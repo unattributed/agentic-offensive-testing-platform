@@ -4,6 +4,8 @@ category: bounded_fuzzing
 action: active_fuzzing
 target_alias: local-placeholder
 target_category: api
+domain: example.invalid
+service: https
 api: placeholder-api
 state_changing: false
 requires_human_approval: true

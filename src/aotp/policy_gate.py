@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
+import re
 from pathlib import Path
 from typing import Any
 
-from .config import ConfigError, validate_scope_shape
+from .config import ConfigError, parse_operator_approval, parse_program_profile, parse_scope
 
 
 @dataclass(frozen=True)
@@ -34,23 +36,72 @@ def _inside(path: Path, parent: Path) -> bool:
         return False
 
 
+def _parse_utc(value: Any, field: str, reasons: list[str]) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        reasons.append(f"{field} is missing")
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        reasons.append(f"{field} is not a valid ISO-8601 timestamp")
+        return None
+    if parsed.tzinfo is None:
+        reasons.append(f"{field} must include a timezone")
+        return None
+    return parsed.astimezone(UTC)
+
+
+def _parse_date(value: Any, field: str, reasons: list[str]) -> date | None:
+    if not isinstance(value, str) or not value.strip():
+        reasons.append(f"{field} is missing")
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        reasons.append(f"{field} is not a valid ISO date")
+        return None
+
+
+def _valid_sha256(value: Any) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+
+
+def _domain_allowed(domain: str, patterns: list[str]) -> bool:
+    candidate = domain.lower().rstrip(".")
+    for raw_pattern in patterns:
+        pattern = raw_pattern.lower().rstrip(".")
+        if pattern.startswith("*."):
+            suffix = pattern[2:]
+            if candidate.endswith("." + suffix) and candidate != suffix:
+                return True
+        elif candidate == pattern:
+            return True
+    return False
+
+
 def evaluate(
     scope: dict[str, Any] | None,
     objective: dict[str, Any] | None = None,
     *,
+    program_profile: dict[str, Any] | None = None,
+    operator_approval: dict[str, Any] | None = None,
+    scope_sha256: str | None = None,
+    campaign_id: str | None = None,
     live: bool = False,
     operator_approved: bool = False,
     workspace: str | Path | None = None,
     redaction_passed: bool = True,
+    now: datetime | None = None,
 ) -> PolicyDecision:
     reasons: list[str] = []
     if scope is None:
         return PolicyDecision(False, ("scope is missing",))
     try:
-        validate_scope_shape(scope)
+        parsed_scope = parse_scope(scope)
     except ConfigError as exc:
         return PolicyDecision(False, (str(exc),))
 
+    current_time = (now or datetime.now(UTC)).astimezone(UTC)
     objective = objective or {}
     authorization = scope["authorization"]
     roe = scope["rules_of_engagement"]
@@ -67,6 +118,8 @@ def evaluate(
     )
     if target_alias and target is None:
         reasons.append("target is not explicitly allowlisted")
+    if live and not target_alias:
+        reasons.append("live objective target alias is missing")
 
     category = objective.get("category") or objective.get("module")
     if category and category not in allowed_categories:
@@ -82,6 +135,21 @@ def evaluate(
     api = objective.get("api")
     if api and (target is None or api not in target.get("apis", [])):
         reasons.append("API is not explicitly allowlisted")
+    environment = objective.get("environment")
+    if environment and (target is None or environment not in target.get("environments", [])):
+        reasons.append("environment is not explicitly allowlisted")
+    account_alias = objective.get("account_alias")
+    if account_alias and (target is None or account_alias not in target.get("approved_account_aliases", [])):
+        reasons.append("test account is not explicitly approved")
+    domain = objective.get("domain")
+    if domain and (target is None or not _domain_allowed(str(domain), target.get("domains", []))):
+        reasons.append("domain is not explicitly allowlisted")
+    network_categories = {"wstg_webapp", "service_control_panel", "bounded_fuzzing"}
+    if live and category in network_categories:
+        if not domain:
+            reasons.append("live network objective domain is missing")
+        if not service:
+            reasons.append("live network objective service is missing")
 
     if category == "bounded_fuzzing":
         fuzzing = scope.get("fuzzing", {})
@@ -104,7 +172,7 @@ def evaluate(
     if category == "crypto_controls" and not scope.get("cryptographic_controls", {}).get("authorized"):
         reasons.append("cryptographic controls review is not explicitly scoped")
 
-    if objective.get("requires_human_approval") and not objective.get("human_approved"):
+    if objective.get("requires_human_approval") and not live and not objective.get("human_approved"):
         reasons.append("human approval is required")
 
     if not rate_limits or not all(
@@ -123,6 +191,14 @@ def evaluate(
         reasons.append("redaction checks failed")
 
     if live:
+        parsed_profile = None
+        if program_profile is None:
+            reasons.append("private program profile is missing")
+        else:
+            try:
+                parsed_profile = parse_program_profile(program_profile)
+            except ConfigError as exc:
+                reasons.append(f"program profile is invalid: {exc}")
         required_refs = (
             ("authorization reference", authorization.get("reference")),
             ("bug bounty style agreement or equivalent authorization reference", authorization.get("agreement_reference")),
@@ -131,11 +207,44 @@ def evaluate(
         )
         if not authorization.get("live_authorized"):
             reasons.append("live mode lacks explicit live authorization")
+        if authorization.get("type") not in {
+            "bug_bounty_program",
+            "written_authorization",
+            "evaluator_authorization",
+            "client_authorization",
+        }:
+            reasons.append("authorization type is missing or unsupported")
         for label, value in required_refs:
             if not _non_placeholder(value):
                 reasons.append(f"{label} is missing")
+        issued_at = _parse_utc(authorization.get("issued_at_utc"), "authorization issued_at_utc", reasons)
+        valid_from = _parse_utc(authorization.get("valid_from_utc"), "authorization valid_from_utc", reasons)
+        valid_until = _parse_utc(authorization.get("valid_until_utc"), "authorization valid_until_utc", reasons)
+        if issued_at and valid_from and issued_at > valid_from:
+            reasons.append("authorization was issued after its validity start")
+        if valid_from and valid_until and valid_from >= valid_until:
+            reasons.append("authorization validity interval is invalid")
+        if valid_from and current_time < valid_from:
+            reasons.append("authorization is not yet valid")
+        if valid_until and current_time >= valid_until:
+            reasons.append("authorization has expired")
         if not roe.get("confirmed"):
             reasons.append("rules-of-engagement confirmation is missing")
+        confirmed_at = _parse_utc(roe.get("confirmed_at_utc"), "rules-of-engagement confirmed_at_utc", reasons)
+        if confirmed_at and confirmed_at > current_time:
+            reasons.append("rules-of-engagement confirmation is in the future")
+        if not _valid_sha256(roe.get("policy_sha256")):
+            reasons.append("rules-of-engagement policy SHA256 is missing or invalid")
+        if not roe.get("prohibited_actions_acknowledged"):
+            reasons.append("prohibited actions were not acknowledged")
+        if not roe.get("evidence_handling_confirmed"):
+            reasons.append("evidence handling requirements were not confirmed")
+        if not _non_placeholder(roe.get("emergency_contact_reference")):
+            reasons.append("emergency contact reference is missing")
+        if not roe.get("target_instability_stop"):
+            reasons.append("target instability stop is not confirmed")
+        if not roe.get("authentication_lockout_stop"):
+            reasons.append("authentication lockout stop is not confirmed")
         confidentiality = authorization.get("confidentiality", {})
         if confidentiality.get("required") and (
             not confidentiality.get("confirmed") or not _non_placeholder(confidentiality.get("reference"))
@@ -143,11 +252,106 @@ def evaluate(
             reasons.append("required confidentiality confirmation is missing")
         if not operator_approved:
             reasons.append("operator approval is missing")
-        if not scope.get("allowed_test_windows"):
+        parsed_approval = None
+        if operator_approval is None:
+            reasons.append("private operator approval record is missing")
+        else:
+            try:
+                parsed_approval = parse_operator_approval(operator_approval)
+            except ConfigError as exc:
+                reasons.append(f"operator approval record is invalid: {exc}")
+        if parsed_approval is not None:
+            approved_at = _parse_utc(
+                parsed_approval.approved_at_utc,
+                "operator approval approved_at_utc",
+                reasons,
+            )
+            approval_expires = _parse_utc(
+                parsed_approval.valid_until_utc,
+                "operator approval valid_until_utc",
+                reasons,
+            )
+            if parsed_approval.decision != "approved":
+                reasons.append("operator approval decision is not approved")
+            if approved_at and approved_at > current_time:
+                reasons.append("operator approval is not yet valid")
+            if approval_expires and current_time >= approval_expires:
+                reasons.append("operator approval has expired")
+            if approved_at and approval_expires and approved_at >= approval_expires:
+                reasons.append("operator approval validity interval is invalid")
+            if parsed_approval.operator_alias != parsed_scope.operator_alias:
+                reasons.append("operator approval alias does not match scope")
+            if parsed_approval.authorization_reference != authorization.get("reference"):
+                reasons.append("operator approval authorization reference does not match scope")
+            if not _valid_sha256(parsed_approval.scope_sha256) or parsed_approval.scope_sha256 != scope_sha256:
+                reasons.append("operator approval scope SHA256 does not match scope file")
+            objective_id = objective.get("id")
+            objective_approved = bool(objective_id and objective_id in parsed_approval.objective_ids)
+            campaign_approved = bool(campaign_id and campaign_id in parsed_approval.campaign_ids)
+            if not objective_approved and not campaign_approved:
+                reasons.append("operator approval does not cover this objective or campaign")
+        windows = scope.get("allowed_test_windows", [])
+        if not windows:
             reasons.append("allowed test windows are missing")
+        active_window = False
+        for index, window in enumerate(windows):
+            start = _parse_utc(window.get("start_utc"), f"allowed_test_windows[{index}].start_utc", reasons)
+            end = _parse_utc(window.get("end_utc"), f"allowed_test_windows[{index}].end_utc", reasons)
+            if start and end:
+                if start >= end:
+                    reasons.append(f"allowed_test_windows[{index}] interval is invalid")
+                elif start <= current_time < end:
+                    active_window = True
+        if windows and not active_window:
+            reasons.append("current time is outside all allowed test windows")
         if not scope.get("reporting", {}).get("disclosure_rules"):
             reasons.append("reporting and disclosure rules are missing")
-        if not scope.get("stop_conditions"):
+        reporting = scope.get("reporting", {})
+        if not reporting.get("human_review_required"):
+            reasons.append("human report review is not required")
+        if reporting.get("automatic_submission"):
+            reasons.append("automatic report submission is forbidden")
+        required_stops = {
+            "operator_stop",
+            "policy_denial",
+            "instability",
+            "authentication_lockout_risk",
+            "redaction_failure",
+        }
+        stop_conditions = set(scope.get("stop_conditions", []))
+        if not stop_conditions:
             reasons.append("emergency stop conditions are missing")
+        elif missing_stops := sorted(required_stops - stop_conditions):
+            reasons.append("required stop conditions are missing: " + ", ".join(missing_stops))
+        if parsed_profile is not None:
+            if parsed_profile.program_alias != parsed_scope.program_alias:
+                reasons.append("program profile alias does not match scope")
+            profile_reference = program_profile.get("authorization_reference")
+            if authorization.get("reference") != profile_reference:
+                reasons.append("authorization reference does not match program profile")
+            if roe.get("policy_sha256") != program_profile.get("policy_sha256"):
+                reasons.append("rules-of-engagement policy SHA256 does not match program profile")
+            accepted_date = _parse_date(
+                program_profile.get("accepted_policy_date"),
+                "program profile accepted_policy_date",
+                reasons,
+            )
+            if accepted_date and accepted_date > current_time.date():
+                reasons.append("program policy acceptance date is in the future")
+            if target_alias:
+                if target_alias in parsed_profile.out_of_scope_asset_aliases:
+                    reasons.append("target is explicitly out of scope in program profile")
+                if target_alias not in parsed_profile.in_scope_asset_aliases:
+                    reasons.append("target is not in scope in program profile")
+            if category:
+                if category in parsed_profile.forbidden_testing_categories:
+                    reasons.append("test category is forbidden by program profile")
+                if category not in parsed_profile.allowed_testing_categories:
+                    reasons.append("test category is not allowed by program profile")
+            if action in parsed_profile.prohibited_actions:
+                reasons.append("action is prohibited by program profile")
+            profile_rate = program_profile["rate_limits"]["requests_per_minute"]
+            if rate_limits["requests_per_minute"] > profile_rate:
+                reasons.append("scope rate limit exceeds program profile limit")
 
     return PolicyDecision(not reasons, tuple(dict.fromkeys(reasons)))

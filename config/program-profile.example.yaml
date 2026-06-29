@@ -4,6 +4,7 @@ platform_reference: example-only
 accepted_policy_date: "2000-01-01"
 authorization_reference: example-only
 safe_harbor_reference: example-only
+policy_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 confidentiality_reference: not-required-for-example
 in_scope_asset_aliases:
   - local-placeholder

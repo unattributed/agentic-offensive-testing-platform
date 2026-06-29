@@ -1,0 +1,40 @@
+schema_version: "1.0"
+sources:
+  - source_id: nuclei-curated-candidate
+    kind: nuclei_yaml
+    repository: https://github.com/projectdiscovery/nuclei-templates
+    commit_sha: "0000000000000000000000000000000000000000"
+    license_spdx: MIT
+    license_reviewed: false
+    enabled: false
+    local_path: private-template-bundles/nuclei
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    signature_required: true
+    allowed_template_ids:
+      - replace-with-reviewed-template-id
+    allowed_capabilities:
+      - passive_http
+    denied_capabilities:
+      - code_execution
+      - credential_attack
+      - destructive_payload
+      - target_discovery
+  - source_id: provided-yara-candidate
+    kind: yara
+    repository: https://github.com/virustotal/yara
+    commit_sha: "0000000000000000000000000000000000000000"
+    license_spdx: BSD-3-Clause
+    license_reviewed: false
+    enabled: false
+    local_path: private-template-bundles/provided.yar
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    signature_required: false
+    allowed_template_ids:
+      - replace-with-reviewed-rule-id
+    allowed_capabilities:
+      - provided_artifact_classification
+    denied_capabilities:
+      - code_execution
+      - credential_attack
+      - destructive_payload
+      - target_discovery

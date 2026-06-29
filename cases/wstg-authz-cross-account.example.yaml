@@ -4,5 +4,7 @@ category: wstg_webapp
 action: cross_account_confirmation
 target_alias: local-placeholder
 target_category: web_application
+domain: example.invalid
+service: https
 wstg_mapping: [WSTG-ATHZ]
 requires_human_approval: true

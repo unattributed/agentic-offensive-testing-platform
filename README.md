@@ -65,6 +65,8 @@ aotp campaign-plan \
   --campaign campaigns/authorized-webapp-campaign.example.yaml
 ```
 
+Before any live case, run the non-executing `aotp policy-check` with the private scope, program profile, approval record, case, `--live`, and `--operator-approved`. It returns a structured allow or deny decision and creates no evidence or network traffic.
+
 Run a safe case:
 
 ```bash
@@ -93,6 +95,8 @@ aotp campaign-run \
 7. Review the resulting `manual_review` state before adding or enabling a future live adapter.
 
 The example scope is deliberately incapable of authorizing live work.
+
+Live commands also require `--program-profile <private-profile.yaml>` and `--approval <private-approval.yaml>`. The approval record is bound to the exact scope file SHA256, authorization reference, operator alias, expiry, and approved objective or campaign identifiers. The boolean flag is an additional runtime confirmation, not a substitute for the record.
 
 ## Cases and modules
 
@@ -135,3 +139,5 @@ This repository is private proprietary intellectual property. No open-source lic
 Third-party dependencies are minimal and tracked for later legal review. Generated evidence, profiles, candidate data, and campaign memory stay untracked.
 
 Development agents follow the [engineering agent SOP](docs/engineering-agent-sop.md) and the slice-based [development plan](docs/development-plan.md).
+
+External YAML and YARA sources are disabled unless a private registry pins their repository commit, local bundle hash, license review, template identifiers, capabilities, and mandatory denials. See the [template ecosystem evaluation](docs/template-ecosystem-evaluation.md).

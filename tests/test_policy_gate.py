@@ -337,6 +337,136 @@ def test_environment_and_account_must_be_allowlisted(example_scope, tmp_path):
     assert "test account is not explicitly approved" in decision.reasons
 
 
+def test_live_network_domain_must_be_explicitly_allowlisted(
+    authorized_scope,
+    authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_objective["domain"] = "outside.invalid"
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "domain is not explicitly allowlisted" in decision.reasons
+
+
+def test_wildcard_domain_does_not_implicitly_include_apex(
+    authorized_scope,
+    authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_scope["allowed_targets"][0]["domains"] = ["*.example.invalid"]
+    authorized_objective["domain"] = "example.invalid"
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "domain is not explicitly allowlisted" in decision.reasons
+
+
+def test_wildcard_domain_allows_only_a_real_subdomain(
+    authorized_scope,
+    authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_scope["allowed_targets"][0]["domains"] = ["*.example.invalid"]
+    authorized_objective["domain"] = "app.example.invalid"
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert decision.allowed, decision.reasons
+
+
+def test_placeholder_authorization_reference_is_denied(
+    authorized_scope,
+    authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_scope["authorization"]["reference"] = "replace-me"
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "authorization reference is missing" in decision.reasons
+
+
+def test_required_confidentiality_confirmation_is_enforced(
+    authorized_scope,
+    authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_scope["authorization"]["confidentiality"] = {
+        "required": True,
+        "confirmed": False,
+        "reference": None,
+    }
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "required confidentiality confirmation is missing" in decision.reasons
+
+
 def test_evidence_directory_cannot_escape_workspace(example_scope, tmp_path):
     example_scope["evidence"]["workspace"] = str(Path(tmp_path).parent / "outside")
     decision = evaluate(example_scope, workspace=tmp_path)

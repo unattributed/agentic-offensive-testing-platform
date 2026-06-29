@@ -66,6 +66,19 @@ def _valid_sha256(value: Any) -> bool:
     return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
 
 
+def _domain_allowed(domain: str, patterns: list[str]) -> bool:
+    candidate = domain.lower().rstrip(".")
+    for raw_pattern in patterns:
+        pattern = raw_pattern.lower().rstrip(".")
+        if pattern.startswith("*."):
+            suffix = pattern[2:]
+            if candidate.endswith("." + suffix) and candidate != suffix:
+                return True
+        elif candidate == pattern:
+            return True
+    return False
+
+
 def evaluate(
     scope: dict[str, Any] | None,
     objective: dict[str, Any] | None = None,
@@ -128,6 +141,15 @@ def evaluate(
     account_alias = objective.get("account_alias")
     if account_alias and (target is None or account_alias not in target.get("approved_account_aliases", [])):
         reasons.append("test account is not explicitly approved")
+    domain = objective.get("domain")
+    if domain and (target is None or not _domain_allowed(str(domain), target.get("domains", []))):
+        reasons.append("domain is not explicitly allowlisted")
+    network_categories = {"wstg_webapp", "service_control_panel", "bounded_fuzzing"}
+    if live and category in network_categories:
+        if not domain:
+            reasons.append("live network objective domain is missing")
+        if not service:
+            reasons.append("live network objective service is missing")
 
     if category == "bounded_fuzzing":
         fuzzing = scope.get("fuzzing", {})

@@ -65,6 +65,8 @@ aotp campaign-plan \
   --campaign campaigns/authorized-webapp-campaign.example.yaml
 ```
 
+Before any live case, run the non-executing `aotp policy-check` with the private scope, program profile, approval record, case, `--live`, and `--operator-approved`. It returns a structured allow or deny decision and creates no evidence or network traffic.
+
 Run a safe case:
 
 ```bash

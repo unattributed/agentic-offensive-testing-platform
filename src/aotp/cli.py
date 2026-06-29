@@ -35,6 +35,13 @@ def _build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--live", action="store_true")
     commands.add_parser("list-cases")
     commands.add_parser("list-modules")
+    policy = commands.add_parser("policy-check")
+    policy.add_argument("--scope", required=True)
+    policy.add_argument("--case", required=True)
+    policy.add_argument("--program-profile")
+    policy.add_argument("--approval")
+    policy.add_argument("--live", action="store_true")
+    policy.add_argument("--operator-approved", action="store_true")
     dry = commands.add_parser("dry-run")
     dry.add_argument("--scope", required=True)
     case = commands.add_parser("run-case")
@@ -152,6 +159,32 @@ def main(argv: list[str] | None = None) -> int:
             for name in ("wstg_webapp", "service_control_panel", "bounded_fuzzing", "sbom_review", "crypto_controls"):
                 print(name)
             return 0
+        if args.command == "policy-check":
+            scope_path, scope = _load_scope(args.scope)
+            case = load_yaml(args.case).data
+            decision = evaluate(
+                scope,
+                case,
+                program_profile=_load_optional(args.program_profile),
+                operator_approval=_load_optional(args.approval),
+                scope_sha256=sha256_file(scope_path),
+                live=args.live,
+                operator_approved=args.operator_approved,
+                workspace=Path.cwd(),
+            )
+            print(
+                json.dumps(
+                    {
+                        "allowed": decision.allowed,
+                        "mode": "live" if args.live else "dry_run",
+                        "scope_id": scope["scope_id"],
+                        "case_id": case.get("id"),
+                        "reasons": list(decision.reasons),
+                    },
+                    indent=2,
+                )
+            )
+            return 0 if decision.allowed else 2
         if args.command == "dry-run":
             _, scope = _load_scope(args.scope)
             decision = evaluate(scope, workspace=Path.cwd())

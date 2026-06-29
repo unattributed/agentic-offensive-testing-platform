@@ -82,6 +82,7 @@ def authorized_objective() -> dict:
         "target_alias": "local-placeholder",
         "category": "wstg_webapp",
         "action": "observe_security_headers",
+        "domain": "example.invalid",
         "service": "https",
         "environment": "isolated-example-environment",
         "account_alias": "provisioned-example-account",

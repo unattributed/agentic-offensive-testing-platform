@@ -40,6 +40,8 @@ Each iteration reads the scope and rules of engagement, selects an already appro
 
 Campaign state is JSON under the ignored `.aotp/state/` directory. It records the scope hash, authorization and rules-of-engagement references, timestamps, module dispositions, finding candidate references, evidence directories, counters, events, and stop history.
 
+[LangGraph](https://docs.langchain.com/oss/python/langgraph/persistence) is the preferred future orchestration layer for durable execution, checkpointed state, and human interrupts. The initial harness keeps a small standard-library state machine so its policy invariants can be proven before LangGraph is introduced. The migration boundary is documented in [docs/langgraph-orchestration.md](docs/langgraph-orchestration.md).
+
 ## Safety boundaries
 
 A fresh clone, CI, tests, example files, `make dry-run`, and all quick-start commands send no traffic to third-party targets. Live mode requires a private untracked program profile and scope, non-placeholder written authorization and agreement references, confirmed rules of engagement, confidentiality confirmation when applicable, an allowed window, explicit targets and categories, rate limits, evidence rules, disclosure rules, stop conditions, and `--operator-approved`.

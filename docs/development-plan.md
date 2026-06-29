@@ -45,8 +45,9 @@ Goal: implement bounded scheduling, checkpoints, events, stop conditions, pause,
 | 2.4 scheduler and safety budget | Order approved work and enforce iteration, runtime, and requests | No budget can be exceeded | `pytest tests/test_safety_budget.py` | boundary cases | scheduler and budget | `enforce campaign safety budgets` |
 | 2.5 pause resume and stop behavior | Add operator stop and reviewed resume state | Invalid resume fails; stop persists | `aotp campaign-stop --state <fixture>` | before and after state | CLI and state | `add campaign pause resume and stop` |
 | 2.6 campaign event log | Record iteration, policy, module, outcome, and evidence | Events are ordered and complete | `pytest tests/test_campaign_loop.py -k events` | event JSON | loop and state | `record structured campaign events` |
+| 2.7 LangGraph orchestration prototype | Map approved objectives to nodes, add a durable checkpointer and interrupts, and preserve the policy boundary | Restart, pause, approval, denial, and resume match the deterministic state contract | `pytest tests/test_langgraph_orchestration.py` | checkpoint and parity fixtures | orchestration adapter, state, tests, dependency inventory | `prototype durable langgraph orchestration` |
 
-Sprint acceptance: plan and dry-run work; state tracks all dispositions; stop conditions and reviewed resume are enforced.
+Sprint acceptance: plan and dry-run work; state tracks all dispositions; stop conditions and reviewed resume are enforced; the LangGraph prototype passes state and policy parity tests before it can replace the initial loop.
 
 ## Sprint 3: evidence and finding candidate pipeline
 

@@ -1,0 +1,8 @@
+id: cryptographic-controls-review
+module: crypto_controls
+category: crypto_controls
+action: inspect_provided_crypto_evidence
+target_alias: local-placeholder
+target_category: configuration_artifact
+artifact_mapping: [TLS, cookie-attributes, token-configuration]
+requires_human_approval: false

@@ -1,0 +1,63 @@
+schema_version: "1.0"
+scope_id: example-dry-run
+sponsor_alias: example-sponsor
+operator_alias: example-operator
+authorization:
+  live_authorized: false
+  reference: example-only
+  agreement_reference: example-only
+  program_profile_reference: example-only
+  confidentiality:
+    required: false
+    confirmed: false
+    reference: null
+rules_of_engagement:
+  confirmed: false
+  reference: example-only
+allowed_targets:
+  - alias: local-placeholder
+    domains:
+      - example.invalid
+    services:
+      - https
+    apis:
+      - placeholder-api
+allowed_test_windows: []
+allowed_categories:
+  - wstg_webapp
+  - service_control_panel
+  - bounded_fuzzing
+  - sbom_review
+  - crypto_controls
+forbidden_actions:
+  - credential_attack
+  - destructive_payload
+  - payment_workflow
+  - kyc_workflow
+  - account_recovery_abuse
+  - report_submission
+rate_limits:
+  requests_per_minute: 1
+  max_requests: 5
+fuzzing:
+  authorized: false
+  state_changing_authorized: false
+  payload_budget: 1
+  request_budget: 1
+  per_endpoint_limit: 1
+  max_runtime_seconds: 1
+service_control_panels:
+  authorized: false
+cryptographic_controls:
+  authorized: false
+provided_artifacts:
+  - artifacts/sbom.placeholder.json
+evidence:
+  workspace: .aotp/evidence
+  handling: local-redacted-placeholder-only
+reporting:
+  disclosure_rules: human-review-required
+stop_conditions:
+  - operator_stop
+  - policy_denial
+  - instability

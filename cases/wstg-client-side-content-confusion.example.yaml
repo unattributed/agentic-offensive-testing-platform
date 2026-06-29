@@ -1,0 +1,8 @@
+id: wstg-client-side-content-confusion
+module: wstg_webapp
+category: wstg_webapp
+action: inspect_content_confusion
+target_alias: local-placeholder
+target_category: browser_application
+wstg_mapping: [WSTG-CLNT]
+requires_human_approval: false

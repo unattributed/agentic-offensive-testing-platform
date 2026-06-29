@@ -1,0 +1,6 @@
+requests_per_minute: 1
+max_requests: 5
+per_endpoint_max_requests: 1
+max_response_bytes: 1048576
+retry_limit: 0
+max_runtime_seconds: 60

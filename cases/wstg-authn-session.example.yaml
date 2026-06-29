@@ -1,0 +1,8 @@
+id: wstg-authn-session
+module: wstg_webapp
+category: wstg_webapp
+action: review_authn_session
+target_alias: local-placeholder
+target_category: web_application
+wstg_mapping: [WSTG-ATHN, WSTG-SESS]
+requires_human_approval: false

@@ -1,0 +1,8 @@
+id: wstg-authz-cross-account
+module: wstg_webapp
+category: wstg_webapp
+action: cross_account_confirmation
+target_alias: local-placeholder
+target_category: web_application
+wstg_mapping: [WSTG-ATHZ]
+requires_human_approval: true

@@ -1,0 +1,12 @@
+base_url: http://localhost:11434
+default_model: qwen3:8b
+models:
+  - qwen3:8b
+  - qwen2.5-coder:7b
+  - qwen2.5-coder:14b
+  - deepseek-r1:8b
+  - qwen3-vl:8b
+rules:
+  structured_json: true
+  redact_before_send: true
+  allow_remote_endpoint: false

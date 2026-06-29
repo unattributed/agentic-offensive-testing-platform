@@ -1,0 +1,8 @@
+id: wstg-browser-agent-context
+module: wstg_webapp
+category: wstg_webapp
+action: capture_browser_context
+target_alias: local-placeholder
+target_category: browser_application
+wstg_mapping: [WSTG-CLNT]
+requires_human_approval: false

@@ -1,0 +1,24 @@
+campaign_id: example-webapp-dry-run
+name: Authorized web application dry run
+limits:
+  max_iterations: 3
+  max_runtime_seconds: 30
+objectives:
+  - id: wstg-security-headers
+    title: Plan a security-header observation
+    module: wstg_webapp
+    category: wstg_webapp
+    action: observe_security_headers
+    target_alias: local-placeholder
+    target_category: web_application
+    wstg_mapping: [WSTG-CONF-14]
+    priority: 10
+  - id: wstg-authn-session
+    title: Plan an authentication and session review
+    module: wstg_webapp
+    category: wstg_webapp
+    action: review_authn_session
+    target_alias: local-placeholder
+    target_category: web_application
+    wstg_mapping: [WSTG-ATHN, WSTG-SESS]
+    priority: 20

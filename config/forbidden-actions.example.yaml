@@ -1,0 +1,10 @@
+forbidden_actions:
+  - credential_attack
+  - destructive_payload
+  - authentication_abuse
+  - payment_workflow
+  - kyc_workflow
+  - support_workflow
+  - account_recovery_abuse
+  - automatic_report_submission
+  - public_disclosure

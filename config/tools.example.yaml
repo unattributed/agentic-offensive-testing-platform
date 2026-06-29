@@ -1,0 +1,13 @@
+adapters:
+  zap:
+    supports: [passive_scan, spider_limited]
+    requires: [explicit_target_scope, rate_limits]
+    denies: [active_scan_without_approval, destructive_payloads]
+  playwright:
+    supports: [browser_navigation, dom_capture, trace_capture]
+    requires: [explicit_target_scope, rate_limits]
+    denies: [target_expansion, credential_guessing]
+  mitmproxy:
+    supports: [authorized_proxy_capture]
+    requires: [explicit_target_scope, evidence_rules]
+    denies: [unscoped_interception, credential_persistence]

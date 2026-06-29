@@ -1,0 +1,8 @@
+id: service-control-panel-misconfiguration
+module: service_control_panel
+category: service_control_panel
+action: observe_panel_metadata
+target_alias: local-placeholder
+target_category: control_panel
+service: https
+requires_human_approval: false

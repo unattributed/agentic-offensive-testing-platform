@@ -1,0 +1,2 @@
+purpose: placeholder-only
+instruction: copy config/scope.example.yaml to an untracked private scope file and replace every placeholder

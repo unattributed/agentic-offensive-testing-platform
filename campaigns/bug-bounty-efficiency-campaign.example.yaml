@@ -1,0 +1,21 @@
+campaign_id: example-program-efficiency-dry-run
+name: Program profile planning dry run
+limits:
+  max_iterations: 2
+  max_runtime_seconds: 30
+objectives:
+  - id: prior-testing-memory-review
+    module: wstg_webapp
+    category: wstg_webapp
+    action: review_duplicate_risk
+    target_alias: local-placeholder
+    target_category: web_application
+    priority: 10
+  - id: report-quality-review
+    module: wstg_webapp
+    category: wstg_webapp
+    action: score_draft_report
+    target_alias: local-placeholder
+    target_category: report_draft
+    requires_human_approval: true
+    priority: 20

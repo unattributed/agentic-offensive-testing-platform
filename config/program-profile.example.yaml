@@ -1,0 +1,24 @@
+schema_version: "1.0"
+program_alias: example-program
+platform_reference: example-only
+accepted_policy_date: "2000-01-01"
+authorization_reference: example-only
+safe_harbor_reference: example-only
+confidentiality_reference: not-required-for-example
+in_scope_asset_aliases:
+  - local-placeholder
+out_of_scope_asset_aliases:
+  - everything-else
+prohibited_actions:
+  - credential_attack
+  - destructive_payload
+rate_limits:
+  requests_per_minute: 1
+allowed_testing_categories:
+  - wstg_webapp
+forbidden_testing_categories:
+  - state_changing_fuzzing
+report_format_expectations: human-reviewed-markdown
+disclosure_rules: no-automatic-or-public-disclosure
+emergency_stop_condition: operator-stop
+sensitive_workflow_notes: require-human-approval

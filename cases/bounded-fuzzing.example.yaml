@@ -1,0 +1,9 @@
+id: bounded-fuzzing
+module: bounded_fuzzing
+category: bounded_fuzzing
+action: active_fuzzing
+target_alias: local-placeholder
+target_category: api
+api: placeholder-api
+state_changing: false
+requires_human_approval: true

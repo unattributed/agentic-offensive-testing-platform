@@ -1,0 +1,23 @@
+campaign_id: example-artifact-dry-run
+name: Provided artifact and cryptographic controls dry run
+limits:
+  max_iterations: 2
+  max_runtime_seconds: 30
+objectives:
+  - id: sbom-dependency-review
+    module: sbom_review
+    category: sbom_review
+    action: inspect_provided_artifact
+    target_alias: local-placeholder
+    target_category: provided_artifact
+    artifact: artifacts/sbom.placeholder.json
+    artifact_mapping: [SBOM-component-inventory]
+    priority: 10
+  - id: cryptographic-controls-review
+    module: crypto_controls
+    category: crypto_controls
+    action: inspect_provided_crypto_evidence
+    target_alias: local-placeholder
+    target_category: configuration_artifact
+    artifact_mapping: [TLS, cookie-attributes, token-configuration]
+    priority: 20

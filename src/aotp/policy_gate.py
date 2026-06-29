@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+import re
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +60,10 @@ def _parse_date(value: Any, field: str, reasons: list[str]) -> date | None:
     except ValueError:
         reasons.append(f"{field} is not a valid ISO date")
         return None
+
+
+def _valid_sha256(value: Any) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
 
 
 def evaluate(
@@ -200,6 +205,21 @@ def evaluate(
             reasons.append("authorization has expired")
         if not roe.get("confirmed"):
             reasons.append("rules-of-engagement confirmation is missing")
+        confirmed_at = _parse_utc(roe.get("confirmed_at_utc"), "rules-of-engagement confirmed_at_utc", reasons)
+        if confirmed_at and confirmed_at > current_time:
+            reasons.append("rules-of-engagement confirmation is in the future")
+        if not _valid_sha256(roe.get("policy_sha256")):
+            reasons.append("rules-of-engagement policy SHA256 is missing or invalid")
+        if not roe.get("prohibited_actions_acknowledged"):
+            reasons.append("prohibited actions were not acknowledged")
+        if not roe.get("evidence_handling_confirmed"):
+            reasons.append("evidence handling requirements were not confirmed")
+        if not _non_placeholder(roe.get("emergency_contact_reference")):
+            reasons.append("emergency contact reference is missing")
+        if not roe.get("target_instability_stop"):
+            reasons.append("target instability stop is not confirmed")
+        if not roe.get("authentication_lockout_stop"):
+            reasons.append("authentication lockout stop is not confirmed")
         confidentiality = authorization.get("confidentiality", {})
         if confidentiality.get("required") and (
             not confidentiality.get("confirmed") or not _non_placeholder(confidentiality.get("reference"))
@@ -207,18 +227,47 @@ def evaluate(
             reasons.append("required confidentiality confirmation is missing")
         if not operator_approved:
             reasons.append("operator approval is missing")
-        if not scope.get("allowed_test_windows"):
+        windows = scope.get("allowed_test_windows", [])
+        if not windows:
             reasons.append("allowed test windows are missing")
+        active_window = False
+        for index, window in enumerate(windows):
+            start = _parse_utc(window.get("start_utc"), f"allowed_test_windows[{index}].start_utc", reasons)
+            end = _parse_utc(window.get("end_utc"), f"allowed_test_windows[{index}].end_utc", reasons)
+            if start and end:
+                if start >= end:
+                    reasons.append(f"allowed_test_windows[{index}] interval is invalid")
+                elif start <= current_time < end:
+                    active_window = True
+        if windows and not active_window:
+            reasons.append("current time is outside all allowed test windows")
         if not scope.get("reporting", {}).get("disclosure_rules"):
             reasons.append("reporting and disclosure rules are missing")
-        if not scope.get("stop_conditions"):
+        reporting = scope.get("reporting", {})
+        if not reporting.get("human_review_required"):
+            reasons.append("human report review is not required")
+        if reporting.get("automatic_submission"):
+            reasons.append("automatic report submission is forbidden")
+        required_stops = {
+            "operator_stop",
+            "policy_denial",
+            "instability",
+            "authentication_lockout_risk",
+            "redaction_failure",
+        }
+        stop_conditions = set(scope.get("stop_conditions", []))
+        if not stop_conditions:
             reasons.append("emergency stop conditions are missing")
+        elif missing_stops := sorted(required_stops - stop_conditions):
+            reasons.append("required stop conditions are missing: " + ", ".join(missing_stops))
         if parsed_profile is not None:
             if parsed_profile.program_alias != parsed_scope.program_alias:
                 reasons.append("program profile alias does not match scope")
             profile_reference = program_profile.get("authorization_reference")
             if authorization.get("reference") != profile_reference:
                 reasons.append("authorization reference does not match program profile")
+            if roe.get("policy_sha256") != program_profile.get("policy_sha256"):
+                reasons.append("rules-of-engagement policy SHA256 does not match program profile")
             accepted_date = _parse_date(
                 program_profile.get("accepted_policy_date"),
                 "program profile accepted_policy_date",

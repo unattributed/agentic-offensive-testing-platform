@@ -40,6 +40,92 @@ def test_complete_live_authorization_relationship_is_allowed(
     assert decision.allowed, decision.reasons
 
 
+def test_live_execution_requires_an_active_test_window(
+    authorized_scope,
+    authorized_profile,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_scope["allowed_test_windows"][0].update(
+        {"start_utc": "2026-01-01T00:00:00Z", "end_utc": "2026-06-01T00:00:00Z"}
+    )
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "current time is outside all allowed test windows" in decision.reasons
+
+
+def test_rules_of_engagement_must_match_accepted_policy(
+    authorized_scope,
+    authorized_profile,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_scope["rules_of_engagement"]["policy_sha256"] = "b" * 64
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "rules-of-engagement policy SHA256 does not match program profile" in decision.reasons
+
+
+def test_live_execution_requires_all_safety_stops(
+    authorized_scope,
+    authorized_profile,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_scope["stop_conditions"].remove("authentication_lockout_risk")
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert any(reason.startswith("required stop conditions are missing") for reason in decision.reasons)
+
+
+def test_automatic_report_submission_is_denied(
+    authorized_scope,
+    authorized_profile,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_scope["reporting"]["automatic_submission"] = True
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "automatic report submission is forbidden" in decision.reasons
+
+
 def test_live_profile_must_match_scope_and_authorization(
     authorized_scope,
     authorized_profile,

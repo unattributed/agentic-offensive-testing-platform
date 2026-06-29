@@ -19,6 +19,13 @@ authorization:
 rules_of_engagement:
   confirmed: false
   reference: example-only
+  confirmed_at_utc: "2000-01-01T00:00:00Z"
+  policy_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  prohibited_actions_acknowledged: false
+  evidence_handling_confirmed: false
+  emergency_contact_reference: example-only
+  target_instability_stop: true
+  authentication_lockout_stop: true
 allowed_targets:
   - alias: local-placeholder
     domains:
@@ -64,9 +71,17 @@ provided_artifacts:
 evidence:
   workspace: .aotp/evidence
   handling: local-redacted-placeholder-only
+  retention_days: 1
+  encryption_required: false
+  allowed_artifact_types:
+    - evidence_manifest
 reporting:
   disclosure_rules: human-review-required
+  human_review_required: true
+  automatic_submission: false
 stop_conditions:
   - operator_stop
   - policy_denial
   - instability
+  - authentication_lockout_risk
+  - redaction_failure

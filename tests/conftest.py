@@ -32,9 +32,25 @@ def authorized_scope(example_scope: dict) -> dict:
             "valid_until_utc": "2027-01-01T00:00:00Z",
         }
     )
-    scope["rules_of_engagement"].update({"confirmed": True, "reference": "roe-record-2026"})
+    scope["rules_of_engagement"].update(
+        {
+            "confirmed": True,
+            "reference": "roe-record-2026",
+            "confirmed_at_utc": "2026-01-02T00:00:00Z",
+            "policy_sha256": "a" * 64,
+            "prohibited_actions_acknowledged": True,
+            "evidence_handling_confirmed": True,
+            "emergency_contact_reference": "private-emergency-contact-record",
+            "target_instability_stop": True,
+            "authentication_lockout_stop": True,
+        }
+    )
     scope["allowed_test_windows"] = [
-        {"start_utc": "2026-01-01T00:00:00Z", "end_utc": "2027-01-01T00:00:00Z"}
+        {
+            "label": "authorized-2026-window",
+            "start_utc": "2026-01-01T00:00:00Z",
+            "end_utc": "2027-01-01T00:00:00Z",
+        }
     ]
     return scope
 
@@ -48,6 +64,7 @@ def authorized_profile(project_root: Path) -> dict:
             "accepted_policy_date": "2026-01-01",
             "authorization_reference": "authorization-record-2026",
             "safe_harbor_reference": "safe-harbor-record-2026",
+            "policy_sha256": "a" * 64,
         }
     )
     return profile

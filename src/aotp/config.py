@@ -156,7 +156,34 @@ def parse_scope(scope: dict[str, Any]) -> ScopeConfig:
     sponsor_alias = require_text(scope.get("sponsor_alias"), "sponsor_alias")
     operator_alias = require_text(scope.get("operator_alias"), "operator_alias")
     require_mapping(scope.get("authorization"), "authorization")
-    require_mapping(scope.get("rules_of_engagement"), "rules_of_engagement")
+    roe = require_mapping(scope.get("rules_of_engagement"), "rules_of_engagement")
+    _reject_unknown(
+        roe,
+        {
+            "confirmed",
+            "reference",
+            "confirmed_at_utc",
+            "policy_sha256",
+            "prohibited_actions_acknowledged",
+            "evidence_handling_confirmed",
+            "emergency_contact_reference",
+            "target_instability_stop",
+            "authentication_lockout_stop",
+        },
+        "rules_of_engagement",
+    )
+    require_bool(roe.get("confirmed"), "rules_of_engagement.confirmed")
+    require_text(roe.get("reference"), "rules_of_engagement.reference")
+    require_text(roe.get("confirmed_at_utc"), "rules_of_engagement.confirmed_at_utc")
+    require_text(roe.get("policy_sha256"), "rules_of_engagement.policy_sha256")
+    for field in (
+        "prohibited_actions_acknowledged",
+        "evidence_handling_confirmed",
+        "target_instability_stop",
+        "authentication_lockout_stop",
+    ):
+        require_bool(roe.get(field), f"rules_of_engagement.{field}")
+    require_text(roe.get("emergency_contact_reference"), "rules_of_engagement.emergency_contact_reference")
     raw_targets = require_list(scope.get("allowed_targets"), "allowed_targets")
     targets: list[TargetScope] = []
     for index, raw_target in enumerate(raw_targets):
@@ -188,12 +215,36 @@ def parse_scope(scope: dict[str, Any]) -> ScopeConfig:
     rate_limits = require_mapping(scope.get("rate_limits"), "rate_limits")
     require_positive_int(rate_limits.get("requests_per_minute"), "rate_limits.requests_per_minute")
     require_positive_int(rate_limits.get("max_requests"), "rate_limits.max_requests")
-    require_list(scope.get("allowed_test_windows"), "allowed_test_windows")
+    windows = require_list(scope.get("allowed_test_windows"), "allowed_test_windows")
+    for index, raw_window in enumerate(windows):
+        field = f"allowed_test_windows[{index}]"
+        window = require_mapping(raw_window, field)
+        _reject_unknown(window, {"label", "start_utc", "end_utc"}, field)
+        require_text(window.get("label"), f"{field}.label")
+        require_text(window.get("start_utc"), f"{field}.start_utc")
+        require_text(window.get("end_utc"), f"{field}.end_utc")
     require_list(scope.get("provided_artifacts"), "provided_artifacts")
     require_list(scope.get("stop_conditions"), "stop_conditions")
     evidence = require_mapping(scope.get("evidence"), "evidence")
+    _reject_unknown(
+        evidence,
+        {"workspace", "handling", "retention_days", "encryption_required", "allowed_artifact_types"},
+        "evidence",
+    )
     require_text(evidence.get("workspace"), "evidence.workspace")
     require_text(evidence.get("handling"), "evidence.handling")
+    require_positive_int(evidence.get("retention_days"), "evidence.retention_days")
+    require_bool(evidence.get("encryption_required"), "evidence.encryption_required")
+    require_text_list(evidence.get("allowed_artifact_types"), "evidence.allowed_artifact_types", allow_empty=False)
+    reporting = require_mapping(scope.get("reporting"), "reporting")
+    _reject_unknown(
+        reporting,
+        {"disclosure_rules", "human_review_required", "automatic_submission"},
+        "reporting",
+    )
+    require_text(reporting.get("disclosure_rules"), "reporting.disclosure_rules")
+    require_bool(reporting.get("human_review_required"), "reporting.human_review_required")
+    require_bool(reporting.get("automatic_submission"), "reporting.automatic_submission")
     return ScopeConfig(
         schema_version=schema_version,
         scope_id=scope_id,
@@ -221,6 +272,7 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
             "accepted_policy_date",
             "authorization_reference",
             "safe_harbor_reference",
+            "policy_sha256",
             "confidentiality_reference",
             "in_scope_asset_aliases",
             "out_of_scope_asset_aliases",
@@ -244,6 +296,7 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
         "accepted_policy_date",
         "authorization_reference",
         "safe_harbor_reference",
+        "policy_sha256",
         "confidentiality_reference",
         "report_format_expectations",
         "disclosure_rules",

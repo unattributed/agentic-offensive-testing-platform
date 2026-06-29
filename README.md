@@ -139,3 +139,5 @@ This repository is private proprietary intellectual property. No open-source lic
 Third-party dependencies are minimal and tracked for later legal review. Generated evidence, profiles, candidate data, and campaign memory stay untracked.
 
 Development agents follow the [engineering agent SOP](docs/engineering-agent-sop.md) and the slice-based [development plan](docs/development-plan.md).
+
+External YAML and YARA sources are disabled unless a private registry pins their repository commit, local bundle hash, license review, template identifiers, capabilities, and mandatory denials. See the [template ecosystem evaluation](docs/template-ecosystem-evaluation.md).

@@ -16,6 +16,7 @@ from .evidence import EvidenceManifest, sha256_file, utc_now, verify_evidence_di
 from .executor import execute
 from .policy_gate import evaluate
 from .reporter import generate_markdown
+from .template_registry import parse_template_registry, verify_template_source
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,6 +36,9 @@ def _build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--live", action="store_true")
     commands.add_parser("list-cases")
     commands.add_parser("list-modules")
+    template_verify = commands.add_parser("template-source-verify")
+    template_verify.add_argument("--registry", required=True)
+    template_verify.add_argument("--source", required=True)
     policy = commands.add_parser("policy-check")
     policy.add_argument("--scope", required=True)
     policy.add_argument("--case", required=True)
@@ -159,6 +163,23 @@ def main(argv: list[str] | None = None) -> int:
             for name in ("wstg_webapp", "service_control_panel", "bounded_fuzzing", "sbom_review", "crypto_controls"):
                 print(name)
             return 0
+        if args.command == "template-source-verify":
+            loaded = load_yaml(args.registry)
+            sources = parse_template_registry(loaded.data)
+            if args.source not in sources:
+                raise ConfigError(f"template source is not registered: {args.source}")
+            failures = verify_template_source(sources[args.source], loaded.path)
+            print(
+                json.dumps(
+                    {
+                        "valid": not failures,
+                        "source": args.source,
+                        "failures": failures,
+                    },
+                    indent=2,
+                )
+            )
+            return 0 if not failures else 2
         if args.command == "policy-check":
             scope_path, scope = _load_scope(args.scope)
             case = load_yaml(args.case).data

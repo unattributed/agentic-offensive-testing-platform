@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .config import ConfigError, parse_program_profile, parse_scope
+from .config import ConfigError, parse_operator_approval, parse_program_profile, parse_scope
 
 
 @dataclass(frozen=True)
@@ -71,6 +71,9 @@ def evaluate(
     objective: dict[str, Any] | None = None,
     *,
     program_profile: dict[str, Any] | None = None,
+    operator_approval: dict[str, Any] | None = None,
+    scope_sha256: str | None = None,
+    campaign_id: str | None = None,
     live: bool = False,
     operator_approved: bool = False,
     workspace: str | Path | None = None,
@@ -147,7 +150,7 @@ def evaluate(
     if category == "crypto_controls" and not scope.get("cryptographic_controls", {}).get("authorized"):
         reasons.append("cryptographic controls review is not explicitly scoped")
 
-    if objective.get("requires_human_approval") and not objective.get("human_approved"):
+    if objective.get("requires_human_approval") and not live and not objective.get("human_approved"):
         reasons.append("human approval is required")
 
     if not rate_limits or not all(
@@ -227,6 +230,44 @@ def evaluate(
             reasons.append("required confidentiality confirmation is missing")
         if not operator_approved:
             reasons.append("operator approval is missing")
+        parsed_approval = None
+        if operator_approval is None:
+            reasons.append("private operator approval record is missing")
+        else:
+            try:
+                parsed_approval = parse_operator_approval(operator_approval)
+            except ConfigError as exc:
+                reasons.append(f"operator approval record is invalid: {exc}")
+        if parsed_approval is not None:
+            approved_at = _parse_utc(
+                parsed_approval.approved_at_utc,
+                "operator approval approved_at_utc",
+                reasons,
+            )
+            approval_expires = _parse_utc(
+                parsed_approval.valid_until_utc,
+                "operator approval valid_until_utc",
+                reasons,
+            )
+            if parsed_approval.decision != "approved":
+                reasons.append("operator approval decision is not approved")
+            if approved_at and approved_at > current_time:
+                reasons.append("operator approval is not yet valid")
+            if approval_expires and current_time >= approval_expires:
+                reasons.append("operator approval has expired")
+            if approved_at and approval_expires and approved_at >= approval_expires:
+                reasons.append("operator approval validity interval is invalid")
+            if parsed_approval.operator_alias != parsed_scope.operator_alias:
+                reasons.append("operator approval alias does not match scope")
+            if parsed_approval.authorization_reference != authorization.get("reference"):
+                reasons.append("operator approval authorization reference does not match scope")
+            if not _valid_sha256(parsed_approval.scope_sha256) or parsed_approval.scope_sha256 != scope_sha256:
+                reasons.append("operator approval scope SHA256 does not match scope file")
+            objective_id = objective.get("id")
+            objective_approved = bool(objective_id and objective_id in parsed_approval.objective_ids)
+            campaign_approved = bool(campaign_id and campaign_id in parsed_approval.campaign_ids)
+            if not objective_approved and not campaign_approved:
+                reasons.append("operator approval does not cover this objective or campaign")
         windows = scope.get("allowed_test_windows", [])
         if not windows:
             reasons.append("allowed test windows are missing")

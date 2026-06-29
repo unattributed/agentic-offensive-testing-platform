@@ -2,7 +2,14 @@ import pytest
 
 from copy import deepcopy
 
-from aotp.config import ConfigError, load_yaml, parse_program_profile, parse_scope, validate_scope_shape
+from aotp.config import (
+    ConfigError,
+    load_yaml,
+    parse_operator_approval,
+    parse_program_profile,
+    parse_scope,
+    validate_scope_shape,
+)
 
 
 def test_example_scope_is_structurally_valid(project_root):
@@ -38,6 +45,13 @@ def test_program_profile_rejects_scope_contradictions(project_root):
     profile["out_of_scope_asset_aliases"] = ["local-placeholder"]
     with pytest.raises(ConfigError, match="both in and out of scope"):
         parse_program_profile(profile)
+
+
+def test_operator_approval_example_is_structurally_valid(project_root):
+    approval = load_yaml(project_root / "config/operator-approval.example.yaml").data
+    parsed = parse_operator_approval(approval)
+    assert parsed.decision == "denied"
+    assert parsed.objective_ids == ("example-only",)
 
 
 def test_missing_config_fails_closed(tmp_path):

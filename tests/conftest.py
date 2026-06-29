@@ -86,3 +86,24 @@ def authorized_objective() -> dict:
         "environment": "isolated-example-environment",
         "account_alias": "provisioned-example-account",
     }
+
+
+@pytest.fixture
+def authorized_scope_sha256() -> str:
+    return "b" * 64
+
+
+@pytest.fixture
+def authorized_approval(authorized_scope_sha256: str) -> dict:
+    return {
+        "schema_version": "1.0",
+        "approval_id": "operator-approval-2026",
+        "operator_alias": "example-operator",
+        "decision": "approved",
+        "approved_at_utc": "2026-06-29T00:00:00Z",
+        "valid_until_utc": "2026-07-01T00:00:00Z",
+        "scope_sha256": authorized_scope_sha256,
+        "authorization_reference": "authorization-record-2026",
+        "objective_ids": ["authorized-security-headers"],
+        "campaign_ids": [],
+    }

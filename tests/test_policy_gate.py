@@ -24,6 +24,8 @@ def test_example_scope_denies_live_mode(example_scope, tmp_path):
 def test_complete_live_authorization_relationship_is_allowed(
     authorized_scope,
     authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
     authorized_objective,
     authorized_now,
     tmp_path,
@@ -32,12 +34,88 @@ def test_complete_live_authorization_relationship_is_allowed(
         authorized_scope,
         authorized_objective,
         program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
         live=True,
         operator_approved=True,
         workspace=tmp_path,
         now=authorized_now,
     )
     assert decision.allowed, decision.reasons
+
+
+def test_live_execution_requires_private_approval_record(
+    authorized_scope,
+    authorized_profile,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "private operator approval record is missing" in decision.reasons
+
+
+def test_approval_must_match_scope_and_objective(
+    authorized_scope,
+    authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_approval["scope_sha256"] = "c" * 64
+    authorized_approval["objective_ids"] = ["different-objective"]
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "operator approval scope SHA256 does not match scope file" in decision.reasons
+    assert "operator approval does not cover this objective or campaign" in decision.reasons
+
+
+def test_expired_operator_approval_is_denied(
+    authorized_scope,
+    authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_approval["valid_until_utc"] = "2026-06-01T00:00:00Z"
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert "operator approval has expired" in decision.reasons
 
 
 def test_live_execution_requires_an_active_test_window(

@@ -12,7 +12,7 @@ from .campaign import load_campaign
 from .campaign_loop import run_campaign
 from .campaign_state import load_state, save_state
 from .config import ConfigError, load_yaml, validate_scope_shape
-from .evidence import EvidenceManifest, utc_now, verify_evidence_directory, write_manifest
+from .evidence import EvidenceManifest, sha256_file, utc_now, verify_evidence_directory, write_manifest
 from .executor import execute
 from .policy_gate import evaluate
 from .reporter import generate_markdown
@@ -30,6 +30,9 @@ def _build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     validate = commands.add_parser("validate-config")
     validate.add_argument("--scope", required=True)
+    validate.add_argument("--program-profile")
+    validate.add_argument("--approval")
+    validate.add_argument("--live", action="store_true")
     commands.add_parser("list-cases")
     commands.add_parser("list-modules")
     dry = commands.add_parser("dry-run")
@@ -41,6 +44,8 @@ def _build_parser() -> argparse.ArgumentParser:
     mode.add_argument("--dry-run", action="store_true")
     mode.add_argument("--live", action="store_true")
     case.add_argument("--operator-approved", action="store_true")
+    case.add_argument("--program-profile")
+    case.add_argument("--approval")
     plan = commands.add_parser("campaign-plan")
     plan.add_argument("--scope", required=True)
     plan.add_argument("--campaign", required=True)
@@ -49,6 +54,8 @@ def _build_parser() -> argparse.ArgumentParser:
     run.add_argument("--campaign", required=True)
     run.add_argument("--live", action="store_true")
     run.add_argument("--operator-approved", action="store_true")
+    run.add_argument("--program-profile")
+    run.add_argument("--approval")
     resume = commands.add_parser("campaign-resume")
     resume.add_argument("--state", required=True)
     stop = commands.add_parser("campaign-stop")
@@ -68,12 +75,21 @@ def _load_scope(path: str) -> tuple[Path, dict]:
     return loaded.path, loaded.data
 
 
+def _load_optional(path: str | None) -> dict | None:
+    return load_yaml(path).data if path else None
+
+
 def _run_case(args: argparse.Namespace) -> int:
-    _, scope = _load_scope(args.scope)
+    scope_path, scope = _load_scope(args.scope)
     case = load_yaml(args.case).data
+    profile = _load_optional(args.program_profile)
+    approval = _load_optional(args.approval)
     decision = evaluate(
         scope,
         case,
+        program_profile=profile,
+        operator_approval=approval,
+        scope_sha256=sha256_file(scope_path),
         live=args.live,
         operator_approved=args.operator_approved,
         workspace=Path.cwd(),
@@ -113,9 +129,21 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     try:
         if args.command == "validate-config":
-            _, scope = _load_scope(args.scope)
-            print(json.dumps({"valid": True, "scope_id": scope["scope_id"]}))
-            return 0
+            scope_path, scope = _load_scope(args.scope)
+            decision = evaluate(
+                scope,
+                program_profile=_load_optional(args.program_profile),
+                operator_approval=_load_optional(args.approval),
+                scope_sha256=sha256_file(scope_path),
+                live=args.live,
+                workspace=Path.cwd(),
+            )
+            print(
+                json.dumps(
+                    {"valid": decision.allowed, "scope_id": scope["scope_id"], "decision": decision.summary}
+                )
+            )
+            return 0 if decision.allowed else 2
         if args.command == "list-cases":
             for path in _yaml_files("cases"):
                 print(path.name)
@@ -140,10 +168,14 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "campaign-run":
             scope_path, scope = _load_scope(args.scope)
             campaign = load_campaign(args.campaign).data
+            profile = _load_optional(args.program_profile)
+            approval = _load_optional(args.approval)
             state, path = run_campaign(
                 scope,
                 scope_path,
                 campaign,
+                program_profile=profile,
+                operator_approval=approval,
                 live=args.live,
                 operator_approved=args.operator_approved,
                 workspace=Path.cwd(),

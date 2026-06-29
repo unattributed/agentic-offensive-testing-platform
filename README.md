@@ -94,6 +94,8 @@ aotp campaign-run \
 
 The example scope is deliberately incapable of authorizing live work.
 
+Live commands also require `--program-profile <private-profile.yaml>` and `--approval <private-approval.yaml>`. The approval record is bound to the exact scope file SHA256, authorization reference, operator alias, expiry, and approved objective or campaign identifiers. The boolean flag is an additional runtime confirmation, not a substitute for the record.
+
 ## Cases and modules
 
 - **WSTG web application:** case YAML records an identifier, approved action, target alias, approval need, and version-aware WSTG mapping where applicable. Coverage includes authentication, sessions, authorization, input validation, headers, client-side behavior, and business logic.

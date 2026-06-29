@@ -60,6 +60,20 @@ class ProgramProfile:
     data: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class OperatorApproval:
+    approval_id: str
+    operator_alias: str
+    decision: str
+    approved_at_utc: str
+    valid_until_utc: str
+    scope_sha256: str
+    authorization_reference: str
+    objective_ids: tuple[str, ...]
+    campaign_ids: tuple[str, ...]
+    data: dict[str, Any]
+
+
 def load_yaml(path: str | Path) -> LoadedConfig:
     config_path = Path(path).expanduser().resolve()
     if not config_path.is_file():
@@ -338,4 +352,49 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
         allowed_testing_categories=tuple(allowed),
         forbidden_testing_categories=tuple(forbidden),
         data=profile,
+    )
+
+
+def parse_operator_approval(approval: dict[str, Any]) -> OperatorApproval:
+    _reject_unknown(
+        approval,
+        {
+            "schema_version",
+            "approval_id",
+            "operator_alias",
+            "decision",
+            "approved_at_utc",
+            "valid_until_utc",
+            "scope_sha256",
+            "authorization_reference",
+            "objective_ids",
+            "campaign_ids",
+        },
+        "operator approval",
+    )
+    schema_version = require_text(approval.get("schema_version"), "schema_version")
+    if schema_version != SUPPORTED_SCHEMA_VERSION:
+        raise ConfigError(f"unsupported schema_version: {schema_version}")
+    decision = require_text(approval.get("decision"), "decision")
+    if decision not in {"approved", "denied"}:
+        raise ConfigError("decision must be approved or denied")
+    objective_ids = require_text_list(approval.get("objective_ids"), "objective_ids")
+    campaign_ids = require_text_list(approval.get("campaign_ids"), "campaign_ids")
+    _validate_unique(objective_ids, "objective_ids")
+    _validate_unique(campaign_ids, "campaign_ids")
+    if not objective_ids and not campaign_ids:
+        raise ConfigError("operator approval must name at least one objective or campaign")
+    return OperatorApproval(
+        approval_id=require_text(approval.get("approval_id"), "approval_id"),
+        operator_alias=require_text(approval.get("operator_alias"), "operator_alias"),
+        decision=decision,
+        approved_at_utc=require_text(approval.get("approved_at_utc"), "approved_at_utc"),
+        valid_until_utc=require_text(approval.get("valid_until_utc"), "valid_until_utc"),
+        scope_sha256=require_text(approval.get("scope_sha256"), "scope_sha256"),
+        authorization_reference=require_text(
+            approval.get("authorization_reference"), "authorization_reference"
+        ),
+        objective_ids=tuple(objective_ids),
+        campaign_ids=tuple(campaign_ids),
+        data=approval,
     )

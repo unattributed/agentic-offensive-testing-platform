@@ -1,0 +1,11 @@
+schema_version: "1.0"
+approval_id: example-only
+operator_alias: example-operator
+decision: denied
+approved_at_utc: "2000-01-01T00:00:00Z"
+valid_until_utc: "2000-01-02T00:00:00Z"
+scope_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+authorization_reference: example-only
+objective_ids:
+  - example-only
+campaign_ids: []

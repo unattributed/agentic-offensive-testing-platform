@@ -1,5 +1,6 @@
 schema_version: "1.0"
 scope_id: example-dry-run
+program_alias: example-program
 sponsor_alias: example-sponsor
 operator_alias: example-operator
 authorization:
@@ -22,6 +23,10 @@ allowed_targets:
       - https
     apis:
       - placeholder-api
+    environments:
+      - isolated-example-environment
+    approved_account_aliases:
+      - provisioned-example-account
 allowed_test_windows: []
 allowed_categories:
   - wstg_webapp

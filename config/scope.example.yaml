@@ -5,9 +5,13 @@ sponsor_alias: example-sponsor
 operator_alias: example-operator
 authorization:
   live_authorized: false
+  type: bug_bounty_program
   reference: example-only
   agreement_reference: example-only
   program_profile_reference: example-only
+  issued_at_utc: "2000-01-01T00:00:00Z"
+  valid_from_utc: "2000-01-01T00:00:00Z"
+  valid_until_utc: "2000-01-02T00:00:00Z"
   confidentiality:
     required: false
     confirmed: false

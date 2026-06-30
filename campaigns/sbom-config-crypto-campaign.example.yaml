@@ -1,10 +1,27 @@
+schema_version: "1.0"
 campaign_id: example-artifact-dry-run
 name: Provided artifact and cryptographic controls dry run
+description: Plans provided-artifact review without contacting a network target.
 limits:
   max_iterations: 2
   max_runtime_seconds: 30
+  max_requests: 2
+  max_consecutive_failures: 1
+execution:
+  default_mode: dry_run
+  continue_on_inconclusive: true
+  pause_on_manual_review: true
+  stop_on_policy_denial: true
+stop_conditions:
+  - operator_stop
+  - policy_denial
+  - human_review
+  - iteration_limit
+  - runtime_limit
+  - request_limit
 objectives:
   - id: sbom-dependency-review
+    title: Review the provided dependency inventory
     module: sbom_review
     category: sbom_review
     action: inspect_provided_artifact
@@ -13,7 +30,11 @@ objectives:
     artifact: artifacts/sbom.placeholder.json
     artifact_mapping: [SBOM-component-inventory]
     priority: 10
+    depends_on: []
+    requires_human_approval: false
+    parameters: {}
   - id: cryptographic-controls-review
+    title: Review provided cryptographic configuration evidence
     module: crypto_controls
     category: crypto_controls
     action: inspect_provided_crypto_evidence
@@ -21,3 +42,7 @@ objectives:
     target_category: configuration_artifact
     artifact_mapping: [TLS, cookie-attributes, token-configuration]
     priority: 20
+    depends_on:
+      - sbom-dependency-review
+    requires_human_approval: false
+    parameters: {}

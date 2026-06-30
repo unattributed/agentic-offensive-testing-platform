@@ -25,6 +25,9 @@ from .finding_candidate import create_candidate, load_candidate, write_candidate
 from .finding_lifecycle import transition
 
 
+from .sprint4_cli import dispatch_sprint4_command
+
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -191,6 +194,9 @@ def _run_case(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    sprint4_cli_result = dispatch_sprint4_command(argv)
+    if sprint4_cli_result is not None:
+        return sprint4_cli_result
     args = _build_parser().parse_args(argv)
     try:
         if args.command == "validate-config":

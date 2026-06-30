@@ -10,4 +10,5 @@ by local runners remain outside the repository unless redacted and explicitly ap
 |---|---|---|---|---|
 | 5.1 | Control panel target model | `define control panel targets` | PR #7 | Complete |
 | 5.2 | Safe panel observations | `add safe panel observations` | PR #8 | Complete |
-| 5.3 | Panel evidence records | `add panel evidence records` | Pending | In progress |
+| 5.3 | Panel evidence records | `add panel evidence records` | PR #9 | Complete |
+| 5.4 | Report review gating | `add report review gating` | Pending | In progress |

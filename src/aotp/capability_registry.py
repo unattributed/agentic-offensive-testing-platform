@@ -202,6 +202,7 @@ def module_summary() -> dict[str, Any]:
                 "supported_capabilities": sorted(PANEL_SAFE_OBSERVATIONS),
                 "evidence_artifacts": ["evidence.json", "panel-evidence.json"],
                 "report_inclusion_status": "excluded_pending_review",
+                "report_review_gating": True,
                 "denied_actions": sorted(PANEL_UNSAFE_ACTIONS),
             },
         ]

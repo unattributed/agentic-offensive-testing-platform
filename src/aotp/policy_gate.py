@@ -14,6 +14,7 @@ from .bounded_fuzzing import (
     collect_fuzzing_stop_signals,
     fuzzing_boundary_errors,
 )
+from .crypto_review import crypto_action_is_unsafe, crypto_evidence_errors
 from .control_panel import (
     collect_panel_actions,
     collect_panel_observations,
@@ -288,10 +289,11 @@ def evaluate(
         action = objective.get("action")
         if not action:
             reasons.append("cryptographic controls action is missing")
-        elif action in set(crypto.get("denied_actions", [])):
+        elif action in set(crypto.get("denied_actions", [])) or crypto_action_is_unsafe(action):
             reasons.append("cryptographic controls action is explicitly denied")
         elif action not in set(crypto.get("approved_actions", [])):
             reasons.append("cryptographic controls action is not explicitly approved")
+        reasons.extend(crypto_evidence_errors(objective))
 
     if objective.get("requires_human_approval") and not live and not objective.get("human_approved"):
         reasons.append("human approval is required")

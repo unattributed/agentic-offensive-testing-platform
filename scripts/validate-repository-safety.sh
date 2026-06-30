@@ -7,7 +7,19 @@ cd "$root"
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   files=$(git ls-files)
 else
-  files=$(find . -type f -not -path './.git/*' -not -path './.venv/*' -print | sed 's#^\./##')
+  files=$(find . \
+    \( -type d \( \
+      -name .git -o \
+      -name .pytest_cache -o \
+      -name __pycache__ -o \
+      -name .venv -o \
+      -name build -o \
+      -name dist -o \
+      -name '*.egg-info' -o \
+      -name .aotp \
+    \) -prune \) -o \
+    \( -type f ! -name '*.pyc' -print \) |
+    sed 's#^\./##')
 fi
 
 bad_names=$(printf '%s\n' "$files" | grep -E '(^|/)(private|evidence|screenshots|traces)/|(^|/)\.env$|\.har$|\.pem$|\.key$|\.p12$' || true)

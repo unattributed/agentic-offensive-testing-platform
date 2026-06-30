@@ -8,9 +8,11 @@ import pytest
 import yaml
 
 from aotp.cli import main
+from aotp.campaign import load_campaign
+from aotp.campaign_loop import run_campaign
 from aotp.config import load_yaml
 from aotp.crypto_review import build_crypto_record
-from aotp.evidence import EvidenceManifest, write_manifest
+from aotp.evidence import EvidenceManifest, load_manifest, write_manifest
 from aotp.finding_candidate import create_candidate
 from aotp.finding_lifecycle import transition
 from aotp.policy_gate import evaluate
@@ -28,9 +30,14 @@ def _scope(example_scope: dict) -> dict:
         "authorized": True,
         "approved_actions": ["inspect_provided_crypto_evidence"],
         "denied_actions": [
+            "decryption_attempt",
             "destructive_crypto_testing",
+            "key_extraction",
+            "live_crypto_probe",
+            "live_tls_probe",
             "private_key_extraction",
             "secret_bruteforce",
+            "token_replay",
         ],
     }
     return scope
@@ -102,6 +109,103 @@ def test_cli_writes_crypto_evidence_and_uncertainty_report(
     assert "TLS protocol: `TLSv1.2`" in report
     assert "Private material: `not_collected`" in report
     assert "not confirmed weaknesses" in report
+
+
+def test_authorized_sbom_and_crypto_campaign_completes(
+    project_root,
+    example_scope,
+    tmp_path,
+):
+    campaign = load_campaign(
+        str(project_root / "campaigns/sbom-config-crypto-campaign.example.yaml")
+    ).data
+    state, _ = run_campaign(
+        _scope(example_scope),
+        project_root / "config/scope.example.yaml",
+        campaign,
+        workspace=tmp_path,
+    )
+    assert state.current_status == "completed"
+    assert state.completed_modules == [
+        "sbom-dependency-review",
+        "cryptographic-controls-review",
+    ]
+    crypto_dir = tmp_path / state.evidence_directories[-1]
+    assert (crypto_dir / "crypto-evidence.json").is_file()
+    assert load_manifest(crypto_dir / "evidence.json").request_count == 0
+
+
+def test_missing_tls_evidence_is_stopped_by_policy_before_execution(
+    project_root,
+    example_scope,
+    tmp_path,
+):
+    campaign = load_campaign(
+        str(project_root / "campaigns/sbom-config-crypto-campaign.example.yaml")
+    ).data
+    campaign["campaign_id"] = "example-missing-tls-evidence"
+    campaign["objectives"][1].pop("tls_evidence")
+    state, _ = run_campaign(
+        _scope(example_scope),
+        project_root / "config/scope.example.yaml",
+        campaign,
+        workspace=tmp_path,
+    )
+    assert state.current_status == "stopped_by_policy"
+    assert state.stopped_modules == ["cryptographic-controls-review"]
+    assert any("TLS evidence is missing" in reason for reason in state.stop_condition_history)
+    manifest = load_manifest(
+        tmp_path / state.evidence_directories[-1] / "evidence.json"
+    )
+    assert manifest.tool == "policy-gate"
+    assert manifest.request_count == 0
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        "extract_private_key",
+        "brute_force_secret",
+        "decrypt_ciphertext",
+        "replay_token",
+        "probe_live_tls",
+    ],
+)
+def test_unsafe_crypto_actions_are_denied_by_policy(
+    project_root,
+    example_scope,
+    tmp_path,
+    action,
+):
+    case = _case(project_root)
+    case["action"] = action
+    decision = evaluate(_scope(example_scope), case, workspace=tmp_path)
+    assert not decision.allowed
+    assert any("explicitly denied" in reason for reason in decision.reasons)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("raw_cookie", "session=not-safe", "forbidden secret fields"),
+        ("raw_token", "not-safe-token", "forbidden secret fields"),
+        ("private_key_material", "not-safe-key", "forbidden secret fields"),
+        ("evidence_path", "../outside.json", "path must remain relative"),
+    ],
+)
+def test_unsafe_crypto_evidence_is_denied_by_policy(
+    project_root,
+    example_scope,
+    tmp_path,
+    field,
+    value,
+    message,
+):
+    case = _case(project_root)
+    case[field] = value
+    decision = evaluate(_scope(example_scope), case, workspace=tmp_path)
+    assert not decision.allowed
+    assert any(message in reason for reason in decision.reasons)
 
 
 def test_weak_indicator_cannot_be_confirmed_without_verified_evidence(tmp_path):

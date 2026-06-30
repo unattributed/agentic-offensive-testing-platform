@@ -42,6 +42,31 @@ objectives:
     target_alias: local-placeholder
     target_category: configuration_artifact
     artifact_mapping: [TLS, cookie-attributes, token-configuration]
+    tls_evidence:
+      protocol: TLSv1.2
+      certificate_subject_alias: example-subject
+      certificate_issuer_alias: example-issuer
+      public_key_algorithm: RSA
+      public_key_bits: 2048
+      signature_algorithm: sha256WithRSAEncryption
+    cookie_attributes:
+      - cookie_alias: session-cookie
+        secure: true
+        http_only: true
+        same_site: Lax
+        host_only: true
+    token_configuration:
+      algorithm: RS256
+      issuer_validation: true
+      audience_validation: true
+      expiration_validation: true
+      key_source_alias: configured-public-key-set
+    weak_algorithm_indicators: []
+    key_management_metadata:
+      provider_alias: managed-key-provider
+      storage_type: external-managed-service
+      rotation_configured: true
+      private_material_present: false
     priority: 20
     depends_on:
       - sbom-dependency-review

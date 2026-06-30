@@ -50,6 +50,7 @@ def _initialize_state(
         scope_file_hash=_file_hash(scope_path),
         rules_of_engagement_reference=str(scope["rules_of_engagement"].get("reference", "")),
         authorization_reference=str(scope["authorization"].get("reference", "")),
+        operator_alias=str(scope.get("operator_alias", "operator")),
         start_time=now,
         last_updated_time=now,
         current_status="planned",
@@ -186,10 +187,13 @@ def run_campaign(
     ordered = schedule(campaign["objectives"])
     steps = 0
 
-    for objective in ordered:
+    for configured_objective in ordered:
+        objective = dict(configured_objective)
         objective_id = str(objective["id"])
         if objective_id not in state.pending_modules:
             continue
+        if objective_id in state.reviewed_objectives:
+            objective["human_approved"] = True
         if max_steps is not None and steps >= max_steps:
             break
         elapsed = elapsed_before_invocation + (clock() - invocation_started)
@@ -229,9 +233,15 @@ def run_campaign(
             workspace=root,
         )
         evidence_dir = base_evidence / state.campaign_id / iteration_id
+        human_gate_only = (
+            not decision.allowed and decision.reasons == ("human approval is required",)
+        )
         if decision.allowed:
             result = execute(objective, live=live)
             outcome = result.verdict
+        elif human_gate_only:
+            result = None
+            outcome = Verdict.MANUAL_REVIEW
         else:
             result = None
             outcome = Verdict.STOPPED_BY_POLICY
@@ -246,7 +256,13 @@ def run_campaign(
             rules_of_engagement_reference=str(scope["rules_of_engagement"].get("reference", "")),
             confidentiality_reference=scope["authorization"].get("confidentiality", {}).get("reference"),
             case_id=objective_id,
-            tool=result.tool if result else "policy-gate",
+            tool=(
+                result.tool
+                if result
+                else "human-approval-gate"
+                if human_gate_only
+                else "policy-gate"
+            ),
             verifier_verdict=str(outcome),
             confidence="not_assessed",
             campaign_id=state.campaign_id,
@@ -291,7 +307,16 @@ def run_campaign(
         state.next_iteration += 1
         steps += 1
 
-        if not decision.allowed:
+        if human_gate_only:
+            state.current_status = "paused_for_human_review"
+            state.pending_review = {
+                "objective_id": objective_id,
+                "phase": "pre_execution",
+                "reason": "human approval is required",
+                "evidence_directory": relative_evidence,
+            }
+            state.stop_condition_history.append(f"{objective_id}: human approval required")
+        elif not decision.allowed:
             state.pending_modules.remove(objective_id)
             state.stopped_modules.append(objective_id)
             state.current_objective_id = None
@@ -299,6 +324,12 @@ def run_campaign(
             state.stop_condition_history.extend(decision.reasons)
         elif outcome == Verdict.MANUAL_REVIEW:
             state.current_status = "paused_for_human_review"
+            state.pending_review = {
+                "objective_id": objective_id,
+                "phase": "post_execution",
+                "reason": "manual review required after adapter execution",
+                "evidence_directory": relative_evidence,
+            }
             state.stop_condition_history.append(f"{objective_id}: human review required")
         else:
             state.pending_modules.remove(objective_id)

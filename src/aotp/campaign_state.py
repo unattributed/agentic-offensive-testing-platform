@@ -52,6 +52,7 @@ class CampaignState:
     scope_file_hash: str
     rules_of_engagement_reference: str
     authorization_reference: str
+    operator_alias: str
     start_time: str
     last_updated_time: str
     current_status: str
@@ -60,6 +61,8 @@ class CampaignState:
     next_iteration: int = 1
     elapsed_seconds: float = 0.0
     current_objective_id: str | None = None
+    pending_review: dict[str, Any] | None = None
+    reviewed_objectives: list[str] = field(default_factory=list)
     completed_modules: list[str] = field(default_factory=list)
     pending_modules: list[str] = field(default_factory=list)
     skipped_modules: list[str] = field(default_factory=list)
@@ -138,7 +141,10 @@ def validate_state(state: CampaignState) -> None:
         ):
             raise ValueError(f"{counter_name} values must be non-negative integers")
     if state.current_status == "completed" and (
-        state.pending_modules or state.stopped_modules or state.current_objective_id
+        state.pending_modules
+        or state.stopped_modules
+        or state.current_objective_id
+        or state.pending_review
     ):
         raise ValueError("completed campaign state cannot retain pending, stopped, or current objectives")
     if state.last_event_hash is not None and (
@@ -146,6 +152,13 @@ def validate_state(state: CampaignState) -> None:
         or any(character not in "0123456789abcdef" for character in state.last_event_hash)
     ):
         raise ValueError("last_event_hash must be a lowercase SHA256 digest")
+    if state.current_status == "paused_for_human_review":
+        if not state.current_objective_id or not state.pending_review:
+            raise ValueError("paused campaign state requires a current objective and pending review")
+    elif state.pending_review is not None:
+        raise ValueError("pending review is only valid while paused for human review")
+    if len(state.reviewed_objectives) != len(set(state.reviewed_objectives)):
+        raise ValueError("reviewed objective list contains duplicates")
 
 
 def save_state(state: CampaignState, path: str | Path) -> Path:

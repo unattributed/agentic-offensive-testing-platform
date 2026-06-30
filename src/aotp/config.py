@@ -74,6 +74,19 @@ class OperatorApproval:
     data: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class ReviewDecision:
+    decision_id: str
+    campaign_id: str
+    objective_id: str
+    operator_alias: str
+    decision: str
+    decided_at_utc: str
+    state_sha256: str
+    reason: str
+    data: dict[str, Any]
+
+
 def load_yaml(path: str | Path) -> LoadedConfig:
     config_path = Path(path).expanduser().resolve()
     if not config_path.is_file():
@@ -397,4 +410,43 @@ def parse_operator_approval(approval: dict[str, Any]) -> OperatorApproval:
         objective_ids=tuple(objective_ids),
         campaign_ids=tuple(campaign_ids),
         data=approval,
+    )
+
+
+def parse_review_decision(review: dict[str, Any]) -> ReviewDecision:
+    allowed = {
+        "schema_version",
+        "decision_id",
+        "campaign_id",
+        "objective_id",
+        "operator_alias",
+        "decision",
+        "decided_at_utc",
+        "state_sha256",
+        "reason",
+    }
+    unknown = sorted(set(review) - allowed)
+    if unknown:
+        raise ConfigError(f"review decision contains unknown fields: {', '.join(unknown)}")
+    schema_version = require_text(review.get("schema_version"), "schema_version")
+    if schema_version != SUPPORTED_SCHEMA_VERSION:
+        raise ConfigError(f"unsupported schema_version: {schema_version}")
+    decision = require_text(review.get("decision"), "decision")
+    if decision not in {"approved", "denied", "stop"}:
+        raise ConfigError("review decision must be approved, denied, or stop")
+    state_sha256 = require_text(review.get("state_sha256"), "state_sha256")
+    if len(state_sha256) != 64 or any(
+        character not in "0123456789abcdef" for character in state_sha256
+    ):
+        raise ConfigError("state_sha256 must be a lowercase SHA256 digest")
+    return ReviewDecision(
+        decision_id=require_text(review.get("decision_id"), "decision_id"),
+        campaign_id=require_text(review.get("campaign_id"), "campaign_id"),
+        objective_id=require_text(review.get("objective_id"), "objective_id"),
+        operator_alias=require_text(review.get("operator_alias"), "operator_alias"),
+        decision=decision,
+        decided_at_utc=require_text(review.get("decided_at_utc"), "decided_at_utc"),
+        state_sha256=state_sha256,
+        reason=require_text(review.get("reason"), "reason"),
+        data=review,
     )

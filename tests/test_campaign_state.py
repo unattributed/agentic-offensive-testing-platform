@@ -14,6 +14,7 @@ def make_state():
         scope_file_hash="b" * 64,
         rules_of_engagement_reference="roe",
         authorization_reference="authorization",
+        operator_alias="operator",
         start_time="2026-01-01T00:00:00+00:00",
         last_updated_time="2026-01-01T00:00:00+00:00",
         current_status="running",

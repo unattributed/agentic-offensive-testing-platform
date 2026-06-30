@@ -3,7 +3,7 @@ campaign_id: example-program-efficiency-dry-run
 name: Program profile planning dry run
 description: Demonstrates duplicate review followed by a human-gated report review.
 limits:
-  max_iterations: 2
+  max_iterations: 3
   max_runtime_seconds: 30
   max_requests: 2
   max_consecutive_failures: 1

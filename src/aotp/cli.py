@@ -11,6 +11,7 @@ from pathlib import Path
 from .campaign import load_campaign
 from .campaign_loop import run_campaign
 from .campaign_state import load_state, save_state
+from .campaign_control import apply_review_decision, request_operator_stop
 from .config import ConfigError, load_yaml, validate_scope_shape
 from .evidence import EvidenceManifest, sha256_file, utc_now, verify_evidence_directory, write_manifest
 from .executor import execute
@@ -69,6 +70,13 @@ def _build_parser() -> argparse.ArgumentParser:
     run.add_argument("--approval")
     resume = commands.add_parser("campaign-resume")
     resume.add_argument("--state", required=True)
+    resume.add_argument("--scope", required=True)
+    resume.add_argument("--campaign", required=True)
+    resume.add_argument("--review", required=True)
+    resume.add_argument("--program-profile")
+    resume.add_argument("--approval")
+    resume.add_argument("--live", action="store_true")
+    resume.add_argument("--operator-approved", action="store_true")
     stop = commands.add_parser("campaign-stop")
     stop.add_argument("--state", required=True)
     verify = commands.add_parser("evidence-verify")
@@ -238,21 +246,29 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if state.current_status in {"completed", "paused_for_human_review"} else 2
         if args.command == "campaign-resume":
             state = load_state(args.state)
-            if state.current_status != "paused_for_human_review":
-                print("only a campaign paused for human review can be resumed", file=sys.stderr)
-                return 2
-            state.current_status = "ready_to_resume"
-            state.last_updated_time = utc_now()
-            save_state(state, args.state)
-            print(json.dumps({"status": state.current_status, "state": args.state}))
-            return 0
+            apply_review_decision(state, args.state, load_yaml(args.review).data)
+            if state.current_status != "ready_to_resume":
+                print(json.dumps({"status": state.current_status, "state": args.state}))
+                return 0
+            scope_path, scope = _load_scope(args.scope)
+            campaign = load_campaign(args.campaign).data
+            state, path = run_campaign(
+                scope,
+                scope_path,
+                campaign,
+                program_profile=_load_optional(args.program_profile),
+                operator_approval=_load_optional(args.approval),
+                live=args.live,
+                operator_approved=args.operator_approved,
+                workspace=Path.cwd(),
+                state=state,
+                state_path=Path(args.state),
+            )
+            print(json.dumps({"status": state.current_status, "state": str(path)}))
+            return 0 if state.current_status in {"completed", "paused_for_human_review"} else 2
         if args.command == "campaign-stop":
             state = load_state(args.state)
-            state.operator_stop_requested = True
-            state.current_status = "stopped_by_operator"
-            state.stop_condition_history.append("operator stop requested")
-            state.last_updated_time = utc_now()
-            save_state(state, args.state)
+            request_operator_stop(state, args.state)
             print(json.dumps({"status": state.current_status, "state": args.state}))
             return 0
         if args.command == "evidence-verify":

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import tempfile
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -64,23 +66,101 @@ class EvidenceManifest:
     report_inclusion_status: str = "excluded_pending_review"
     redaction_status: str = "passed"
     sha256_hashes: dict[str, str] = field(default_factory=dict)
+    schema_version: str = "1.0"
+    manifest_sha256: str | None = None
 
     def validate(self) -> None:
+        if self.schema_version != "1.0":
+            raise ValueError("unsupported evidence schema version")
         if self.verifier_verdict not in set(Verdict):
             raise ValueError("unsupported verifier verdict")
+        required = {
+            "run_id": self.run_id,
+            "timestamp_utc": self.timestamp_utc,
+            "operator": self.operator,
+            "sponsor_alias": self.sponsor_alias,
+            "target_alias": self.target_alias,
+            "authorization_reference": self.authorization_reference,
+            "rules_of_engagement_reference": self.rules_of_engagement_reference,
+            "case_id": self.case_id,
+            "tool": self.tool,
+            "confidence": self.confidence,
+        }
+        missing = [name for name, value in required.items() if not isinstance(value, str) or not value]
+        if missing:
+            raise ValueError("required evidence fields are missing: " + ", ".join(missing))
+        try:
+            timestamp = datetime.fromisoformat(self.timestamp_utc.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ValueError("evidence timestamp is invalid") from exc
+        if timestamp.tzinfo is None:
+            raise ValueError("evidence timestamp must include a timezone")
+        if not isinstance(self.request_count, int) or isinstance(self.request_count, bool) or self.request_count < 0:
+            raise ValueError("request_count must be a non-negative integer")
+        if self.confidence not in {"not_assessed", "low", "medium", "high"}:
+            raise ValueError("unsupported evidence confidence")
+        if self.execution_mode not in {"dry_run", "live_stub", "not_executed", "live"}:
+            raise ValueError("unsupported evidence execution mode")
+        if self.report_inclusion_status not in {
+            "excluded_pending_review",
+            "excluded",
+            "candidate",
+            "included",
+        }:
+            raise ValueError("unsupported report inclusion status")
+        for relative, digest in self.sha256_hashes.items():
+            path = Path(relative)
+            if path.is_absolute() or ".." in path.parts:
+                raise ValueError("artifact hash paths must remain relative to evidence directory")
+            if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+                raise ValueError("artifact hashes must be lowercase SHA256 digests")
         encoded = json.dumps(asdict(self), sort_keys=True)
         assert_redacted(encoded)
         if self.redaction_status != "passed":
             raise ValueError("evidence redaction did not pass")
+        if self.manifest_sha256 is not None and self.manifest_sha256 != manifest_digest(self):
+            raise ValueError("evidence manifest integrity check failed")
+
+
+def manifest_digest(manifest: EvidenceManifest) -> str:
+    payload = asdict(manifest)
+    payload["manifest_sha256"] = None
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def write_manifest(manifest: EvidenceManifest, directory: str | Path) -> Path:
+    manifest.manifest_sha256 = None
     manifest.validate()
+    manifest.manifest_sha256 = manifest_digest(manifest)
     output = Path(directory)
     output.mkdir(parents=True, exist_ok=True)
+    os.chmod(output, 0o700)
     path = output / "evidence.json"
-    path.write_text(json.dumps(asdict(manifest), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    descriptor, temporary_name = tempfile.mkstemp(prefix=".evidence.", suffix=".tmp", dir=output)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump(asdict(manifest), handle, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, path)
+        os.chmod(path, 0o600)
+    finally:
+        temporary.unlink(missing_ok=True)
     return path
+
+
+def load_manifest(path: str | Path) -> EvidenceManifest:
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        manifest = EvidenceManifest(**data)
+        manifest.validate()
+        return manifest
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError(f"evidence manifest is invalid: {path}: {exc}") from exc
 
 
 def verify_evidence_directory(directory: str | Path) -> list[str]:
@@ -91,9 +171,7 @@ def verify_evidence_directory(directory: str | Path) -> list[str]:
         return ["no evidence manifests found"]
     for path in paths:
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            manifest = EvidenceManifest(**data)
-            manifest.validate()
+            manifest = load_manifest(path)
             for relative, expected in manifest.sha256_hashes.items():
                 artifact = path.parent / relative
                 if not artifact.is_file() or sha256_file(artifact) != expected:

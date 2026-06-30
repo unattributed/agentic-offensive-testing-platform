@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from ..model_config import LocalModelConfig
-from ..redaction import assert_redacted, sanitize_for_model
+from ..redaction import assert_redacted, assert_value_redacted, sanitize_for_model
 
 MAX_RESPONSE_BYTES = 1_048_576
 DEFAULT_RESPONSE_SCHEMA: dict[str, Any] = {
@@ -28,6 +28,10 @@ class OllamaUnavailableError(OllamaAdapterError):
 
 class OllamaResponseError(OllamaAdapterError):
     """Raised when the local service returns malformed or out-of-schema data."""
+
+
+class OllamaPromptError(OllamaAdapterError):
+    """Raised when safe prompt construction cannot be completed."""
 
 
 def default_local_model_config() -> LocalModelConfig:
@@ -123,8 +127,12 @@ class OllamaAdapter:
     ) -> dict[str, Any]:
         schema = response_schema or DEFAULT_RESPONSE_SCHEMA
         cleaned = sanitize_for_model({"task": task, "payload": payload})
-        encoded = json.dumps(cleaned, sort_keys=True, separators=(",", ":"))
+        try:
+            encoded = json.dumps(cleaned, sort_keys=True, separators=(",", ":"))
+        except (TypeError, ValueError) as exc:
+            raise OllamaPromptError("model prompt must be JSON-serializable") from exc
         assert_redacted(encoded)
+        assert_value_redacted(cleaned)
         return {
             "model": self.model,
             "format": schema,
@@ -175,4 +183,9 @@ class OllamaAdapter:
         except json.JSONDecodeError as exc:
             raise OllamaResponseError("local Ollama structured response is invalid JSON") from exc
         _validate_schema_value(result, schema)
+        try:
+            assert_redacted(json.dumps(result, sort_keys=True))
+            assert_value_redacted(result)
+        except ValueError as exc:
+            raise OllamaResponseError("local Ollama response failed redaction checks") from exc
         return result

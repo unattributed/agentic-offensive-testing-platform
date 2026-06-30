@@ -60,6 +60,60 @@ def test_structured_sanitizer_redacts_sensitive_keys_and_nested_patterns():
     assert {finding.kind for finding in report} >= {"sensitive_field", "email_address"}
 
 
+@pytest.mark.parametrize(
+    "field",
+    [
+        "access_token",
+        "client_secret",
+        "cookie_value",
+        "credentials",
+        "private_key_material",
+        "raw_cookie",
+        "raw_token",
+        "refresh_token",
+        "session_cookie",
+        "token_value",
+    ],
+)
+def test_extended_secret_fields_are_redacted_recursively(field):
+    value = {"outer": [{"inner": {field: "not-for-model"}}]}
+    cleaned, report = sanitize_with_report(value)
+    assert cleaned["outer"][0]["inner"][field] == "[REDACTED:sensitive_field]"
+    assert {finding.kind for finding in report} == {"sensitive_field"}
+    assert "not-for-model" not in repr(cleaned)
+
+
+def test_secret_pattern_in_mapping_key_is_redacted_without_path_leak():
+    secret_key = "person" + "@" + "example.invalid"
+    cleaned, report = sanitize_with_report({secret_key: "metadata"})
+    assert cleaned == {"[REDACTED:key:0]": "metadata"}
+    assert secret_key not in repr(report)
+    assert report[0].path == "$.[redacted-key]"
+
+
+def test_model_prompt_recursively_strips_all_supported_secret_classes():
+    secrets = {
+        "authorization": "Bearer " + "abc.def.ghi123",
+        "nested": [
+            {"cookie_value": "cookie-secret"},
+            {"private_key_material": "private-key-secret"},
+            "person" + "@" + "example.invalid",
+        ],
+    }
+    prompt = OllamaAdapter().build_prompt("summarize", secrets)
+    encoded = prompt["prompt"]
+    assert all(
+        secret not in encoded
+        for secret in (
+            "abc.def.ghi123",
+            "cookie-secret",
+            "private-key-secret",
+            "person" + "@" + "example.invalid",
+        )
+    )
+    assert findings(encoded) == []
+
+
 def test_github_token_and_jwt_are_blocked():
     github_token = "ghp_" + "a" * 30
     jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature"

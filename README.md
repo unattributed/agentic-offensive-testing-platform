@@ -40,7 +40,7 @@ Each iteration reads the scope and rules of engagement, selects an already appro
 
 Campaign state is JSON under the ignored `.aotp/state/` directory. It records the scope hash, authorization and rules-of-engagement references, timestamps, module dispositions, finding candidate references, evidence directories, counters, events, and stop history.
 
-[LangGraph](https://docs.langchain.com/oss/python/langgraph/persistence) is the preferred future orchestration layer for durable execution, checkpointed state, and human interrupts. The initial harness keeps a small standard-library state machine so its policy invariants can be proven before LangGraph is introduced. The migration boundary is documented in [docs/langgraph-orchestration.md](docs/langgraph-orchestration.md).
+[LangGraph](https://docs.langchain.com/oss/python/langgraph/persistence) is implemented as the durable orchestration option for checkpointed state and human interrupts. It advances the same deterministic reference engine one objective at a time, so graph execution cannot bypass policy, evidence, budgets, or the event chain. The boundary is documented in [docs/langgraph-orchestration.md](docs/langgraph-orchestration.md).
 
 ## Safety boundaries
 
@@ -84,6 +84,16 @@ aotp campaign-run \
   --campaign campaigns/authorized-webapp-campaign.example.yaml
 ```
 
+Run the same deterministic engine under durable LangGraph orchestration:
+
+```bash
+aotp campaign-graph-run \
+  --scope config/scope.example.yaml \
+  --campaign campaigns/authorized-webapp-campaign.example.yaml
+```
+
+The graph stores only aliases, hashes, status, and local state references in a mode-`0600` SQLite checkpoint. Policy, evidence, budgets, and the event chain remain owned by the deterministic engine. A paused graph resumes only with `campaign-graph-resume` and a private checkpoint-bound review file.
+
 ## Live authorized flow
 
 1. Accept and record the program or engagement policy in a private untracked program profile.
@@ -91,7 +101,7 @@ aotp campaign-run \
 3. Confirm the authorization, agreement, confidentiality, and rules-of-engagement references.
 4. Validate the profile and scope manually, then run `validate-config` and `campaign-plan`.
 5. Obtain any objective-specific human approvals.
-6. Invoke `campaign-run --live --operator-approved`.
+6. Invoke `campaign-run --live --operator-approved` with the private program profile and approval arguments.
 7. Review the resulting `manual_review` state before adding or enabling a future live adapter.
 
 The example scope is deliberately incapable of authorizing live work.

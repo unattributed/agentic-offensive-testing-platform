@@ -1,6 +1,6 @@
-# LangGraph orchestration plan
+# LangGraph orchestration
 
-LangGraph is the preferred future orchestration layer for AOTP. Its checkpoint persistence supports long-running state, recovery, and memory, while interrupts support explicit human approval and later resume. These capabilities match campaign checkpoints, stop conditions, approval queues, and durable evidence workflows.
+LangGraph is the implemented durable orchestration option for AOTP. Its checkpoint persistence supports long-running state and recovery, while interrupts support explicit human approval and later resume.
 
 Official references:
 
@@ -8,7 +8,7 @@ Official references:
 - [Interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts)
 - [Upstream license](https://github.com/langchain-ai/langgraph/blob/main/LICENSE)
 
-## Proposed graph
+## Implemented graph
 
 ```text
 load private scope
@@ -52,9 +52,13 @@ final checkpoint and evidence-only report
 - A resumed campaign revalidates scope hash, authorization window, rate limits, stop state, and approval.
 - Report generation reads verified state and evidence only.
 
-## Adoption slice
+## Sprint 2 implementation
 
-Sprint 2.7 will implement a prototype behind an orchestration interface. The current deterministic loop remains the reference behavior until parity tests prove:
+`LangGraphCampaignOrchestrator` runs one deterministic AOTP objective per graph step. The deterministic engine still owns policy, execution, evidence, safety budgets, state, and the event chain. LangGraph owns the durable thread, SQLite checkpoints, routing, and human interrupt.
+
+The checkpoint stores campaign identity, scope and campaign hashes, status, state path, objective alias, and step count. It does not store the private scope, program profile, or approval documents. The database is local, ignored, and mode `0600`.
+
+The parity tests prove:
 
 1. deterministic scheduling and policy decisions;
 2. crash recovery without duplicate adapter side effects;
@@ -65,4 +69,4 @@ Sprint 2.7 will implement a prototype behind an orchestration interface. The cur
 7. evidence written for execution or denial; and
 8. no model-controlled authorization path.
 
-LangGraph will be added as an optional dependency only after its direct and transitive license obligations, version policy, storage model, and operational failure modes are reviewed.
+The implementation uses LangGraph `>=1.2.7,<1.3` and `langgraph-checkpoint-sqlite>=3.1,<3.2`. It does not enable LangSmith tracing, telemetry, an agent server, or a remote model.

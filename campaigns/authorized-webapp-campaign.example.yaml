@@ -1,8 +1,24 @@
+schema_version: "1.0"
 campaign_id: example-webapp-dry-run
 name: Authorized web application dry run
+description: Plans two inert WSTG-aligned objectives against a reserved placeholder.
 limits:
   max_iterations: 3
   max_runtime_seconds: 30
+  max_requests: 3
+  max_consecutive_failures: 1
+execution:
+  default_mode: dry_run
+  continue_on_inconclusive: true
+  pause_on_manual_review: true
+  stop_on_policy_denial: true
+stop_conditions:
+  - operator_stop
+  - policy_denial
+  - human_review
+  - iteration_limit
+  - runtime_limit
+  - request_limit
 objectives:
   - id: wstg-security-headers
     title: Plan a security-header observation
@@ -13,6 +29,10 @@ objectives:
     target_category: web_application
     wstg_mapping: [WSTG-CONF-14]
     priority: 10
+    depends_on: []
+    requires_human_approval: false
+    parameters:
+      request_budget: 0
   - id: wstg-authn-session
     title: Plan an authentication and session review
     module: wstg_webapp
@@ -22,3 +42,8 @@ objectives:
     target_category: web_application
     wstg_mapping: [WSTG-ATHN, WSTG-SESS]
     priority: 20
+    depends_on:
+      - wstg-security-headers
+    requires_human_approval: false
+    parameters:
+      request_budget: 0

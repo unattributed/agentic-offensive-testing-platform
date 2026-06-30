@@ -11,12 +11,15 @@ from pathlib import Path
 from .campaign import load_campaign
 from .campaign_loop import run_campaign
 from .campaign_state import load_state, save_state
+from .campaign_control import apply_review_decision, request_operator_stop
+from .campaign_events import resolve_event_log, verify_state_event_log
 from .config import ConfigError, load_yaml, validate_scope_shape
 from .evidence import EvidenceManifest, sha256_file, utc_now, verify_evidence_directory, write_manifest
 from .executor import execute
 from .policy_gate import evaluate
 from .reporter import generate_markdown
 from .template_registry import parse_template_registry, verify_template_source
+from .langgraph_orchestration import LangGraphCampaignOrchestrator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -69,14 +72,40 @@ def _build_parser() -> argparse.ArgumentParser:
     run.add_argument("--approval")
     resume = commands.add_parser("campaign-resume")
     resume.add_argument("--state", required=True)
+    resume.add_argument("--scope", required=True)
+    resume.add_argument("--campaign", required=True)
+    resume.add_argument("--review", required=True)
+    resume.add_argument("--program-profile")
+    resume.add_argument("--approval")
+    resume.add_argument("--live", action="store_true")
+    resume.add_argument("--operator-approved", action="store_true")
     stop = commands.add_parser("campaign-stop")
     stop.add_argument("--state", required=True)
+    events_verify = commands.add_parser("campaign-events-verify")
+    events_verify.add_argument("--state", required=True)
     verify = commands.add_parser("evidence-verify")
     verify.add_argument("--evidence", required=True)
     report = commands.add_parser("report")
     report.add_argument("--evidence", required=True)
     campaign_report = commands.add_parser("campaign-report")
     campaign_report.add_argument("--state", required=True)
+    graph_run = commands.add_parser("campaign-graph-run")
+    graph_run.add_argument("--scope", required=True)
+    graph_run.add_argument("--campaign", required=True)
+    graph_run.add_argument("--program-profile")
+    graph_run.add_argument("--approval")
+    graph_run.add_argument("--live", action="store_true")
+    graph_run.add_argument("--operator-approved", action="store_true")
+    graph_run.add_argument("--checkpoint-db")
+    graph_resume = commands.add_parser("campaign-graph-resume")
+    graph_resume.add_argument("--scope", required=True)
+    graph_resume.add_argument("--campaign", required=True)
+    graph_resume.add_argument("--review", required=True)
+    graph_resume.add_argument("--program-profile")
+    graph_resume.add_argument("--approval")
+    graph_resume.add_argument("--live", action="store_true")
+    graph_resume.add_argument("--operator-approved", action="store_true")
+    graph_resume.add_argument("--checkpoint-db")
     return parser
 
 
@@ -238,23 +267,45 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if state.current_status in {"completed", "paused_for_human_review"} else 2
         if args.command == "campaign-resume":
             state = load_state(args.state)
-            if state.current_status != "paused_for_human_review":
-                print("only a campaign paused for human review can be resumed", file=sys.stderr)
-                return 2
-            state.current_status = "ready_to_resume"
-            state.last_updated_time = utc_now()
-            save_state(state, args.state)
-            print(json.dumps({"status": state.current_status, "state": args.state}))
-            return 0
+            apply_review_decision(state, args.state, load_yaml(args.review).data)
+            if state.current_status != "ready_to_resume":
+                print(json.dumps({"status": state.current_status, "state": args.state}))
+                return 0
+            scope_path, scope = _load_scope(args.scope)
+            campaign = load_campaign(args.campaign).data
+            state, path = run_campaign(
+                scope,
+                scope_path,
+                campaign,
+                program_profile=_load_optional(args.program_profile),
+                operator_approval=_load_optional(args.approval),
+                live=args.live,
+                operator_approved=args.operator_approved,
+                workspace=Path.cwd(),
+                state=state,
+                state_path=Path(args.state),
+            )
+            print(json.dumps({"status": state.current_status, "state": str(path)}))
+            return 0 if state.current_status in {"completed", "paused_for_human_review"} else 2
         if args.command == "campaign-stop":
             state = load_state(args.state)
-            state.operator_stop_requested = True
-            state.current_status = "stopped_by_operator"
-            state.stop_condition_history.append("operator stop requested")
-            state.last_updated_time = utc_now()
-            save_state(state, args.state)
+            request_operator_stop(state, args.state)
             print(json.dumps({"status": state.current_status, "state": args.state}))
             return 0
+        if args.command == "campaign-events-verify":
+            state = load_state(args.state)
+            failures = verify_state_event_log(state, args.state)
+            print(
+                json.dumps(
+                    {
+                        "valid": not failures,
+                        "event_log": str(resolve_event_log(state, args.state)),
+                        "failures": failures,
+                    },
+                    indent=2,
+                )
+            )
+            return 0 if not failures else 2
         if args.command == "evidence-verify":
             failures = verify_evidence_directory(args.evidence)
             print(json.dumps({"valid": not failures, "failures": failures}, indent=2))
@@ -268,6 +319,39 @@ def main(argv: list[str] | None = None) -> int:
             common = roots[0].parent if roots else Path("__missing__")
             print(generate_markdown(common), end="")
             return 0
+        if args.command in {"campaign-graph-run", "campaign-graph-resume"}:
+            scope_path, scope = _load_scope(args.scope)
+            campaign = load_campaign(args.campaign).data
+            checkpoint_db = Path(args.checkpoint_db) if args.checkpoint_db else None
+            with LangGraphCampaignOrchestrator(
+                scope=scope,
+                scope_path=scope_path,
+                campaign=campaign,
+                workspace=Path.cwd(),
+                program_profile=_load_optional(args.program_profile),
+                operator_approval=_load_optional(args.approval),
+                live=args.live,
+                operator_approved=args.operator_approved,
+                checkpoint_db=checkpoint_db,
+            ) as orchestrator:
+                if args.command == "campaign-graph-run":
+                    snapshot = orchestrator.start()
+                else:
+                    snapshot = orchestrator.resume(load_yaml(args.review).data)
+                print(
+                    json.dumps(
+                        {
+                            "status": snapshot.get("status"),
+                            "thread_id": orchestrator.thread_id,
+                            "state": str(orchestrator.state_path),
+                            "checkpoint_db": str(orchestrator.checkpoint_db),
+                        }
+                    )
+                )
+                return 0 if snapshot.get("status") in {
+                    "completed",
+                    "paused_for_human_review",
+                } else 2
     except (ConfigError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

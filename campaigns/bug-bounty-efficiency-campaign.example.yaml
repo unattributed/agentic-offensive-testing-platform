@@ -1,17 +1,39 @@
+schema_version: "1.0"
 campaign_id: example-program-efficiency-dry-run
 name: Program profile planning dry run
+description: Demonstrates duplicate review followed by a human-gated report review.
 limits:
-  max_iterations: 2
+  max_iterations: 3
   max_runtime_seconds: 30
+  max_requests: 2
+  max_consecutive_failures: 1
+execution:
+  default_mode: dry_run
+  continue_on_inconclusive: true
+  pause_on_manual_review: true
+  stop_on_policy_denial: true
+stop_conditions:
+  - operator_stop
+  - policy_denial
+  - human_review
+  - iteration_limit
+  - runtime_limit
+  - request_limit
 objectives:
   - id: prior-testing-memory-review
+    title: Review private prior-testing memory
     module: wstg_webapp
     category: wstg_webapp
     action: review_duplicate_risk
     target_alias: local-placeholder
     target_category: web_application
     priority: 10
+    depends_on: []
+    requires_human_approval: false
+    parameters:
+      request_budget: 0
   - id: report-quality-review
+    title: Score a draft report before manual submission
     module: wstg_webapp
     category: wstg_webapp
     action: score_draft_report
@@ -19,3 +41,7 @@ objectives:
     target_category: report_draft
     requires_human_approval: true
     priority: 20
+    depends_on:
+      - prior-testing-memory-review
+    parameters:
+      request_budget: 0

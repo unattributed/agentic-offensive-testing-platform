@@ -1,0 +1,9 @@
+schema_version: "1.0"
+decision_id: example-only
+campaign_id: example-only
+objective_id: example-only
+operator_alias: example-operator
+decision: denied
+decided_at_utc: "2000-01-01T00:00:00Z"
+state_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+reason: example-only

@@ -3,6 +3,8 @@ import json
 import yaml
 
 from aotp.cli import main
+from aotp.campaign import load_campaign
+from aotp.campaign_loop import run_campaign
 from aotp.evidence import sha256_file
 
 
@@ -107,3 +109,75 @@ def test_policy_check_is_a_non_executing_live_preflight(
         "reasons": [],
     }
     assert not (tmp_path / ".aotp").exists()
+
+
+def test_campaign_resume_cli_applies_bound_review_and_continues(
+    project_root,
+    tmp_path,
+    monkeypatch,
+    example_scope,
+    capsys,
+):
+    scope_path = project_root / "config/scope.example.yaml"
+    campaign_path = project_root / "campaigns/bug-bounty-efficiency-campaign.example.yaml"
+    campaign = load_campaign(str(campaign_path)).data
+    state, state_path = run_campaign(
+        example_scope,
+        scope_path,
+        campaign,
+        workspace=tmp_path,
+    )
+    review = {
+        "schema_version": "1.0",
+        "decision_id": "cli-review-approved",
+        "campaign_id": state.campaign_id,
+        "objective_id": state.current_objective_id,
+        "operator_alias": state.operator_alias,
+        "decision": "approved",
+        "decided_at_utc": "2026-06-30T00:00:00Z",
+        "state_sha256": sha256_file(state_path),
+        "reason": "synthetic CLI resume test",
+    }
+    review_path = tmp_path / "private-review.yaml"
+    review_path.write_text(yaml.safe_dump(review), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    result = main(
+        [
+            "campaign-resume",
+            "--state",
+            str(state_path),
+            "--scope",
+            str(scope_path),
+            "--campaign",
+            str(campaign_path),
+            "--review",
+            str(review_path),
+        ]
+    )
+
+    assert result == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "completed"
+
+
+def test_campaign_graph_run_cli_creates_durable_checkpoint(
+    project_root,
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    monkeypatch.chdir(tmp_path)
+    result = main(
+        [
+            "campaign-graph-run",
+            "--scope",
+            str(project_root / "config/scope.example.yaml"),
+            "--campaign",
+            str(project_root / "campaigns/authorized-webapp-campaign.example.yaml"),
+        ]
+    )
+    assert result == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "completed"
+    assert (tmp_path / ".aotp/checkpoints/example-webapp-dry-run.sqlite").is_file()
+    assert (tmp_path / ".aotp/state/example-webapp-dry-run.json").is_file()

@@ -124,3 +124,33 @@ def test_wstg_header_evidence_record_contains_required_fields():
     assert record["confidence"] == "not_assessed"
     assert record["artifact_placeholders"]
     assert record["redaction_status"] == "placeholder_only_no_private_material"
+
+# SPRINT4_BROWSER_ARTIFACT_PATH_TESTS
+import pytest
+from aotp.external_evidence import validate_external_evidence_reference
+from aotp.wstg_case_registry import build_dry_run_record
+
+VALID_SHA = "a" * 64
+
+
+def test_browser_artifact_placeholders_are_modeled_without_capture():
+    record = build_dry_run_record("wstg-browser-context-evidence")
+    placeholders = set(record["artifact_placeholders"])
+    assert "dom_snapshot" in placeholders
+    assert "rendered_page_summary" in placeholders
+    assert "screenshot_placeholder" in placeholders
+    assert "frame_tree_placeholder" in placeholders
+    assert "browser_context_placeholder" in placeholders
+    assert "storage_state_placeholder" in placeholders
+    assert "proxy_capture_placeholder" in placeholders
+    assert record["request_count"] == 0
+
+
+def test_external_evidence_path_policy_rejects_escape_and_absolute(tmp_path):
+    base = {"alias": "dom", "sha256": VALID_SHA, "provenance": "local dry-run", "source_project_or_adapter_contract": "browser-suite", "redaction_status": "redacted"}
+    good = dict(base, relative_path="browser/dom.json")
+    assert validate_external_evidence_reference(good, tmp_path)["relative_path"] == "browser/dom.json"
+    with pytest.raises(ValueError):
+        validate_external_evidence_reference(dict(base, relative_path="../secret.txt"), tmp_path)
+    with pytest.raises(ValueError):
+        validate_external_evidence_reference(dict(base, relative_path="/tmp/secret.txt"), tmp_path)

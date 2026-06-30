@@ -14,12 +14,13 @@ from .campaign_state import load_state, save_state
 from .campaign_control import apply_review_decision, request_operator_stop
 from .campaign_events import resolve_event_log, verify_state_event_log
 from .config import ConfigError, load_yaml, validate_scope_shape
-from .evidence import EvidenceManifest, sha256_file, utc_now, verify_evidence_directory, write_manifest
+from .evidence import EvidenceManifest, load_manifest, sha256_file, utc_now, verify_evidence_directory, write_manifest
 from .executor import execute
 from .policy_gate import evaluate
 from .reporter import generate_markdown
 from .template_registry import parse_template_registry, verify_template_source
 from .langgraph_orchestration import LangGraphCampaignOrchestrator
+from .verifier import create_verification, write_verification
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -85,6 +86,13 @@ def _build_parser() -> argparse.ArgumentParser:
     events_verify.add_argument("--state", required=True)
     verify = commands.add_parser("evidence-verify")
     verify.add_argument("--evidence", required=True)
+    verdict = commands.add_parser("evidence-verdict")
+    verdict.add_argument("--evidence", required=True)
+    verdict.add_argument("--verdict", required=True)
+    verdict.add_argument("--confidence", required=True)
+    verdict.add_argument("--rationale", required=True)
+    verdict.add_argument("--verifier", required=True)
+    verdict.add_argument("--evidence-reference", action="append", default=[])
     report = commands.add_parser("report")
     report.add_argument("--evidence", required=True)
     campaign_report = commands.add_parser("campaign-report")
@@ -310,6 +318,19 @@ def main(argv: list[str] | None = None) -> int:
             failures = verify_evidence_directory(args.evidence)
             print(json.dumps({"valid": not failures, "failures": failures}, indent=2))
             return 0 if not failures else 2
+        if args.command == "evidence-verdict":
+            manifest = load_manifest(args.evidence)
+            result = create_verification(
+                verdict=args.verdict,
+                confidence=args.confidence,
+                rationale=args.rationale,
+                evidence_manifest_sha256=manifest.manifest_sha256 or "",
+                evidence_references=args.evidence_reference,
+                verifier=args.verifier,
+            )
+            path = write_verification(result, Path(args.evidence).parent / "verification.json")
+            print(json.dumps({"verdict": result.verdict, "verification": str(path)}))
+            return 0
         if args.command == "report":
             print(generate_markdown(args.evidence), end="")
             return 0

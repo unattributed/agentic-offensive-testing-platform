@@ -88,10 +88,17 @@ Goal: safely assess explicitly scoped management interfaces.
 | 5.1 panel target model | Define explicit panel aliases and categories | Unlisted panel is denied | focused policy test | denial evidence | scope and panel module | `define control panel targets` |
 | 5.2 safe checks | Model headers, TLS, login exposure, versions, defaults, indexing, and metadata | Credential and destructive actions absent | module contract test | capability output | panel module and cases | `add safe panel observations` |
 | 5.3 panel evidence | Add panel-specific metadata placeholders | Dry-run creates redacted evidence | run panel case dry-run | manifest | evidence and module | `record panel evidence` |
-| 5.4 lockout stop conditions | Detect or flag lockout and unsafe actions | Risk pauses before execution | approval and policy tests | pause event | approval and loop | `stop on panel lockout risk` |
-| 5.5 report mapping | Render only captured panel fields | No candidate without evidence | reporter test | report excerpt | reporter and docs | `map panel evidence to reports` |
+| 5.4 report review gating | Require a manifest-bound human review record before panel candidate creation | Candidate and report gates fail closed | review-gate tests | review decision record | candidate, reporter, and CLI | `add report review gating` |
+| 5.5 lockout stop conditions and campaign integration | Detect explicit lockout-risk signals and support panel campaign objectives | Risk pauses before execution; campaign evidence stays network-silent | approval, campaign, and policy tests | pause event and panel evidence | campaign, approval, loop, and panel module | `stop on panel lockout risk` |
+| 5.6 report mapping and closeout | Render only validated fields from the hashed panel evidence artifact | No panel candidate without manifest-bound review; report re-derives the gate | adversarial reporter and end-to-end tests | report excerpt and validation record | reporter, tests, and docs | `map panel evidence to reports` |
 
 Sprint acceptance: unscoped panels and credential attacks are refused; dry-run evidence is safe; reports remain evidence-bound.
+
+Plan amendment: the initial plan assigned lockout stop conditions to 5.4 and report mapping to
+5.5. PR #10 used 5.4 for report-review gating before those planned items were implemented. The
+amended sequence preserves that published history, moves lockout and campaign work to 5.5, and
+moves report mapping and adversarial closeout to 5.6. No original acceptance requirement is
+removed.
 
 ## Sprint 6: bounded fuzzing
 

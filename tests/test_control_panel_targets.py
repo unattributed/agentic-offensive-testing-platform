@@ -68,6 +68,15 @@ def test_panel_scope_rejects_unknown_target_reference(example_scope):
         parse_scope(scope)
 
 
+def test_panel_scope_rejects_overlapping_approved_and_denied_actions(example_scope):
+    scope = _panel_scope(example_scope)
+    scope["service_control_panels"]["panels"][0]["denied_actions"].append(
+        "plan_panel_target_metadata"
+    )
+    with pytest.raises(ConfigError, match="overlap"):
+        parse_scope(scope)
+
+
 def test_listed_panel_alias_allows_dry_run_planning(example_scope, tmp_path):
     objective = _panel_objective()
     decision = evaluate(_panel_scope(example_scope), objective, workspace=tmp_path)
@@ -104,6 +113,20 @@ def test_panel_alias_must_match_target_alias(example_scope, tmp_path):
     assert "panel target alias does not match objective" in decision.reasons
 
 
+def test_panel_type_is_required_and_must_match_scope(example_scope, tmp_path):
+    missing = _panel_objective()
+    missing.pop("panel_type")
+    decision = evaluate(_panel_scope(example_scope), missing, workspace=tmp_path)
+    assert not decision.allowed
+    assert "panel type is missing" in decision.reasons
+
+    mismatched = _panel_objective()
+    mismatched["panel_type"] = "service_console"
+    decision = evaluate(_panel_scope(example_scope), mismatched, workspace=tmp_path)
+    assert not decision.allowed
+    assert "panel type does not match scoped panel" in decision.reasons
+
+
 @pytest.mark.parametrize(
     "unsafe_action",
     [
@@ -135,6 +158,31 @@ def test_requested_unsafe_panel_actions_are_denied(example_scope, tmp_path):
     decision = evaluate(_panel_scope(example_scope), objective, workspace=tmp_path)
     assert not decision.allowed
     assert "panel action is denied by safety boundary: brute_force" in decision.reasons
+
+
+def test_configured_panel_denial_wins(example_scope, tmp_path):
+    scope = _panel_scope(example_scope)
+    scope["service_control_panels"]["panels"][0]["denied_actions"].append(
+        "custom_denied_action"
+    )
+    objective = _panel_objective()
+    objective["action"] = "custom_denied_action"
+    decision = evaluate(scope, objective, workspace=tmp_path)
+    assert not decision.allowed
+    assert (
+        "panel action is explicitly denied by scope: custom_denied_action"
+        in decision.reasons
+    )
+
+
+def test_category_module_mismatch_cannot_bypass_panel_denials(example_scope, tmp_path):
+    objective = _panel_objective()
+    objective["category"] = "wstg_webapp"
+    objective["action"] = "login_attempt"
+    decision = evaluate(_panel_scope(example_scope), objective, workspace=tmp_path)
+    assert not decision.allowed
+    assert "objective category must match module" in decision.reasons
+    assert "panel action is denied by safety boundary: login_attempt" in decision.reasons
 
 
 def test_control_panel_module_summary_declares_safe_defaults():

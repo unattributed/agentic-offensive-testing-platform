@@ -86,6 +86,14 @@ aotp campaign-run \
   --campaign campaigns/authorized-webapp-campaign.example.yaml
 ```
 
+Run the service control panel campaign with its mandatory lockout-risk stop condition:
+
+```bash
+aotp campaign-run \
+  --scope config/scope.panel-dry-run.example.yaml \
+  --campaign campaigns/service-control-panel-campaign.example.yaml
+```
+
 Run the same deterministic engine under durable LangGraph orchestration:
 
 ```bash
@@ -134,6 +142,15 @@ evidence.json -> evidence-verdict -> finding-create
 ```
 
 Each stage verifies the integrity and provenance of the previous stage. Only a human-validated `ready_for_report` candidate can appear as a finding in the generated draft.
+
+Service control panel evidence adds a manifest-bound review decision before candidate creation:
+
+```text
+evidence.json -> report-review-create -> finding-create --report-review <decision>
+```
+
+The reporter independently re-derives this requirement from the evidence manifest and renders only
+validated fields from the hashed `panel-evidence.json` artifact.
 
 Bug bounty drafts remain drafts until a human approves them. AOTP has no submission adapter.
 

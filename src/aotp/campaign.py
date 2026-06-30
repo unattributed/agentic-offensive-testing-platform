@@ -203,6 +203,12 @@ def parse_campaign(data: dict[str, Any]) -> CampaignDefinition:
         "depends_on",
         "requires_human_approval",
         "parameters",
+        "panel_alias",
+        "panel_type",
+        "requested_actions",
+        "requested_observations",
+        "safe_observation_only",
+        "lockout_risk_detected",
     }
     for index, raw_objective in enumerate(raw_objectives):
         field = f"objectives[{index}]"
@@ -229,6 +235,28 @@ def parse_campaign(data: dict[str, Any]) -> CampaignDefinition:
             require_text_list(objective["wstg_mapping"], f"{field}.wstg_mapping")
         if "artifact_mapping" in objective:
             require_text_list(objective["artifact_mapping"], f"{field}.artifact_mapping")
+        if module == "service_control_panel":
+            require_text(objective.get("panel_alias"), f"{field}.panel_alias")
+            require_text(objective.get("panel_type"), f"{field}.panel_type")
+            require_text_list(
+                objective.get("requested_observations"),
+                f"{field}.requested_observations",
+                allow_empty=False,
+            )
+            if "requested_actions" in objective:
+                require_text_list(
+                    objective["requested_actions"],
+                    f"{field}.requested_actions",
+                )
+            require_bool(
+                objective.get("safe_observation_only"),
+                f"{field}.safe_observation_only",
+            )
+            if "lockout_risk_detected" in objective:
+                require_bool(
+                    objective["lockout_risk_detected"],
+                    f"{field}.lockout_risk_detected",
+                )
         objectives.append(
             CampaignObjective(
                 objective_id=require_text(objective.get("id"), f"{field}.id"),
@@ -250,6 +278,11 @@ def parse_campaign(data: dict[str, Any]) -> CampaignDefinition:
     if len(objective_ids) != len(set(objective_ids)):
         raise ConfigError("campaign objective ids must not contain duplicates")
     _validate_dependency_graph(objectives)
+    if any(objective.module == "service_control_panel" for objective in objectives):
+        if "authentication_lockout_risk" not in stop_conditions:
+            raise ConfigError(
+                "service control panel campaigns require authentication_lockout_risk stop condition"
+            )
     return CampaignDefinition(
         campaign_id=campaign_id,
         name=name,

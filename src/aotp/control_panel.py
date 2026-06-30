@@ -26,6 +26,13 @@ PANEL_SAFE_OBSERVATIONS = frozenset(
     }
 )
 
+PANEL_SAFE_ACTIONS = frozenset(
+    {
+        "plan_panel_target_metadata",
+        "plan_safe_panel_observations",
+    }
+)
+
 PANEL_OBSERVATION_DESCRIPTIONS = {
     "default_page_metadata": "Record placeholder metadata about whether a default panel landing page is in scope.",
     "indexing_metadata": "Record placeholder metadata about indexing exposure without crawling the panel.",
@@ -101,7 +108,15 @@ def build_panel_dry_run_observation_plan(objective: dict[str, Any]) -> dict[str,
     This function models work only. It does not open sockets, send HTTP requests,
     submit credentials, crawl panels, or create vulnerability findings.
     """
-    requested = collect_panel_observations(objective) or tuple(sorted(PANEL_SAFE_OBSERVATIONS))
+    requested = collect_panel_observations(objective)
+    if not requested:
+        raise ValueError("safe panel observation planning requires requested_observations")
+    unsupported = unsafe_panel_observations(objective)
+    if unsupported:
+        raise ValueError(
+            "safe panel observation planning received unsupported observations: "
+            + ", ".join(unsupported)
+        )
     planned = [
         {
             "observation_id": observation,
@@ -127,3 +142,11 @@ def build_panel_dry_run_observation_plan(objective: dict[str, Any]) -> dict[str,
         "finding_claims": [],
         "denied_runtime_behaviors": sorted(PANEL_UNSAFE_ACTIONS),
     }
+
+
+def panel_lockout_risk_detected(objective: dict[str, Any]) -> bool:
+    """Return true when a panel objective carries a pre-execution lockout-risk signal."""
+    module = objective.get("module")
+    category = objective.get("category")
+    is_panel = module == "service_control_panel" or category == "service_control_panel"
+    return is_panel and objective.get("lockout_risk_detected") is True

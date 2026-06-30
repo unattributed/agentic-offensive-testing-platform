@@ -14,7 +14,16 @@ from .campaign_state import load_state, save_state
 from .campaign_control import apply_review_decision, request_operator_stop
 from .campaign_events import resolve_event_log, verify_state_event_log
 from .config import ConfigError, load_yaml, validate_scope_shape
-from .evidence import EvidenceManifest, load_manifest, sha256_file, utc_now, verify_evidence_directory, write_manifest
+from .evidence import (
+    EvidenceManifest,
+    load_manifest,
+    register_artifact,
+    sha256_file,
+    utc_now,
+    verify_evidence_directory,
+    write_manifest,
+)
+from .panel_evidence import write_panel_evidence_record
 from .executor import execute
 from .policy_gate import evaluate
 from .reporter import generate_markdown
@@ -182,12 +191,36 @@ def _run_case(args: argparse.Namespace) -> int:
         confidence="not_assessed",
         module_name=str(case.get("module", "")),
         wstg_mapping=list(case.get("wstg_mapping", [])),
+        artifact_mapping=list(case.get("evidence_mappings", [])),
         target_category=str(case.get("target_category", "placeholder")),
         execution_mode="live_stub" if args.live else "dry_run",
         policy_decision=decision.summary,
         request_count=result.request_count if result else 0,
         response_metadata=result.response_metadata if result else {"policy_reasons": list(decision.reasons)},
     )
+    if (
+        result
+        and case.get("category") == "service_control_panel"
+        and isinstance(result.response_metadata, dict)
+        and isinstance(result.response_metadata.get("observation_plan"), dict)
+    ):
+        panel_record_path = write_panel_evidence_record(
+            case,
+            evidence_dir,
+            policy_decision=decision.summary,
+            execution_mode="live_stub" if args.live else "dry_run",
+            tool=result.tool,
+            request_count=result.request_count,
+            response_metadata=result.response_metadata,
+        )
+        register_artifact(
+            manifest,
+            evidence_dir,
+            panel_record_path,
+            role="service_control_panel_evidence_record",
+            artifact_id="panel-evidence-record",
+            redaction_status="passed",
+        )
     path = write_manifest(manifest, evidence_dir)
     print(json.dumps({"allowed": decision.allowed, "decision": decision.summary, "evidence": str(path)}))
     return 0 if decision.allowed else 2

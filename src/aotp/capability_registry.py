@@ -200,6 +200,8 @@ def module_summary() -> dict[str, Any]:
                 "adapter_contracts": [],
                 "required_scope_fields": ["target_alias", "panel_alias"],
                 "supported_capabilities": sorted(PANEL_SAFE_OBSERVATIONS),
+                "evidence_artifacts": ["evidence.json", "panel-evidence.json"],
+                "report_inclusion_status": "excluded_pending_review",
                 "denied_actions": sorted(PANEL_UNSAFE_ACTIONS),
             },
         ]

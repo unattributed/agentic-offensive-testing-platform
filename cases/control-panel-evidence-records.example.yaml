@@ -1,0 +1,52 @@
+id: control-panel-evidence-records
+module: service_control_panel
+category: service_control_panel
+title: Control panel evidence records dry-run case
+target_alias: local-placeholder
+panel_alias: example-admin-panel
+panel_type: admin_panel
+target_category: generic_management_interface
+action: plan_safe_panel_observations
+service: https
+environment: isolated-example-environment
+requires_human_approval: false
+safe_observation_only: true
+requested_observations:
+  - response_header_metadata
+  - tls_configuration_metadata
+  - login_exposure_metadata
+  - version_banner_metadata
+  - default_page_metadata
+  - indexing_metadata
+approved_actions:
+  - plan_safe_panel_observations
+denied_actions:
+  - brute_force
+  - credential_attack
+  - credential_guessing
+  - credential_stuffing
+  - default_password_check
+  - destructive_action
+  - destructive_panel_action
+  - login_attempt
+  - lockout_triggering
+  - panel_crawl
+  - password_spraying
+  - session_hijacking
+  - token_replay
+  - unsafe_crawling
+evidence_mappings:
+  - evidence_manifest
+  - panel_evidence_record
+  - case_id
+  - module
+  - target_alias
+  - panel_alias
+  - panel_type
+  - requested_observations
+  - planned_observations
+  - observation_plan
+  - policy_decision
+  - execution_mode
+  - request_count
+  - report_inclusion_status

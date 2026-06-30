@@ -9,4 +9,5 @@ by local runners remain outside the repository unless redacted and explicitly ap
 | Slice | Topic | Commit | PR | Status |
 |---|---|---|---|---|
 | 5.1 | Control panel target model | `define control panel targets` | PR #7 | Complete |
-| 5.2 | Safe panel observations | `add safe panel observations` | Pending | In progress |
+| 5.2 | Safe panel observations | `add safe panel observations` | PR #8 | Complete |
+| 5.3 | Panel evidence records | `add panel evidence records` | Pending | In progress |

@@ -84,6 +84,16 @@ aotp campaign-run \
   --campaign campaigns/authorized-webapp-campaign.example.yaml
 ```
 
+Run the same deterministic engine under durable LangGraph orchestration:
+
+```bash
+aotp campaign-graph-run \
+  --scope config/scope.example.yaml \
+  --campaign campaigns/authorized-webapp-campaign.example.yaml
+```
+
+The graph stores only aliases, hashes, status, and local state references in a mode-`0600` SQLite checkpoint. Policy, evidence, budgets, and the event chain remain owned by the deterministic engine. A paused graph resumes only with `campaign-graph-resume` and a private checkpoint-bound review file.
+
 ## Live authorized flow
 
 1. Accept and record the program or engagement policy in a private untracked program profile.

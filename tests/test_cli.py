@@ -158,3 +158,26 @@ def test_campaign_resume_cli_applies_bound_review_and_continues(
 
     assert result == 0
     assert json.loads(capsys.readouterr().out)["status"] == "completed"
+
+
+def test_campaign_graph_run_cli_creates_durable_checkpoint(
+    project_root,
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    monkeypatch.chdir(tmp_path)
+    result = main(
+        [
+            "campaign-graph-run",
+            "--scope",
+            str(project_root / "config/scope.example.yaml"),
+            "--campaign",
+            str(project_root / "campaigns/authorized-webapp-campaign.example.yaml"),
+        ]
+    )
+    assert result == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "completed"
+    assert (tmp_path / ".aotp/checkpoints/example-webapp-dry-run.sqlite").is_file()
+    assert (tmp_path / ".aotp/state/example-webapp-dry-run.json").is_file()

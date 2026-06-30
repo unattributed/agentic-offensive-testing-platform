@@ -19,6 +19,7 @@ from .executor import execute
 from .policy_gate import evaluate
 from .reporter import generate_markdown
 from .template_registry import parse_template_registry, verify_template_source
+from .langgraph_orchestration import LangGraphCampaignOrchestrator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -88,6 +89,23 @@ def _build_parser() -> argparse.ArgumentParser:
     report.add_argument("--evidence", required=True)
     campaign_report = commands.add_parser("campaign-report")
     campaign_report.add_argument("--state", required=True)
+    graph_run = commands.add_parser("campaign-graph-run")
+    graph_run.add_argument("--scope", required=True)
+    graph_run.add_argument("--campaign", required=True)
+    graph_run.add_argument("--program-profile")
+    graph_run.add_argument("--approval")
+    graph_run.add_argument("--live", action="store_true")
+    graph_run.add_argument("--operator-approved", action="store_true")
+    graph_run.add_argument("--checkpoint-db")
+    graph_resume = commands.add_parser("campaign-graph-resume")
+    graph_resume.add_argument("--scope", required=True)
+    graph_resume.add_argument("--campaign", required=True)
+    graph_resume.add_argument("--review", required=True)
+    graph_resume.add_argument("--program-profile")
+    graph_resume.add_argument("--approval")
+    graph_resume.add_argument("--live", action="store_true")
+    graph_resume.add_argument("--operator-approved", action="store_true")
+    graph_resume.add_argument("--checkpoint-db")
     return parser
 
 
@@ -301,6 +319,39 @@ def main(argv: list[str] | None = None) -> int:
             common = roots[0].parent if roots else Path("__missing__")
             print(generate_markdown(common), end="")
             return 0
+        if args.command in {"campaign-graph-run", "campaign-graph-resume"}:
+            scope_path, scope = _load_scope(args.scope)
+            campaign = load_campaign(args.campaign).data
+            checkpoint_db = Path(args.checkpoint_db) if args.checkpoint_db else None
+            with LangGraphCampaignOrchestrator(
+                scope=scope,
+                scope_path=scope_path,
+                campaign=campaign,
+                workspace=Path.cwd(),
+                program_profile=_load_optional(args.program_profile),
+                operator_approval=_load_optional(args.approval),
+                live=args.live,
+                operator_approved=args.operator_approved,
+                checkpoint_db=checkpoint_db,
+            ) as orchestrator:
+                if args.command == "campaign-graph-run":
+                    snapshot = orchestrator.start()
+                else:
+                    snapshot = orchestrator.resume(load_yaml(args.review).data)
+                print(
+                    json.dumps(
+                        {
+                            "status": snapshot.get("status"),
+                            "thread_id": orchestrator.thread_id,
+                            "state": str(orchestrator.state_path),
+                            "checkpoint_db": str(orchestrator.checkpoint_db),
+                        }
+                    )
+                )
+                return 0 if snapshot.get("status") in {
+                    "completed",
+                    "paused_for_human_review",
+                } else 2
     except (ConfigError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

@@ -1,5 +1,5 @@
 schema_version: "1.0"
-scope_id: example-dry-run
+scope_id: example-panel-dry-run
 program_alias: example-program
 sponsor_alias: example-sponsor
 operator_alias: example-operator
@@ -63,7 +63,7 @@ fuzzing:
   per_endpoint_limit: 1
   max_runtime_seconds: 1
 service_control_panels:
-  authorized: false
+  authorized: true
   panels:
     - alias: example-admin-panel
       target_alias: local-placeholder

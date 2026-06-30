@@ -115,6 +115,8 @@ def _build_parser() -> argparse.ArgumentParser:
     finding_create.add_argument("--summary", required=True)
     finding_create.add_argument("--severity", default="unrated")
     finding_create.add_argument("--evidence-strength", default="weak")
+    finding_create.add_argument("--report-reviewed", action="store_true")
+    finding_create.add_argument("--reviewer", default="system")
     finding_create.add_argument("--output", required=True)
     finding_transition = commands.add_parser("finding-transition")
     finding_transition.add_argument("--finding", required=True)
@@ -396,6 +398,8 @@ def main(argv: list[str] | None = None) -> int:
                 summary=args.summary,
                 severity_candidate=args.severity,
                 evidence_strength=args.evidence_strength,
+                report_reviewed=args.report_reviewed,
+                reviewer=args.reviewer,
             )
             path = write_candidate(candidate, args.output)
             print(json.dumps({"finding_id": candidate.finding_id, "state": candidate.state, "path": str(path)}))

@@ -12,6 +12,7 @@ from pathlib import Path
 
 from .evidence import load_manifest, sha256_file
 from .redaction import assert_value_redacted
+from .report_review import REVIEW_STATUSES, evaluate_report_review_gate, report_inclusion_allowed
 from .verifier import Verdict, load_verification
 
 
@@ -45,6 +46,9 @@ class FindingCandidate:
     confidence: str = "low"
     evidence_strength: str = "weak"
     human_validated: bool = False
+    report_review_required: bool = False
+    report_review_status: str = "not_required"
+    report_reviewer: str | None = None
     title: str = "Unreviewed observation"
     summary: str = "Evidence requires review."
     evidence_manifest_sha256: str | None = None
@@ -72,6 +76,13 @@ class FindingCandidate:
             raise ValueError("unsupported finding confidence")
         if self.evidence_strength not in EVIDENCE_STRENGTHS:
             raise ValueError("unsupported evidence strength")
+        if self.report_review_status not in REVIEW_STATUSES:
+            raise ValueError("unsupported report review status")
+        if self.report_review_required:
+            if self.report_review_status != "candidate_reviewed":
+                raise ValueError("panel evidence requires completed report review")
+            if not self.report_reviewer:
+                raise ValueError("panel evidence requires a report reviewer")
         if self.state != "observed":
             for name, value in (
                 ("evidence manifest hash", self.evidence_manifest_sha256),
@@ -87,6 +98,8 @@ class FindingCandidate:
             self.severity_candidate == "unrated" or self.evidence_strength == "weak"
         ):
             raise ValueError("report-ready findings require rated severity and stronger evidence")
+        if self.state == "ready_for_report" and not report_inclusion_allowed(self):
+            raise ValueError("report-ready findings require completed report review")
         assert_value_redacted(asdict(self))
         if self.candidate_sha256 is not None and self.candidate_sha256 != candidate_digest(self):
             raise ValueError("finding candidate integrity check failed")
@@ -109,6 +122,8 @@ def create_candidate(
     summary: str,
     severity_candidate: str = "unrated",
     evidence_strength: str = "weak",
+    report_reviewed: bool = False,
+    reviewer: str = "system",
 ) -> FindingCandidate:
     manifest = load_manifest(evidence_path)
     verification = load_verification(verification_path)
@@ -116,6 +131,13 @@ def create_candidate(
         raise ValueError("verification does not reference the supplied evidence manifest")
     if verification.verdict != Verdict.FAIL:
         raise ValueError("only a fail verdict can create a finding candidate")
+    review_gate = evaluate_report_review_gate(
+        manifest,
+        report_reviewed=report_reviewed,
+        reviewer=reviewer,
+    )
+    if not review_gate.allowed:
+        raise ValueError(review_gate.reason)
     fingerprint_source = "|".join(
         [
             manifest.sponsor_alias,
@@ -134,6 +156,9 @@ def create_candidate(
         evidence_strength=evidence_strength,
         title=title,
         summary=summary,
+        report_review_required=review_gate.review_required,
+        report_review_status=review_gate.status,
+        report_reviewer=review_gate.reviewer,
         evidence_manifest_sha256=manifest.manifest_sha256,
         verification_reference=str(verification_path),
         verification_sha256=sha256_file(verification_path),
@@ -143,7 +168,12 @@ def create_candidate(
         created_at_utc=now,
         updated_at_utc=now,
         lifecycle_history=[
-            {"timestamp_utc": now, "from": "none", "to": "candidate", "reviewer": "system"}
+            {
+                "timestamp_utc": now,
+                "from": "none",
+                "to": "candidate",
+                "reviewer": review_gate.reviewer or "system",
+            }
         ],
     )
     candidate.validate()

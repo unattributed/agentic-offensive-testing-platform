@@ -7,6 +7,7 @@ from typing import Any
 
 from .evidence import load_manifest, verify_evidence_directory
 from .finding_candidate import load_candidate
+from .report_review import report_inclusion_allowed
 
 
 def _text(value: Any) -> str:
@@ -42,6 +43,8 @@ def _render_candidate(candidate) -> str:
             f"- Severity candidate: `{candidate.severity_candidate}`",
             f"- Confidence: `{candidate.confidence}`",
             f"- Evidence strength: `{candidate.evidence_strength}`",
+            f"- Report review required: `{candidate.report_review_required}`",
+            f"- Report review status: `{_text(candidate.report_review_status)}`",
             f"- Evidence manifest SHA256: `{candidate.evidence_manifest_sha256}`",
             f"- Fingerprint: `{candidate.fingerprint}`",
             "",
@@ -75,7 +78,7 @@ def generate_markdown(
                 raise ValueError(
                     f"finding {candidate.finding_id} references evidence outside the report set"
                 )
-            if candidate.state == "ready_for_report":
+            if candidate.state == "ready_for_report" and report_inclusion_allowed(candidate):
                 ready_candidates.append(candidate)
             else:
                 excluded_count += 1

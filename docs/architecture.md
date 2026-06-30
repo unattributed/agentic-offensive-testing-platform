@@ -24,8 +24,8 @@ Program policy context and technical scope are separate. The policy gate is the 
 
 State and evidence are local, ignored artifacts. Reports read those artifacts and do not receive free-form facts from a model.
 
-## Planned LangGraph orchestration
+## LangGraph orchestration
 
-LangGraph is the preferred orchestration implementation after the deterministic state and policy contracts stabilize. Its checkpoint persistence, durable resume behavior, and interrupt model align with campaign pause, approval, and recovery requirements. AOTP will keep policy evaluation and deterministic adapters outside model-controlled nodes.
+LangGraph is the durable orchestration implementation around the deterministic state and policy contracts. Its SQLite checkpoint persistence and interrupt model provide campaign pause, approval, process restart, and recovery. Policy evaluation and deterministic adapters remain outside model control.
 
-The migration must preserve current JSON export compatibility, idempotent node behavior, stable campaign and iteration identifiers, policy decisions before side effects, and evidence commits before checkpoint advancement. See [langgraph-orchestration.md](langgraph-orchestration.md).
+The graph preserves JSON state compatibility, idempotent step behavior, stable campaign and iteration identifiers, policy decisions before side effects, and evidence commits before checkpoint advancement. See [langgraph-orchestration.md](langgraph-orchestration.md).

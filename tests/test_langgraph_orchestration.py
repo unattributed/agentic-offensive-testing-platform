@@ -1,6 +1,8 @@
 import stat
 from datetime import UTC, datetime
 
+import pytest
+
 from aotp.campaign import load_campaign
 from aotp.campaign_events import verify_state_event_log
 from aotp.campaign_loop import run_campaign
@@ -116,3 +118,19 @@ def test_langgraph_checkpoint_does_not_store_scope_document(
     graph.close()
     database = (tmp_path / ".aotp/checkpoints/example-webapp-dry-run.sqlite").read_bytes()
     assert b"example-only" not in database
+
+
+def test_langgraph_checkpoint_cannot_escape_workspace(
+    project_root, tmp_path, example_scope
+):
+    campaign = load_campaign(
+        str(project_root / "campaigns/authorized-webapp-campaign.example.yaml")
+    ).data
+    with pytest.raises(ValueError, match="must stay within workspace"):
+        LangGraphCampaignOrchestrator(
+            scope=example_scope,
+            scope_path=project_root / "config/scope.example.yaml",
+            campaign=campaign,
+            workspace=tmp_path / "workspace",
+            checkpoint_db=tmp_path / "outside.sqlite",
+        )

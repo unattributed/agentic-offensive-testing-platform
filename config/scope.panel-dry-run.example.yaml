@@ -71,6 +71,7 @@ service_control_panels:
       exposure: placeholder_only
       approved_actions:
         - plan_panel_target_metadata
+        - plan_safe_panel_observations
       denied_actions:
         - brute_force
         - credential_attack

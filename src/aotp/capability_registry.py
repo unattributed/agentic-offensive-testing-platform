@@ -5,7 +5,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
-from .control_panel import PANEL_UNSAFE_ACTIONS
+from .control_panel import PANEL_SAFE_OBSERVATIONS, PANEL_UNSAFE_ACTIONS
 
 @dataclass(frozen=True)
 class AdapterCapability:
@@ -199,6 +199,7 @@ def module_summary() -> dict[str, Any]:
                 "network_silent_default": True,
                 "adapter_contracts": [],
                 "required_scope_fields": ["target_alias", "panel_alias"],
+                "supported_capabilities": sorted(PANEL_SAFE_OBSERVATIONS),
                 "denied_actions": sorted(PANEL_UNSAFE_ACTIONS),
             },
         ]

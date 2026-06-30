@@ -10,6 +10,7 @@ from .evidence import load_manifest, verify_evidence_directory
 from .finding_candidate import load_candidate
 from .panel_evidence import validate_panel_evidence_record
 from .sbom_review import validate_sbom_record
+from .crypto_review import validate_crypto_record
 from .report_review import manifest_requires_report_review, report_inclusion_allowed
 
 
@@ -21,6 +22,7 @@ def _render_evidence(
     data: dict[str, Any],
     panel_record: dict[str, Any] | None = None,
     sbom_record: dict[str, Any] | None = None,
+    crypto_record: dict[str, Any] | None = None,
 ) -> str:
     mappings = data.get("wstg_mapping") or data.get("artifact_mapping") or []
     lines = [
@@ -64,6 +66,23 @@ def _render_evidence(
                 ]
             )
         lines.extend(["", sbom_record["caveat"]])
+    if crypto_record is not None:
+        tls = crypto_record["tls_evidence"]
+        lines.extend(
+            [
+                "",
+                "#### Recorded cryptographic controls",
+                "",
+                f"- TLS protocol: `{_text(tls.get('protocol'))}`",
+                f"- Certificate signature algorithm: `{_text(tls.get('signature_algorithm'))}`",
+                f"- Cookie attribute records: `{len(crypto_record['cookie_attributes'])}`",
+                f"- Token algorithm setting: `{_text(crypto_record['token_configuration'].get('algorithm'))}`",
+                f"- Weak algorithm indicators: `{len(crypto_record['weak_algorithm_indicators'])}`",
+                f"- Private material: `{crypto_record['private_material']}`",
+                "",
+                crypto_record["caveat"],
+            ]
+        )
     return "\n".join(lines)
 
 
@@ -111,6 +130,7 @@ def generate_markdown(
     }
     panel_records: dict[str, dict[str, Any]] = {}
     sbom_records: dict[str, dict[str, Any]] = {}
+    crypto_records: dict[str, dict[str, Any]] = {}
     for manifest_path, manifest in manifest_entries:
         if not manifest_requires_report_review(manifest):
             continue
@@ -165,6 +185,21 @@ def generate_markdown(
         if record["artifact_alias"] != manifest.sbom_artifact:
             raise ValueError("SBOM evidence record does not match its manifest")
         sbom_records[manifest.manifest_sha256 or ""] = record
+    for manifest_path, manifest in manifest_entries:
+        artifacts = [
+            artifact
+            for artifact in manifest.artifacts
+            if artifact.get("role") == "cryptographic_controls_evidence"
+        ]
+        if not artifacts:
+            continue
+        record = json.loads(
+            (manifest_path.parent / artifacts[0]["redacted_path"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        validate_crypto_record(record)
+        crypto_records[manifest.manifest_sha256 or ""] = record
 
     ready_candidates = []
     excluded_count = 0
@@ -185,10 +220,20 @@ def generate_markdown(
                     and candidate.exploitability_status == "verified"
                 )
             )
+            crypto_record = crypto_records.get(manifest.manifest_sha256 or "", {})
+            crypto_risk_allowed = (
+                manifest.module_name != "crypto_controls"
+                or not crypto_record.get("weak_algorithm_indicators")
+                or (
+                    candidate.crypto_indicator_only
+                    and candidate.crypto_indicator_status == "verified_weakness"
+                )
+            )
             if (
                 candidate.state == "ready_for_report"
                 and report_inclusion_allowed(candidate, manifest)
                 and sbom_risk_allowed
+                and crypto_risk_allowed
             ):
                 ready_candidates.append(candidate)
             else:
@@ -221,6 +266,7 @@ def generate_markdown(
             asdict_manifest(manifest),
             panel_records.get(manifest.manifest_sha256 or ""),
             sbom_records.get(manifest.manifest_sha256 or ""),
+            crypto_records.get(manifest.manifest_sha256 or ""),
         )
         + "\n"
         for _, manifest in manifest_entries

@@ -8,6 +8,7 @@ from typing import Any
 from .control_panel import PANEL_SAFE_OBSERVATIONS, PANEL_UNSAFE_ACTIONS
 from .bounded_fuzzing import FUZZING_SAFE_PAYLOAD_CLASSES, FUZZING_UNSAFE_ACTIONS
 from .sbom_review import VULNERABILITY_MAPPING_CONTRACT
+from .crypto_review import CRYPTO_UNSAFE_ACTIONS
 
 @dataclass(frozen=True)
 class AdapterCapability:
@@ -244,6 +245,24 @@ def module_summary() -> dict[str, Any]:
                     "unprovided_artifacts",
                     "unverified_exploitability_claims",
                 ],
+            },
+            {
+                "module_id": "crypto_controls",
+                "display_name": "Cryptographic controls review",
+                "default_execution_mode": "dry_run",
+                "network_silent_default": True,
+                "adapter_contracts": [],
+                "required_scope_fields": ["target_alias", "cryptographic_controls"],
+                "supported_capabilities": [
+                    "certificate_metadata",
+                    "cookie_attributes",
+                    "key_management_metadata",
+                    "tls",
+                    "token_configuration",
+                    "weak_algorithm_indicators",
+                ],
+                "evidence_artifacts": ["evidence.json", "crypto-evidence.json"],
+                "denied_actions": sorted(CRYPTO_UNSAFE_ACTIONS),
             },
         ]
     }

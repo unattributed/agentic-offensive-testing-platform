@@ -8,6 +8,7 @@ from typing import Any
 from .bounded_fuzzing import build_fuzzing_dry_run_plan
 from .control_panel import build_panel_dry_run_observation_plan
 from .sbom_review import ingest_sbom_artifact
+from .crypto_review import build_crypto_record
 from .verifier import Verdict
 
 
@@ -70,6 +71,16 @@ def execute(objective: dict[str, Any], *, live: bool = False) -> ExecutionResult
             {
                 "status": "provided dependency artifact reviewed locally",
                 "sbom_record": record,
+            },
+        )
+    if objective.get("category") == "crypto_controls":
+        return ExecutionResult(
+            Verdict.INCONCLUSIVE,
+            "offline-crypto-controls-review",
+            0,
+            {
+                "status": "provided cryptographic metadata reviewed locally",
+                "crypto_record": build_crypto_record(objective),
             },
         )
     return ExecutionResult(

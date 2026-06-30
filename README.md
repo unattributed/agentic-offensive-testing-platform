@@ -124,6 +124,15 @@ Every executed or denied objective produces an evidence manifest with campaign a
 
 Only `pass`, `fail`, `inconclusive`, `manual_review`, and `stopped_by_policy` are valid verifier verdicts. Severity candidate, confidence, evidence strength, and human validation are independent. An observation moves through an explicit lifecycle before it can become `ready_for_report`. Reports render recorded fields only and never invent vulnerabilities, affected assets, exploitation paths, impact, or remediation.
 
+The usable evidence pipeline is:
+
+```text
+evidence.json -> evidence-verdict -> finding-create
+              -> finding-transition -> report
+```
+
+Each stage verifies the integrity and provenance of the previous stage. Only a human-validated `ready_for_report` candidate can appear as a finding in the generated draft.
+
 Bug bounty drafts remain drafts until a human approves them. AOTP has no submission adapter.
 
 ## Local models

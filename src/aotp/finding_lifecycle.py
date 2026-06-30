@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from .finding_candidate import FINDING_STATES, FindingCandidate
 
 
@@ -17,11 +19,24 @@ ALLOWED_TRANSITIONS = {
 }
 
 
-def transition(finding: FindingCandidate, new_state: str, *, human_validated: bool = False) -> None:
+def transition(
+    finding: FindingCandidate,
+    new_state: str,
+    *,
+    human_validated: bool = False,
+    reviewer: str = "system",
+) -> None:
     if new_state not in FINDING_STATES:
         raise ValueError("unsupported finding state")
     if new_state not in ALLOWED_TRANSITIONS.get(finding.state, set()):
         raise ValueError(f"transition from {finding.state} to {new_state} is not allowed")
+    old_state = finding.state
     finding.state = new_state
     finding.human_validated = finding.human_validated or human_validated
+    now = datetime.now(UTC).isoformat()
+    finding.updated_at_utc = now
+    finding.lifecycle_history.append(
+        {"timestamp_utc": now, "from": old_state, "to": new_state, "reviewer": reviewer}
+    )
+    finding.candidate_sha256 = None
     finding.validate()

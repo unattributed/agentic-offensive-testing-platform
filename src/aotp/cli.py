@@ -21,6 +21,8 @@ from .reporter import generate_markdown
 from .template_registry import parse_template_registry, verify_template_source
 from .langgraph_orchestration import LangGraphCampaignOrchestrator
 from .verifier import create_verification, write_verification
+from .finding_candidate import create_candidate, load_candidate, write_candidate
+from .finding_lifecycle import transition
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -93,6 +95,20 @@ def _build_parser() -> argparse.ArgumentParser:
     verdict.add_argument("--rationale", required=True)
     verdict.add_argument("--verifier", required=True)
     verdict.add_argument("--evidence-reference", action="append", default=[])
+    finding_create = commands.add_parser("finding-create")
+    finding_create.add_argument("--evidence", required=True)
+    finding_create.add_argument("--verification", required=True)
+    finding_create.add_argument("--finding-id", required=True)
+    finding_create.add_argument("--title", required=True)
+    finding_create.add_argument("--summary", required=True)
+    finding_create.add_argument("--severity", default="unrated")
+    finding_create.add_argument("--evidence-strength", default="weak")
+    finding_create.add_argument("--output", required=True)
+    finding_transition = commands.add_parser("finding-transition")
+    finding_transition.add_argument("--finding", required=True)
+    finding_transition.add_argument("--state", required=True)
+    finding_transition.add_argument("--reviewer", required=True)
+    finding_transition.add_argument("--human-validated", action="store_true")
     report = commands.add_parser("report")
     report.add_argument("--evidence", required=True)
     campaign_report = commands.add_parser("campaign-report")
@@ -330,6 +346,30 @@ def main(argv: list[str] | None = None) -> int:
             )
             path = write_verification(result, Path(args.evidence).parent / "verification.json")
             print(json.dumps({"verdict": result.verdict, "verification": str(path)}))
+            return 0
+        if args.command == "finding-create":
+            candidate = create_candidate(
+                args.evidence,
+                args.verification,
+                finding_id=args.finding_id,
+                title=args.title,
+                summary=args.summary,
+                severity_candidate=args.severity,
+                evidence_strength=args.evidence_strength,
+            )
+            path = write_candidate(candidate, args.output)
+            print(json.dumps({"finding_id": candidate.finding_id, "state": candidate.state, "path": str(path)}))
+            return 0
+        if args.command == "finding-transition":
+            candidate = load_candidate(args.finding)
+            transition(
+                candidate,
+                args.state,
+                reviewer=args.reviewer,
+                human_validated=args.human_validated,
+            )
+            write_candidate(candidate, args.finding)
+            print(json.dumps({"finding_id": candidate.finding_id, "state": candidate.state}))
             return 0
         if args.command == "report":
             print(generate_markdown(args.evidence), end="")

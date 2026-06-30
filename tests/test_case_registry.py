@@ -19,3 +19,18 @@ def test_wstg_case_dry_run_record_is_network_silent():
     assert record["execution_mode"] == "dry_run"
     assert record["request_count"] == 0
     assert record["policy_decision"] == "allowed_dry_run"
+
+
+
+def test_authn_and_session_cases_deny_credential_abuse():
+    authn = get_case("wstg-authn-provisioned-account-observation")
+    session = get_case("wstg-session-attribute-observation")
+    denied = set(authn["denied_actions"]) | set(session["denied_actions"])
+    assert "credential_guessing" in denied
+    assert "brute_force" in denied
+    assert "password_spraying" in denied
+    assert "credential_stuffing" in denied
+    assert "token_replay" in denied
+    assert "session_hijacking" in denied
+    assert "wstg-authn-provisioned-account-observation" in case_ids()
+    assert "wstg-session-attribute-observation" in case_ids()

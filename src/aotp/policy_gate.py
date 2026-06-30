@@ -281,8 +281,17 @@ def evaluate(
             if not isinstance(source, dict) or source.get("network_lookup") is not False:
                 reasons.append("vulnerability mapping requires an offline configured data source")
 
-    if category == "crypto_controls" and not scope.get("cryptographic_controls", {}).get("authorized"):
-        reasons.append("cryptographic controls review is not explicitly scoped")
+    if category == "crypto_controls":
+        crypto = scope.get("cryptographic_controls", {})
+        if not crypto.get("authorized"):
+            reasons.append("cryptographic controls review is not explicitly scoped")
+        action = objective.get("action")
+        if not action:
+            reasons.append("cryptographic controls action is missing")
+        elif action in set(crypto.get("denied_actions", [])):
+            reasons.append("cryptographic controls action is explicitly denied")
+        elif action not in set(crypto.get("approved_actions", [])):
+            reasons.append("cryptographic controls action is not explicitly approved")
 
     if objective.get("requires_human_approval") and not live and not objective.get("human_approved"):
         reasons.append("human approval is required")

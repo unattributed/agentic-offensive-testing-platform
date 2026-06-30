@@ -59,6 +59,8 @@ class FindingCandidate:
     component_presence_only: bool = False
     reachability_status: str = "not_applicable"
     exploitability_status: str = "not_applicable"
+    crypto_indicator_only: bool = False
+    crypto_indicator_status: str = "not_applicable"
     title: str = "Unreviewed observation"
     summary: str = "Evidence requires review."
     evidence_manifest_sha256: str | None = None
@@ -114,6 +116,14 @@ class FindingCandidate:
                 raise ValueError(
                     "component presence alone cannot become a confirmed security risk"
                 )
+        if (
+            self.crypto_indicator_only
+            and self.state in {"confirmed", "ready_for_report"}
+            and self.crypto_indicator_status != "verified_weakness"
+        ):
+            raise ValueError(
+                "cryptographic indicators require verified evidence before confirmation"
+            )
         if self.state == "ready_for_report" and (
             self.severity_candidate == "unrated" or self.evidence_strength == "weak"
         ):
@@ -168,6 +178,12 @@ def create_candidate(
     )
     now = datetime.now(UTC).isoformat()
     component_presence_only = manifest.module_name == "sbom_review"
+    crypto_record = manifest.response_metadata.get("crypto_record", {})
+    crypto_indicator_only = (
+        manifest.module_name == "crypto_controls"
+        and isinstance(crypto_record, dict)
+        and bool(crypto_record.get("weak_algorithm_indicators"))
+    )
     candidate = FindingCandidate(
         finding_id=finding_id,
         evidence_reference=str(evidence_path),
@@ -187,6 +203,8 @@ def create_candidate(
         component_presence_only=component_presence_only,
         reachability_status="not_assessed" if component_presence_only else "not_applicable",
         exploitability_status="not_assessed" if component_presence_only else "not_applicable",
+        crypto_indicator_only=crypto_indicator_only,
+        crypto_indicator_status="observation_only" if crypto_indicator_only else "not_applicable",
         evidence_manifest_sha256=manifest.manifest_sha256,
         verification_reference=str(verification_path),
         verification_sha256=sha256_file(verification_path),

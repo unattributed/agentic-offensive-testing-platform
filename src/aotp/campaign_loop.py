@@ -19,6 +19,7 @@ from .executor import execute
 from .panel_evidence import write_panel_evidence_record
 from .fuzzing_evidence import write_fuzzing_evidence_record
 from .sbom_review import write_sbom_record
+from .crypto_review import write_crypto_record
 from .policy_gate import evaluate
 from .safety_budget import SafetyBudget
 from .scheduler import schedule
@@ -558,6 +559,24 @@ def run_campaign(
                 redaction_status="passed",
             )
             manifest.sbom_artifact = str(objective.get("artifact", ""))
+        if (
+            result
+            and objective.get("category") == "crypto_controls"
+            and isinstance(result.response_metadata.get("crypto_record"), dict)
+        ):
+            crypto_path = write_crypto_record(
+                result.response_metadata["crypto_record"],
+                evidence_dir,
+            )
+            register_artifact(
+                manifest,
+                evidence_dir,
+                crypto_path,
+                role="cryptographic_controls_evidence",
+                artifact_id="crypto-controls-evidence",
+                redaction_status="passed",
+            )
+            manifest.cryptographic_evidence = "crypto-evidence.json"
         write_manifest(manifest, evidence_dir)
         relative_evidence = str(evidence_dir.relative_to(root))
         if relative_evidence not in state.evidence_directories:

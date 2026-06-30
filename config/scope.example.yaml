@@ -105,6 +105,11 @@ service_control_panels:
         - unsafe_crawling
 cryptographic_controls:
   authorized: false
+  approved_actions: []
+  denied_actions:
+    - destructive_crypto_testing
+    - private_key_extraction
+    - secret_bruteforce
 provided_artifacts:
   - artifacts/sbom.placeholder.json
 evidence:

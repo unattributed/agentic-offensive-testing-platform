@@ -1,13 +1,15 @@
 .PHONY: bootstrap compile test safety check dry-run
 
+PYTHON ?= python3
+
 bootstrap:
 	./scripts/bootstrap.sh
 
 compile:
-	python3 -m compileall -q src tests
+	$(PYTHON) -m compileall -q src tests
 
 test:
-	python3 -m pytest
+	$(PYTHON) -m pytest
 
 safety:
 	./scripts/validate-repository-safety.sh
@@ -15,4 +17,4 @@ safety:
 check: compile test safety
 
 dry-run:
-	PYTHONPATH=src python3 -m aotp.cli dry-run --scope config/scope.example.yaml
+	PYTHONPATH=src $(PYTHON) -m aotp.cli dry-run --scope config/scope.example.yaml

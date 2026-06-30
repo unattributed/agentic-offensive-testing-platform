@@ -1,6 +1,11 @@
+"""Canonical service control panel module contract."""
+
+from ..control_panel import PANEL_SAFE_OBSERVATIONS, PANEL_UNSAFE_ACTIONS
+
+
 MODULE = {
     "name": "service_control_panel",
-    "supports": ("login_panel_observation", "security_headers", "tls_posture", "version_leakage", "default_pages", "metadata_exposure"),
+    "supports": tuple(sorted(PANEL_SAFE_OBSERVATIONS)),
     "requires": ("explicit_panel_scope", "human_approval_for_state_change"),
-    "denies": ("credential_attacks", "lockout_behavior", "destructive_admin_actions"),
+    "denies": tuple(sorted(PANEL_UNSAFE_ACTIONS)),
 }

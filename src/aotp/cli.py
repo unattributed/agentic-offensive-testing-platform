@@ -27,6 +27,12 @@ from .panel_evidence import write_panel_evidence_record
 from .executor import execute
 from .policy_gate import evaluate
 from .reporter import generate_markdown
+from .report_review import (
+    PANEL_REVIEW_DECISION,
+    PanelReportReviewDecision,
+    manifest_requires_report_review,
+    write_report_review_decision,
+)
 from .template_registry import parse_template_registry, verify_template_source
 from .langgraph_orchestration import LangGraphCampaignOrchestrator
 from .verifier import create_verification, write_verification
@@ -115,9 +121,14 @@ def _build_parser() -> argparse.ArgumentParser:
     finding_create.add_argument("--summary", required=True)
     finding_create.add_argument("--severity", default="unrated")
     finding_create.add_argument("--evidence-strength", default="weak")
-    finding_create.add_argument("--report-reviewed", action="store_true")
-    finding_create.add_argument("--reviewer", default="system")
+    finding_create.add_argument("--report-review")
     finding_create.add_argument("--output", required=True)
+    report_review = commands.add_parser("report-review-create")
+    report_review.add_argument("--evidence", required=True)
+    report_review.add_argument("--decision-id", required=True)
+    report_review.add_argument("--reviewer", required=True)
+    report_review.add_argument("--rationale", required=True)
+    report_review.add_argument("--output", required=True)
     finding_transition = commands.add_parser("finding-transition")
     finding_transition.add_argument("--finding", required=True)
     finding_transition.add_argument("--state", required=True)
@@ -398,11 +409,34 @@ def main(argv: list[str] | None = None) -> int:
                 summary=args.summary,
                 severity_candidate=args.severity,
                 evidence_strength=args.evidence_strength,
-                report_reviewed=args.report_reviewed,
-                reviewer=args.reviewer,
+                report_review_path=args.report_review,
             )
             path = write_candidate(candidate, args.output)
             print(json.dumps({"finding_id": candidate.finding_id, "state": candidate.state, "path": str(path)}))
+            return 0
+        if args.command == "report-review-create":
+            manifest = load_manifest(args.evidence)
+            if not manifest_requires_report_review(manifest):
+                raise ValueError("evidence does not require a panel report review decision")
+            decision = PanelReportReviewDecision(
+                decision_id=args.decision_id,
+                evidence_manifest_sha256=manifest.manifest_sha256 or "",
+                reviewer_alias=args.reviewer,
+                decision=PANEL_REVIEW_DECISION,
+                decided_at_utc=utc_now(),
+                rationale=args.rationale,
+            )
+            path = write_report_review_decision(decision, args.output)
+            print(
+                json.dumps(
+                    {
+                        "decision_id": decision.decision_id,
+                        "reviewer": decision.reviewer_alias,
+                        "evidence_manifest_sha256": decision.evidence_manifest_sha256,
+                        "path": str(path),
+                    }
+                )
+            )
             return 0
         if args.command == "finding-transition":
             candidate = load_candidate(args.finding)

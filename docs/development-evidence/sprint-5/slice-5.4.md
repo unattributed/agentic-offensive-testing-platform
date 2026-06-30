@@ -4,7 +4,8 @@
 
 This slice adds report-review gating for service control panel evidence records.
 Panel evidence remains excluded by default and cannot become a finding candidate
-until a named human reviewer explicitly marks the evidence as reviewed for candidate creation.
+until a named human reviewer creates an integrity-bound review decision for the exact evidence
+manifest.
 
 ## Safety properties
 
@@ -14,7 +15,7 @@ until a named human reviewer explicitly marks the evidence as reviewed for candi
 - No brute force, crawling, token replay, session hijacking, or destructive panel actions are introduced.
 - Panel evidence stays excluded pending review by default.
 - Report generation includes only integrity-verified evidence and report-ready candidates.
-- Panel candidates require named human review before candidate creation.
+- Panel candidates require a named, manifest-bound human review decision before candidate creation.
 - Panel candidates still require human validation before report-ready state.
 
 ## Code changes
@@ -22,7 +23,7 @@ until a named human reviewer explicitly marks the evidence as reviewed for candi
 - `src/aotp/report_review.py`: report-review gate helpers for panel evidence.
 - `src/aotp/finding_candidate.py`: candidate creation now enforces panel evidence review gating.
 - `src/aotp/reporter.py`: report generation checks report-review inclusion status.
-- `src/aotp/cli.py`: `finding-create` accepts explicit report-review flags.
+- `src/aotp/cli.py`: `report-review-create` writes a review decision and `finding-create` consumes it.
 - `src/aotp/capability_registry.py`: module summary records report-review gating.
 - `tests/test_report_review_gating.py`: focused tests for gating behavior.
 

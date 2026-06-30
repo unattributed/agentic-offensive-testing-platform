@@ -8,7 +8,7 @@ from typing import Any
 
 import yaml
 
-from .control_panel import PANEL_TYPES
+from .control_panel import PANEL_SAFE_ACTIONS, PANEL_TYPES, PANEL_UNSAFE_ACTIONS
 
 
 class ConfigError(ValueError):
@@ -272,18 +272,39 @@ def parse_scope(scope: dict[str, Any]) -> ScopeConfig:
         panel_target_alias = require_text(panel.get("target_alias"), f"{field}.target_alias")
         if panel_target_alias not in target_aliases:
             raise ConfigError(f"{field}.target_alias must reference allowed_targets")
+        approved_actions = require_text_list(
+            panel.get("approved_actions"), f"{field}.approved_actions", allow_empty=False
+        )
+        denied_actions = require_text_list(
+            panel.get("denied_actions"), f"{field}.denied_actions", allow_empty=False
+        )
+        _validate_unique(approved_actions, f"{field}.approved_actions")
+        _validate_unique(denied_actions, f"{field}.denied_actions")
+        unsupported_approved = sorted(set(approved_actions) - PANEL_SAFE_ACTIONS)
+        if unsupported_approved:
+            raise ConfigError(
+                f"{field}.approved_actions contains unsupported actions: "
+                + ", ".join(unsupported_approved)
+            )
+        overlap = sorted(set(approved_actions) & set(denied_actions))
+        if overlap:
+            raise ConfigError(
+                f"{field}.approved_actions and denied_actions overlap: " + ", ".join(overlap)
+            )
+        missing_denials = sorted(PANEL_UNSAFE_ACTIONS - set(denied_actions))
+        if missing_denials:
+            raise ConfigError(
+                f"{field}.denied_actions is missing required safety denials: "
+                + ", ".join(missing_denials)
+            )
         panels.append(
             PanelScope(
                 alias=require_text(panel.get("alias"), f"{field}.alias"),
                 target_alias=panel_target_alias,
                 panel_type=panel_type,
                 exposure=require_text(panel.get("exposure"), f"{field}.exposure"),
-                approved_actions=tuple(
-                    require_text_list(panel.get("approved_actions"), f"{field}.approved_actions", allow_empty=False)
-                ),
-                denied_actions=tuple(
-                    require_text_list(panel.get("denied_actions"), f"{field}.denied_actions", allow_empty=False)
-                ),
+                approved_actions=tuple(approved_actions),
+                denied_actions=tuple(denied_actions),
             )
         )
     _validate_unique([panel.alias for panel in panels], "service_control_panels panel aliases")

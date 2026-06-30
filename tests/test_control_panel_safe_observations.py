@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+import pytest
+
 from aotp.capability_registry import module_summary
 from aotp.config import load_yaml
 from aotp.control_panel import (
@@ -121,6 +123,16 @@ def test_unsupported_panel_observation_is_denied(example_scope, tmp_path):
 
     assert not decision.allowed
     assert "panel observation is not approved as safe: active_crawl" in decision.reasons
+
+
+def test_missing_panel_observations_are_denied_before_execution(example_scope, tmp_path):
+    objective = _safe_observation_objective()
+    objective.pop("requested_observations")
+    decision = evaluate(_safe_observation_scope(example_scope), objective, workspace=tmp_path)
+    assert not decision.allowed
+    assert "safe panel observation planning requires requested_observations" in decision.reasons
+    with pytest.raises(ValueError, match="requires requested_observations"):
+        build_panel_dry_run_observation_plan(objective)
 
 
 def test_default_password_and_login_checks_are_not_safe_observations():

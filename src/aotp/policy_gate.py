@@ -9,7 +9,13 @@ from pathlib import Path
 from typing import Any
 
 from .config import ConfigError, parse_operator_approval, parse_program_profile, parse_scope
-from .control_panel import collect_panel_actions, denied_panel_actions, unsafe_panel_observations
+from .control_panel import (
+    collect_panel_actions,
+    collect_panel_observations,
+    denied_panel_actions,
+    panel_lockout_risk_detected,
+    unsafe_panel_observations,
+)
 
 
 @dataclass(frozen=True)
@@ -122,7 +128,10 @@ def evaluate(
     if live and not target_alias:
         reasons.append("live objective target alias is missing")
 
-    category = objective.get("category") or objective.get("module")
+    module = objective.get("module")
+    category = objective.get("category") or module
+    if module and category and module != category:
+        reasons.append("objective category must match module")
     if category and category not in allowed_categories:
         reasons.append("test category is not explicitly allowlisted")
 
@@ -162,7 +171,7 @@ def evaluate(
         if objective.get("state_changing") and not fuzzing.get("state_changing_authorized"):
             reasons.append("state-changing fuzzing is not explicitly authorized")
 
-    if category == "service_control_panel":
+    if category == "service_control_panel" or module == "service_control_panel":
         panel_config = scope.get("service_control_panels", {})
         if not panel_config.get("authorized"):
             reasons.append("service control panel testing is not explicitly authorized")
@@ -181,13 +190,26 @@ def evaluate(
             if target_alias != panel.get("target_alias"):
                 reasons.append("panel target alias does not match objective")
             objective_panel_type = objective.get("panel_type")
-            if objective_panel_type and objective_panel_type != panel.get("panel_type"):
+            if not objective_panel_type:
+                reasons.append("panel type is missing")
+            elif objective_panel_type != panel.get("panel_type"):
                 reasons.append("panel type does not match scoped panel")
             approved_actions = set(panel.get("approved_actions", []))
+            configured_denials = set(panel.get("denied_actions", []))
+            configured_denied_actions = sorted(
+                action for action in collect_panel_actions(objective) if action in configured_denials
+            )
+            if configured_denied_actions:
+                reasons.append(
+                    "panel action is explicitly denied by scope: "
+                    + ", ".join(configured_denied_actions)
+                )
             unapproved_actions = sorted(
                 action
                 for action in collect_panel_actions(objective)
-                if action not in approved_actions and action not in unsafe_panel_actions
+                if action not in approved_actions
+                and action not in unsafe_panel_actions
+                and action not in configured_denials
             )
             if unapproved_actions:
                 reasons.append("panel action is not explicitly approved: " + ", ".join(unapproved_actions))
@@ -200,6 +222,13 @@ def evaluate(
             reasons.append(
                 "panel observation is not approved as safe: " + ", ".join(unsafe_observations)
             )
+        if (
+            "plan_safe_panel_observations" in collect_panel_actions(objective)
+            and not collect_panel_observations(objective)
+        ):
+            reasons.append("safe panel observation planning requires requested_observations")
+        if panel_lockout_risk_detected(objective) and not objective.get("human_approved"):
+            reasons.append("authentication lockout risk requires human approval")
 
     if category == "sbom_review":
         provided = set(scope.get("provided_artifacts", []))

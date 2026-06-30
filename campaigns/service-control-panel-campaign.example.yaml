@@ -1,0 +1,53 @@
+schema_version: "1.0"
+campaign_id: example-service-control-panel-dry-run
+name: Authorized service control panel dry run
+description: Plans safe, network-silent observations for one explicitly scoped panel alias.
+limits:
+  max_iterations: 3
+  max_runtime_seconds: 30
+  max_requests: 1
+  max_consecutive_failures: 1
+execution:
+  default_mode: dry_run
+  continue_on_inconclusive: true
+  pause_on_manual_review: true
+  stop_on_policy_denial: true
+stop_conditions:
+  - operator_stop
+  - policy_denial
+  - human_review
+  - authentication_lockout_risk
+  - iteration_limit
+  - runtime_limit
+  - request_limit
+objectives:
+  - id: panel-safe-observations
+    title: Plan safe service control panel observations
+    module: service_control_panel
+    category: service_control_panel
+    action: plan_safe_panel_observations
+    target_alias: local-placeholder
+    target_category: generic_management_interface
+    service: https
+    environment: isolated-example-environment
+    panel_alias: example-admin-panel
+    panel_type: admin_panel
+    safe_observation_only: true
+    requested_observations:
+      - response_header_metadata
+      - tls_configuration_metadata
+      - login_exposure_metadata
+      - version_banner_metadata
+      - default_page_metadata
+      - indexing_metadata
+    artifact_mapping:
+      - evidence_manifest
+      - panel_evidence_record
+      - planned_observations
+      - policy_decision
+      - request_count
+    priority: 10
+    depends_on: []
+    requires_human_approval: false
+    parameters:
+      request_budget: 0

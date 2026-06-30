@@ -12,8 +12,10 @@ from typing import Any, Callable
 from .campaign import parse_campaign
 from .campaign_events import append_campaign_event, resolve_event_log, verify_state_event_log
 from .campaign_state import CampaignState, save_state
-from .evidence import EvidenceManifest, utc_now, write_manifest
+from .control_panel import panel_lockout_risk_detected
+from .evidence import EvidenceManifest, register_artifact, utc_now, write_manifest
 from .executor import execute
+from .panel_evidence import write_panel_evidence_record
 from .policy_gate import evaluate
 from .safety_budget import SafetyBudget
 from .scheduler import schedule
@@ -141,6 +143,74 @@ def _record_pre_execution_stop(
     )
 
 
+def _record_panel_lockout_pause(
+    *,
+    state: CampaignState,
+    scope: dict[str, Any],
+    objective: dict[str, Any],
+    root: Path,
+    base_evidence: Path,
+    state_path: Path,
+) -> None:
+    objective_id = str(objective["id"])
+    iteration_id = f"{state.next_iteration:04d}"
+    evidence_dir = base_evidence / state.campaign_id / iteration_id
+    reason = "authentication_lockout_risk"
+    manifest = EvidenceManifest(
+        run_id=_run_id(state, iteration_id, objective_id),
+        timestamp_utc=utc_now(),
+        operator=str(scope.get("operator_alias", "operator")),
+        sponsor_alias=scope["sponsor_alias"],
+        target_alias=str(objective.get("target_alias", "none")),
+        authorization_reference=str(scope["authorization"].get("reference", "")),
+        rules_of_engagement_reference=str(scope["rules_of_engagement"].get("reference", "")),
+        confidentiality_reference=scope["authorization"].get("confidentiality", {}).get("reference"),
+        case_id=objective_id,
+        tool="panel-lockout-risk-gate",
+        verifier_verdict=str(Verdict.MANUAL_REVIEW),
+        confidence="not_assessed",
+        campaign_id=state.campaign_id,
+        campaign_iteration_id=iteration_id,
+        parent_test_objective=str(objective.get("title", objective_id)),
+        module_name=str(objective.get("module", "")),
+        artifact_mapping=list(objective.get("artifact_mapping", [])),
+        target_category=str(objective.get("target_category", "placeholder")),
+        execution_mode="not_executed",
+        policy_decision=f"paused by {reason}",
+        request_count=0,
+        response_metadata={
+            "stop_condition": reason,
+            "status": "paused before execution for explicit human review",
+        },
+    )
+    write_manifest(manifest, evidence_dir)
+    relative_evidence = str(evidence_dir.relative_to(root))
+    state.evidence_directories.append(relative_evidence)
+    state.current_objective_id = objective_id
+    state.current_status = "paused_for_human_review"
+    state.pending_review = {
+        "objective_id": objective_id,
+        "phase": "pre_execution",
+        "reason": "authentication lockout risk requires human review",
+        "stop_condition": reason,
+        "evidence_directory": relative_evidence,
+    }
+    state.stop_condition_history.append(f"{objective_id}: {reason}")
+    state.next_iteration += 1
+    append_campaign_event(
+        state,
+        state_path,
+        event_type="campaign_paused",
+        iteration_id=iteration_id,
+        objective_id=objective_id,
+        module_name=str(objective.get("module", "")),
+        policy_decision=f"paused by {reason}",
+        outcome="paused_for_human_review",
+        evidence_directory=relative_evidence,
+        details={"phase": "pre_execution", "stop_condition": reason},
+    )
+
+
 def run_campaign(
     scope: dict[str, Any],
     scope_path: Path,
@@ -217,6 +287,21 @@ def run_campaign(
         if objective_id in state.reviewed_objectives:
             objective["human_approved"] = True
         if max_steps is not None and steps >= max_steps:
+            break
+        if (
+            panel_lockout_risk_detected(objective)
+            and objective_id not in state.reviewed_objectives
+        ):
+            _record_panel_lockout_pause(
+                state=state,
+                scope=scope,
+                objective=objective,
+                root=root,
+                base_evidence=base_evidence,
+                state_path=state_path,
+            )
+            state.last_updated_time = utc_now()
+            save_state(state, state_path)
             break
         elapsed = elapsed_before_invocation + (clock() - invocation_started)
         proposed_requests = int(objective["parameters"]["request_budget"])
@@ -302,6 +387,29 @@ def run_campaign(
                 result.response_metadata if result else {"policy_reasons": list(decision.reasons)}
             ),
         )
+        if (
+            result
+            and objective.get("category") == "service_control_panel"
+            and isinstance(result.response_metadata, dict)
+            and isinstance(result.response_metadata.get("observation_plan"), dict)
+        ):
+            panel_record_path = write_panel_evidence_record(
+                objective,
+                evidence_dir,
+                policy_decision=decision.summary,
+                execution_mode="live_stub" if live else "dry_run",
+                tool=result.tool,
+                request_count=result.request_count,
+                response_metadata=result.response_metadata,
+            )
+            register_artifact(
+                manifest,
+                evidence_dir,
+                panel_record_path,
+                role="service_control_panel_evidence_record",
+                artifact_id="panel-evidence-record",
+                redaction_status="passed",
+            )
         write_manifest(manifest, evidence_dir)
         relative_evidence = str(evidence_dir.relative_to(root))
         if relative_evidence not in state.evidence_directories:

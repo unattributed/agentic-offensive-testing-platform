@@ -14,3 +14,8 @@ Each bounded iteration:
 10. makes evidence available to reporting.
 
 Iteration, runtime, request, endpoint, and payload budgets are hard limits. Model suggestions never become authorization.
+
+Service control panel objectives include an explicit panel alias, panel type, and non-empty safe
+observation list. Panel campaigns must declare `authentication_lockout_risk` as a stop condition.
+An objective with `lockout_risk_detected: true` writes a zero-request pause record before execution
+and can resume only after a human decision bound to the exact campaign checkpoint.

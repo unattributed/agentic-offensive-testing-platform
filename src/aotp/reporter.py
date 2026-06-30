@@ -2,19 +2,24 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
 from .evidence import load_manifest, verify_evidence_directory
 from .finding_candidate import load_candidate
-from .report_review import report_inclusion_allowed
+from .panel_evidence import validate_panel_evidence_record
+from .report_review import manifest_requires_report_review, report_inclusion_allowed
 
 
 def _text(value: Any) -> str:
     return str(value).replace("\r", " ").replace("\n", " ").strip()
 
 
-def _render_evidence(data: dict[str, Any]) -> str:
+def _render_evidence(
+    data: dict[str, Any],
+    panel_record: dict[str, Any] | None = None,
+) -> str:
     mappings = data.get("wstg_mapping") or data.get("artifact_mapping") or []
     lines = [
         f"### Case `{_text(data.get('case_id', 'unknown'))}`",
@@ -28,6 +33,22 @@ def _render_evidence(data: dict[str, Any]) -> str:
         f"- Redaction: `{_text(data.get('redaction_status', 'unknown'))}`",
         f"- Manifest SHA256: `{_text(data.get('manifest_sha256', 'unknown'))}`",
     ]
+    if panel_record is not None:
+        lines.extend(
+            [
+                "",
+                "#### Captured service control panel fields",
+                "",
+                f"- Panel alias: `{_text(panel_record['panel_alias'])}`",
+                f"- Panel type: `{_text(panel_record['panel_type'])}`",
+                f"- Network silent: `{panel_record['network_silent']}`",
+                f"- Request count: `{panel_record['request_count']}`",
+                "- Planned observations: `"
+                + _text(", ".join(panel_record["planned_observations"]))
+                + "`",
+                f"- Evidence status: `{_text(panel_record['report_inclusion_status'])}`",
+            ]
+        )
     return "\n".join(lines)
 
 
@@ -45,6 +66,8 @@ def _render_candidate(candidate) -> str:
             f"- Evidence strength: `{candidate.evidence_strength}`",
             f"- Report review required: `{candidate.report_review_required}`",
             f"- Report review status: `{_text(candidate.report_review_status)}`",
+            f"- Report reviewer: `{_text(candidate.report_reviewer)}`",
+            f"- Report review SHA256: `{_text(candidate.report_review_sha256)}`",
             f"- Evidence manifest SHA256: `{candidate.evidence_manifest_sha256}`",
             f"- Fingerprint: `{candidate.fingerprint}`",
             "",
@@ -63,22 +86,65 @@ def generate_markdown(
     failures = verify_evidence_directory(evidence_root)
     if failures:
         raise ValueError("evidence verification failed: " + "; ".join(failures))
-    manifests = [
-        load_manifest(path)
+    manifest_entries = [
+        (path, load_manifest(path))
         for path in sorted(evidence_root.rglob("evidence.json"))
     ]
-    manifest_hashes = {manifest.manifest_sha256 for manifest in manifests}
+    manifests_by_hash = {
+        manifest.manifest_sha256: (path, manifest)
+        for path, manifest in manifest_entries
+    }
+    panel_records: dict[str, dict[str, Any]] = {}
+    for manifest_path, manifest in manifest_entries:
+        if not manifest_requires_report_review(manifest):
+            continue
+        artifacts = [
+            artifact
+            for artifact in manifest.artifacts
+            if artifact.get("role") == "service_control_panel_evidence_record"
+        ]
+        has_observation_plan = isinstance(
+            manifest.response_metadata.get("observation_plan"), dict
+        )
+        if has_observation_plan and len(artifacts) != 1:
+            raise ValueError(
+                f"panel evidence {manifest.case_id} requires exactly one panel evidence record"
+            )
+        if not artifacts:
+            continue
+        if len(artifacts) != 1:
+            raise ValueError(
+                f"panel evidence {manifest.case_id} has duplicate panel evidence records"
+            )
+        artifact_path = manifest_path.parent / artifacts[0]["redacted_path"]
+        try:
+            record = json.loads(artifact_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"panel evidence record is invalid: {artifact_path}") from exc
+        if not isinstance(record, dict):
+            raise ValueError(f"panel evidence record is invalid: {artifact_path}")
+        validate_panel_evidence_record(record)
+        if (
+            record["case_id"] != manifest.case_id
+            or record["target_alias"] != manifest.target_alias
+        ):
+            raise ValueError("panel evidence record does not match its manifest")
+        panel_records[manifest.manifest_sha256 or ""] = record
 
     ready_candidates = []
     excluded_count = 0
     if findings_directory is not None:
         for path in sorted(Path(findings_directory).rglob("*.json")):
             candidate = load_candidate(path)
-            if candidate.evidence_manifest_sha256 not in manifest_hashes:
+            matched = manifests_by_hash.get(candidate.evidence_manifest_sha256)
+            if matched is None:
                 raise ValueError(
                     f"finding {candidate.finding_id} references evidence outside the report set"
                 )
-            if candidate.state == "ready_for_report" and report_inclusion_allowed(candidate):
+            _, manifest = matched
+            if candidate.state == "ready_for_report" and report_inclusion_allowed(
+                candidate, manifest
+            ):
                 ready_candidates.append(candidate)
             else:
                 excluded_count += 1
@@ -88,7 +154,7 @@ def generate_markdown(
         "",
         "This draft is generated only from integrity-verified evidence and report-ready finding candidates. It does not infer vulnerabilities, impact, exploitability, affected assets, or remediation.",
         "",
-        f"Verified evidence records: `{len(manifests)}`",
+        f"Verified evidence records: `{len(manifest_entries)}`",
         f"Report-ready findings: `{len(ready_candidates)}`",
         f"Excluded non-ready candidates: `{excluded_count}`",
         "",
@@ -105,7 +171,14 @@ def generate_markdown(
             ]
         )
     lines.extend(["## Evidence appendix", ""])
-    lines.extend(_render_evidence(asdict_manifest(manifest)) + "\n" for manifest in manifests)
+    lines.extend(
+        _render_evidence(
+            asdict_manifest(manifest),
+            panel_records.get(manifest.manifest_sha256 or ""),
+        )
+        + "\n"
+        for _, manifest in manifest_entries
+    )
     return "\n".join(lines).rstrip() + "\n"
 
 

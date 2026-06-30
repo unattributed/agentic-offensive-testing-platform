@@ -89,7 +89,9 @@ def build_panel_evidence_record(
         "finding_claims": plan.get("finding_claims", []),
         "report_inclusion_status": "excluded_pending_review",
         "redaction_status": "passed",
-        "evidence_mappings": _text_list(case.get("evidence_mappings")),
+        "evidence_mappings": _text_list(
+            case.get("evidence_mappings") or case.get("artifact_mapping")
+        ),
         "safety_boundary": {
             "login_attempts": "not_performed",
             "credential_checks": "not_performed",

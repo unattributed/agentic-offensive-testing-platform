@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .control_panel import PANEL_SAFE_OBSERVATIONS, PANEL_UNSAFE_ACTIONS
+from .bounded_fuzzing import FUZZING_SAFE_PAYLOAD_CLASSES, FUZZING_UNSAFE_ACTIONS
 
 @dataclass(frozen=True)
 class AdapterCapability:
@@ -204,6 +205,23 @@ def module_summary() -> dict[str, Any]:
                 "report_inclusion_status": "excluded_pending_review",
                 "report_review_gating": True,
                 "denied_actions": sorted(PANEL_UNSAFE_ACTIONS),
+            },
+            {
+                "module_id": "bounded_fuzzing",
+                "display_name": "Bounded fuzzing",
+                "default_execution_mode": "dry_run",
+                "network_silent_default": True,
+                "adapter_contracts": [],
+                "required_scope_fields": [
+                    "target_alias",
+                    "api",
+                    "payload_budget",
+                    "request_budget",
+                    "per_endpoint_limit",
+                ],
+                "supported_capabilities": sorted(FUZZING_SAFE_PAYLOAD_CLASSES),
+                "evidence_artifacts": ["evidence.json", "fuzzing-evidence.json"],
+                "denied_actions": sorted(FUZZING_UNSAFE_ACTIONS),
             },
         ]
     }

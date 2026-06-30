@@ -1,11 +1,28 @@
 id: bounded-fuzzing
 module: bounded_fuzzing
 category: bounded_fuzzing
-action: active_fuzzing
+action: plan_bounded_fuzzing
 target_alias: local-placeholder
 target_category: api
 domain: example.invalid
 service: https
 api: placeholder-api
 state_changing: false
-requires_human_approval: true
+requires_human_approval: false
+payload_classes:
+  - boundary_value
+payload_count: 1
+endpoint_request_budgets:
+  placeholder-api-root: 1
+max_response_bytes: 65536
+max_retries: 0
+max_runtime_seconds: 1
+corpus_reference:
+  schema_version: "1.0"
+  alias: private-corpus-placeholder
+  sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  size_bytes: 1
+  payload_count: 1
+  payload_class: boundary_value
+  source: external_private_corpus
+detected_stop_signals: []

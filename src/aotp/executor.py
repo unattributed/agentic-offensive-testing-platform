@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from .bounded_fuzzing import build_fuzzing_dry_run_plan
 from .control_panel import build_panel_dry_run_observation_plan
 from .verifier import Verdict
 
@@ -40,6 +41,17 @@ def execute(objective: dict[str, Any], *, live: bool = False) -> ExecutionResult
             {
                 "status": "safe panel observations planned only; no network request was sent",
                 "observation_plan": plan,
+            },
+        )
+    if objective.get("category") == "bounded_fuzzing":
+        plan = build_fuzzing_dry_run_plan(objective)
+        return ExecutionResult(
+            Verdict.INCONCLUSIVE,
+            "bounded-fuzzing-dry-run-planner",
+            0,
+            {
+                "status": "bounded fuzzing planned only; no network request was sent",
+                "fuzzing_plan": plan,
             },
         )
     return ExecutionResult(

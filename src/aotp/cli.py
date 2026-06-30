@@ -8,6 +8,7 @@ import sys
 import uuid
 from pathlib import Path
 
+from .bounded_fuzzing import build_corpus_reference, write_corpus_reference
 from .campaign import load_campaign
 from .campaign_loop import run_campaign
 from .campaign_state import load_state, save_state
@@ -24,6 +25,7 @@ from .evidence import (
     write_manifest,
 )
 from .panel_evidence import write_panel_evidence_record
+from .fuzzing_evidence import write_fuzzing_evidence_record
 from .executor import execute
 from .policy_gate import evaluate
 from .reporter import generate_markdown
@@ -60,6 +62,11 @@ def _build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--live", action="store_true")
     commands.add_parser("list-cases")
     commands.add_parser("list-modules")
+    corpus_reference = commands.add_parser("fuzzing-corpus-reference")
+    corpus_reference.add_argument("--corpus", required=True)
+    corpus_reference.add_argument("--alias", required=True)
+    corpus_reference.add_argument("--payload-class", required=True)
+    corpus_reference.add_argument("--output", required=True)
     template_verify = commands.add_parser("template-source-verify")
     template_verify.add_argument("--registry", required=True)
     template_verify.add_argument("--source", required=True)
@@ -234,6 +241,34 @@ def _run_case(args: argparse.Namespace) -> int:
             artifact_id="panel-evidence-record",
             redaction_status="passed",
         )
+    if (
+        result
+        and case.get("category") == "bounded_fuzzing"
+        and isinstance(result.response_metadata, dict)
+        and isinstance(result.response_metadata.get("fuzzing_plan"), dict)
+    ):
+        fuzzing_record_path = write_fuzzing_evidence_record(
+            case,
+            evidence_dir,
+            policy_decision=decision.summary,
+            execution_mode="live_stub" if args.live else "dry_run",
+            tool=result.tool,
+            request_count=result.request_count,
+            response_metadata=result.response_metadata,
+        )
+        register_artifact(
+            manifest,
+            evidence_dir,
+            fuzzing_record_path,
+            role="bounded_fuzzing_evidence_record",
+            artifact_id="fuzzing-evidence-record",
+            redaction_status="passed",
+        )
+        corpus_reference = result.response_metadata["fuzzing_plan"].get(
+            "corpus_reference"
+        )
+        if isinstance(corpus_reference, dict):
+            manifest.fuzzing_corpus_reference = str(corpus_reference.get("alias", ""))
     path = write_manifest(manifest, evidence_dir)
     print(json.dumps({"allowed": decision.allowed, "decision": decision.summary, "evidence": str(path)}))
     return 0 if decision.allowed else 2
@@ -268,6 +303,24 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "list-modules":
             for name in ("wstg_webapp", "service_control_panel", "bounded_fuzzing", "sbom_review", "crypto_controls"):
                 print(name)
+            return 0
+        if args.command == "fuzzing-corpus-reference":
+            reference = build_corpus_reference(
+                args.corpus,
+                alias=args.alias,
+                payload_class=args.payload_class,
+            )
+            path = write_corpus_reference(reference, args.output)
+            print(
+                json.dumps(
+                    {
+                        "alias": reference["alias"],
+                        "sha256": reference["sha256"],
+                        "payload_count": reference["payload_count"],
+                        "path": str(path),
+                    }
+                )
+            )
             return 0
         if args.command == "template-source-verify":
             loaded = load_yaml(args.registry)

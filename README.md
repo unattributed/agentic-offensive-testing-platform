@@ -94,6 +94,14 @@ aotp campaign-run \
   --campaign campaigns/service-control-panel-campaign.example.yaml
 ```
 
+Run the network-silent bounded fuzzing campaign:
+
+```bash
+aotp campaign-run \
+  --scope config/scope.fuzzing-dry-run.example.yaml \
+  --campaign campaigns/bounded-fuzzing-campaign.example.yaml
+```
+
 Run the same deterministic engine under durable LangGraph orchestration:
 
 ```bash
@@ -151,6 +159,10 @@ evidence.json -> report-review-create -> finding-create --report-review <decisio
 
 The reporter independently re-derives this requirement from the evidence manifest and renders only
 validated fields from the hashed `panel-evidence.json` artifact.
+
+Bounded fuzzing is network-silent in this release. Private corpora are reduced to local SHA256
+reference records, planned request budgets are evidence-bound, and safety signals stop campaigns
+before execution.
 
 Bug bounty drafts remain drafts until a human approves them. AOTP has no submission adapter.
 

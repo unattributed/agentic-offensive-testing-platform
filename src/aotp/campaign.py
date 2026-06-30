@@ -12,10 +12,12 @@ from .config import (
     require_bool,
     require_list,
     require_mapping,
+    require_non_negative_int,
     require_positive_int,
     require_text,
     require_text_list,
 )
+from .bounded_fuzzing import FUZZING_STOP_SIGNALS
 
 
 SUPPORTED_MODULES = {
@@ -36,6 +38,8 @@ SUPPORTED_STOP_CONDITIONS = {
     "request_limit",
     "target_instability",
     "authentication_lockout_risk",
+    "response_size_limit",
+    "retry_limit",
     "redaction_failure",
 }
 
@@ -209,6 +213,14 @@ def parse_campaign(data: dict[str, Any]) -> CampaignDefinition:
         "requested_observations",
         "safe_observation_only",
         "lockout_risk_detected",
+        "payload_classes",
+        "payload_count",
+        "endpoint_request_budgets",
+        "max_response_bytes",
+        "max_retries",
+        "max_runtime_seconds",
+        "corpus_reference",
+        "detected_stop_signals",
     }
     for index, raw_objective in enumerate(raw_objectives):
         field = f"objectives[{index}]"
@@ -257,6 +269,56 @@ def parse_campaign(data: dict[str, Any]) -> CampaignDefinition:
                     objective["lockout_risk_detected"],
                     f"{field}.lockout_risk_detected",
                 )
+        if module == "bounded_fuzzing":
+            require_text_list(
+                objective.get("payload_classes"),
+                f"{field}.payload_classes",
+                allow_empty=False,
+            )
+            require_positive_int(
+                objective.get("payload_count"),
+                f"{field}.payload_count",
+            )
+            endpoint_budgets = require_mapping(
+                objective.get("endpoint_request_budgets"),
+                f"{field}.endpoint_request_budgets",
+            )
+            if not endpoint_budgets:
+                raise ConfigError(f"{field}.endpoint_request_budgets must not be empty")
+            for alias, count in endpoint_budgets.items():
+                require_text(alias, f"{field}.endpoint_request_budgets key")
+                require_positive_int(
+                    count,
+                    f"{field}.endpoint_request_budgets.{alias}",
+                )
+            require_positive_int(
+                objective.get("max_response_bytes"),
+                f"{field}.max_response_bytes",
+            )
+            require_non_negative_int(
+                objective.get("max_retries"),
+                f"{field}.max_retries",
+            )
+            require_positive_int(
+                objective.get("max_runtime_seconds"),
+                f"{field}.max_runtime_seconds",
+            )
+            if "corpus_reference" in objective:
+                require_mapping(
+                    objective["corpus_reference"],
+                    f"{field}.corpus_reference",
+                )
+            if "detected_stop_signals" in objective:
+                stop_signals = require_text_list(
+                    objective["detected_stop_signals"],
+                    f"{field}.detected_stop_signals",
+                )
+                unsupported_signals = sorted(set(stop_signals) - FUZZING_STOP_SIGNALS)
+                if unsupported_signals:
+                    raise ConfigError(
+                        f"{field}.detected_stop_signals contains unsupported signals: "
+                        + ", ".join(unsupported_signals)
+                    )
         objectives.append(
             CampaignObjective(
                 objective_id=require_text(objective.get("id"), f"{field}.id"),
@@ -282,6 +344,23 @@ def parse_campaign(data: dict[str, Any]) -> CampaignDefinition:
         if "authentication_lockout_risk" not in stop_conditions:
             raise ConfigError(
                 "service control panel campaigns require authentication_lockout_risk stop condition"
+            )
+    if any(objective.module == "bounded_fuzzing" for objective in objectives):
+        required_fuzzing_stops = {
+            "authentication_lockout_risk",
+            "request_limit",
+            "response_size_limit",
+            "retry_limit",
+            "runtime_limit",
+            "target_instability",
+        }
+        missing_fuzzing_stops = sorted(
+            required_fuzzing_stops - set(stop_conditions)
+        )
+        if missing_fuzzing_stops:
+            raise ConfigError(
+                "bounded fuzzing campaign is missing required stop conditions: "
+                + ", ".join(missing_fuzzing_stops)
             )
     return CampaignDefinition(
         campaign_id=campaign_id,

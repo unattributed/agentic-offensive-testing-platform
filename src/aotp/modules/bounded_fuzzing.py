@@ -1,6 +1,11 @@
+"""Canonical bounded fuzzing module contract."""
+
+from ..bounded_fuzzing import FUZZING_SAFE_PAYLOAD_CLASSES, FUZZING_UNSAFE_ACTIONS
+
+
 MODULE = {
     "name": "bounded_fuzzing",
-    "supports": ("endpoint", "parameter", "form", "api", "file_input"),
+    "supports": tuple(sorted(FUZZING_SAFE_PAYLOAD_CLASSES)),
     "requires": ("explicit_fuzzing_authorization", "payload_budget", "request_budget", "rate_limits"),
-    "denies": ("high_volume", "destructive_payloads", "authentication_abuse", "payment_or_kyc"),
+    "denies": tuple(sorted(FUZZING_UNSAFE_ACTIONS)),
 }

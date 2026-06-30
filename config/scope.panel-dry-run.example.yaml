@@ -58,9 +58,26 @@ rate_limits:
 fuzzing:
   authorized: false
   state_changing_authorized: false
+  approved_actions: []
+  denied_actions:
+    - authentication_abuse
+    - destructive_fuzzing
+    - high_volume_fuzzing
+    - kyc_workflow_fuzzing
+    - payment_workflow_fuzzing
+    - recovery_workflow_fuzzing
+    - support_workflow_fuzzing
+  safe_payload_classes:
+    - boundary_value
+    - empty_value
+    - encoded_literal
+    - format_literal
+    - type_variation
   payload_budget: 1
   request_budget: 1
   per_endpoint_limit: 1
+  max_response_bytes: 65536
+  max_retries: 0
   max_runtime_seconds: 1
 service_control_panels:
   authorized: true

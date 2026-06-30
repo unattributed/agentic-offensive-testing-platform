@@ -1,0 +1,63 @@
+schema_version: "1.0"
+campaign_id: example-bounded-fuzzing-dry-run
+name: Authorized bounded fuzzing dry run
+description: Plans one network-silent, budget-constrained fuzzing objective.
+limits:
+  max_iterations: 2
+  max_runtime_seconds: 30
+  max_requests: 1
+  max_consecutive_failures: 1
+execution:
+  default_mode: dry_run
+  continue_on_inconclusive: true
+  pause_on_manual_review: true
+  stop_on_policy_denial: true
+stop_conditions:
+  - operator_stop
+  - policy_denial
+  - human_review
+  - request_limit
+  - response_size_limit
+  - retry_limit
+  - runtime_limit
+  - target_instability
+  - authentication_lockout_risk
+objectives:
+  - id: bounded-fuzzing-plan
+    title: Plan bounded fuzzing against an approved API alias
+    module: bounded_fuzzing
+    category: bounded_fuzzing
+    action: plan_bounded_fuzzing
+    target_alias: local-placeholder
+    target_category: api
+    domain: example.invalid
+    service: https
+    api: placeholder-api
+    state_changing: false
+    payload_classes:
+      - boundary_value
+    payload_count: 1
+    endpoint_request_budgets:
+      placeholder-api-root: 1
+    max_response_bytes: 65536
+    max_retries: 0
+    max_runtime_seconds: 1
+    corpus_reference:
+      schema_version: "1.0"
+      alias: private-corpus-placeholder
+      sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      size_bytes: 1
+      payload_count: 1
+      payload_class: boundary_value
+      source: external_private_corpus
+    detected_stop_signals: []
+    artifact_mapping:
+      - evidence_manifest
+      - fuzzing_evidence_record
+      - corpus_reference
+      - endpoint_request_budgets
+    priority: 10
+    depends_on: []
+    requires_human_approval: false
+    parameters:
+      request_budget: 0

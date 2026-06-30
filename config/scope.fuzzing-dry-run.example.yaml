@@ -1,5 +1,5 @@
 schema_version: "1.0"
-scope_id: example-dry-run
+scope_id: example-fuzzing-dry-run
 program_alias: example-program
 sponsor_alias: example-sponsor
 operator_alias: example-operator
@@ -56,9 +56,10 @@ rate_limits:
   requests_per_minute: 1
   max_requests: 5
 fuzzing:
-  authorized: false
+  authorized: true
   state_changing_authorized: false
-  approved_actions: []
+  approved_actions:
+    - plan_bounded_fuzzing
   denied_actions:
     - authentication_abuse
     - destructive_fuzzing

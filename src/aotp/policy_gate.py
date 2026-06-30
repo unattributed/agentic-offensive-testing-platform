@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import ConfigError, parse_operator_approval, parse_program_profile, parse_scope
-from .control_panel import denied_panel_actions
+from .control_panel import collect_panel_actions, denied_panel_actions, unsafe_panel_observations
 
 
 @dataclass(frozen=True)
@@ -172,6 +172,7 @@ def evaluate(
             (entry for entry in raw_panels if isinstance(entry, dict) and entry.get("alias") == panel_alias),
             None,
         )
+        unsafe_panel_actions = sorted(denied_panel_actions(objective))
         if not panel_alias:
             reasons.append("panel alias is missing")
         elif panel is None:
@@ -182,10 +183,22 @@ def evaluate(
             objective_panel_type = objective.get("panel_type")
             if objective_panel_type and objective_panel_type != panel.get("panel_type"):
                 reasons.append("panel type does not match scoped panel")
-        unsafe_panel_actions = sorted(denied_panel_actions(objective))
+            approved_actions = set(panel.get("approved_actions", []))
+            unapproved_actions = sorted(
+                action
+                for action in collect_panel_actions(objective)
+                if action not in approved_actions and action not in unsafe_panel_actions
+            )
+            if unapproved_actions:
+                reasons.append("panel action is not explicitly approved: " + ", ".join(unapproved_actions))
         if unsafe_panel_actions:
             reasons.append(
                 "panel action is denied by safety boundary: " + ", ".join(unsafe_panel_actions)
+            )
+        unsafe_observations = sorted(unsafe_panel_observations(objective))
+        if unsafe_observations:
+            reasons.append(
+                "panel observation is not approved as safe: " + ", ".join(unsafe_observations)
             )
 
     if category == "sbom_review":

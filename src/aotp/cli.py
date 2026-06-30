@@ -26,6 +26,7 @@ from .evidence import (
 )
 from .panel_evidence import write_panel_evidence_record
 from .fuzzing_evidence import write_fuzzing_evidence_record
+from .sbom_review import write_sbom_record
 from .executor import execute
 from .policy_gate import evaluate
 from .reporter import generate_markdown
@@ -179,6 +180,14 @@ def _load_optional(path: str | None) -> dict | None:
 def _run_case(args: argparse.Namespace) -> int:
     scope_path, scope = _load_scope(args.scope)
     case = load_yaml(args.case).data
+    if case.get("category") == "sbom_review" and isinstance(case.get("artifact"), str):
+        candidates = [
+            (scope_path.parent / case["artifact"]).resolve(),
+            (scope_path.parent.parent / case["artifact"]).resolve(),
+            (Path.cwd() / case["artifact"]).resolve(),
+        ]
+        artifact_path = next((path for path in candidates if path.is_file()), candidates[0])
+        case["_resolved_artifact_path"] = str(artifact_path)
     profile = _load_optional(args.program_profile)
     approval = _load_optional(args.approval)
     decision = evaluate(
@@ -269,6 +278,24 @@ def _run_case(args: argparse.Namespace) -> int:
         )
         if isinstance(corpus_reference, dict):
             manifest.fuzzing_corpus_reference = str(corpus_reference.get("alias", ""))
+    if (
+        result
+        and case.get("category") == "sbom_review"
+        and isinstance(result.response_metadata.get("sbom_record"), dict)
+    ):
+        sbom_path = write_sbom_record(
+            result.response_metadata["sbom_record"],
+            evidence_dir,
+        )
+        register_artifact(
+            manifest,
+            evidence_dir,
+            sbom_path,
+            role="sbom_component_evidence",
+            artifact_id="sbom-component-evidence",
+            redaction_status="passed",
+        )
+        manifest.sbom_artifact = str(case.get("artifact", ""))
     path = write_manifest(manifest, evidence_dir)
     print(json.dumps({"allowed": decision.allowed, "decision": decision.summary, "evidence": str(path)}))
     return 0 if decision.allowed else 2

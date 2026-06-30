@@ -18,6 +18,7 @@ from .evidence import EvidenceManifest, register_artifact, utc_now, write_manife
 from .executor import execute
 from .panel_evidence import write_panel_evidence_record
 from .fuzzing_evidence import write_fuzzing_evidence_record
+from .sbom_review import write_sbom_record
 from .policy_gate import evaluate
 from .safety_budget import SafetyBudget
 from .scheduler import schedule
@@ -360,6 +361,17 @@ def run_campaign(
             continue
         if objective_id in state.reviewed_objectives:
             objective["human_approved"] = True
+        if (
+            objective.get("category") == "sbom_review"
+            and isinstance(objective.get("artifact"), str)
+        ):
+            candidates = [
+                (root / objective["artifact"]).resolve(),
+                (scope_path.parent / objective["artifact"]).resolve(),
+                (scope_path.parent.parent / objective["artifact"]).resolve(),
+            ]
+            artifact_path = next((path for path in candidates if path.is_file()), candidates[0])
+            objective["_resolved_artifact_path"] = str(artifact_path)
         if max_steps is not None and steps >= max_steps:
             break
         fuzzing_stop_signals = collect_fuzzing_stop_signals(objective)
@@ -528,6 +540,24 @@ def run_campaign(
                 manifest.fuzzing_corpus_reference = str(
                     corpus_reference.get("alias", "")
                 )
+        if (
+            result
+            and objective.get("category") == "sbom_review"
+            and isinstance(result.response_metadata.get("sbom_record"), dict)
+        ):
+            sbom_path = write_sbom_record(
+                result.response_metadata["sbom_record"],
+                evidence_dir,
+            )
+            register_artifact(
+                manifest,
+                evidence_dir,
+                sbom_path,
+                role="sbom_component_evidence",
+                artifact_id="sbom-component-evidence",
+                redaction_status="passed",
+            )
+            manifest.sbom_artifact = str(objective.get("artifact", ""))
         write_manifest(manifest, evidence_dir)
         relative_evidence = str(evidence_dir.relative_to(root))
         if relative_evidence not in state.evidence_directories:

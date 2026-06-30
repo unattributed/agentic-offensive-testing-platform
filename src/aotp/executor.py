@@ -7,6 +7,7 @@ from typing import Any
 
 from .bounded_fuzzing import build_fuzzing_dry_run_plan
 from .control_panel import build_panel_dry_run_observation_plan
+from .sbom_review import ingest_sbom_artifact
 from .verifier import Verdict
 
 
@@ -52,6 +53,23 @@ def execute(objective: dict[str, Any], *, live: bool = False) -> ExecutionResult
             {
                 "status": "bounded fuzzing planned only; no network request was sent",
                 "fuzzing_plan": plan,
+            },
+        )
+    if objective.get("category") == "sbom_review":
+        artifact_path = objective.get("_resolved_artifact_path")
+        if not isinstance(artifact_path, str):
+            raise ValueError("provided SBOM artifact path was not resolved")
+        record = ingest_sbom_artifact(
+            artifact_path,
+            str(objective.get("artifact", "")),
+        )
+        return ExecutionResult(
+            Verdict.INCONCLUSIVE,
+            "offline-sbom-review",
+            0,
+            {
+                "status": "provided dependency artifact reviewed locally",
+                "sbom_record": record,
             },
         )
     return ExecutionResult(

@@ -271,6 +271,15 @@ def evaluate(
         provided = set(scope.get("provided_artifacts", []))
         if not objective.get("artifact") or objective.get("artifact") not in provided:
             reasons.append("SBOM or configuration artifact was not provided")
+        artifact = objective.get("artifact")
+        if isinstance(artifact, str):
+            artifact_path = Path(artifact)
+            if artifact_path.is_absolute() or ".." in artifact_path.parts:
+                reasons.append("provided artifact path must remain relative")
+        if objective.get("vulnerability_data_source") is not None:
+            source = objective.get("vulnerability_data_source")
+            if not isinstance(source, dict) or source.get("network_lookup") is not False:
+                reasons.append("vulnerability mapping requires an offline configured data source")
 
     if category == "crypto_controls" and not scope.get("cryptographic_controls", {}).get("authorized"):
         reasons.append("cryptographic controls review is not explicitly scoped")

@@ -1,0 +1,13 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "name": "placeholder-component",
+      "purl": "pkg:generic/placeholder-component@0.0.0",
+      "type": "library",
+      "version": "0.0.0"
+    }
+  ],
+  "specVersion": "1.5",
+  "version": 1
+}

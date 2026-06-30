@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import uuid
 from dataclasses import asdict
 from pathlib import Path
@@ -22,6 +23,12 @@ def _hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _mapping_hash(value: dict[str, Any]) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    ).hexdigest()
+
+
 def run_campaign(
     scope: dict[str, Any],
     scope_path: Path,
@@ -39,6 +46,7 @@ def run_campaign(
     state = CampaignState(
         campaign_id=campaign["campaign_id"],
         campaign_name=campaign["name"],
+        campaign_definition_hash=_mapping_hash(campaign),
         scope_file_hash=_hash(scope_path),
         rules_of_engagement_reference=str(scope["rules_of_engagement"].get("reference", "")),
         authorization_reference=str(scope["authorization"].get("reference", "")),
@@ -123,13 +131,16 @@ def run_campaign(
         state.request_counters["total"] += manifest.request_count
         budget.record(manifest.request_count)
         event = CampaignEvent(
-            iteration_id,
-            utc_now(),
-            objective_id,
-            str(objective.get("module", "")),
-            decision.summary,
-            str(outcome),
-            str(evidence_dir.relative_to(root)),
+            sequence=len(state.events) + 1,
+            event_id=str(uuid.uuid4()),
+            iteration_id=iteration_id,
+            timestamp_utc=utc_now(),
+            event_type="objective_result",
+            objective_id=objective_id,
+            module_name=str(objective.get("module", "")),
+            policy_decision=decision.summary,
+            outcome=str(outcome),
+            evidence_directory=str(evidence_dir.relative_to(root)),
         )
         state.events.append(asdict(event))
         state.last_updated_time = utc_now()

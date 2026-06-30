@@ -1,5 +1,7 @@
+schema_version: "1.0"
 base_url: http://localhost:11434
 default_model: qwen3:8b
+timeout_seconds: 10
 models:
   - qwen3:8b
   - qwen2.5-coder:7b

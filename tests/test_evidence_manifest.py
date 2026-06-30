@@ -3,7 +3,14 @@ import stat
 
 import pytest
 
-from aotp.evidence import EvidenceManifest, load_manifest, sha256_file, verify_evidence_directory, write_manifest
+from aotp.evidence import (
+    EvidenceManifest,
+    load_manifest,
+    register_artifact,
+    sha256_file,
+    verify_evidence_directory,
+    write_manifest,
+)
 
 
 def make_manifest():
@@ -55,3 +62,48 @@ def test_manifest_rejects_invalid_required_fields():
     manifest.request_count = -1
     with pytest.raises(ValueError, match="request_count"):
         manifest.validate()
+
+
+def test_registered_artifact_is_verified_and_modification_is_detected(tmp_path):
+    artifact = tmp_path / "response.txt"
+    artifact.write_text("synthetic response metadata", encoding="utf-8")
+    manifest = make_manifest()
+    record = register_artifact(
+        manifest,
+        tmp_path,
+        "response.txt",
+        role="response_metadata",
+        artifact_id="response-1",
+    )
+    assert record["raw_sha256"] == record["redacted_sha256"]
+    write_manifest(manifest, tmp_path)
+    assert verify_evidence_directory(tmp_path) == []
+    artifact.write_text("modified", encoding="utf-8")
+    assert verify_evidence_directory(tmp_path) == [
+        "artifact verification failed: response.txt"
+    ]
+
+
+def test_artifact_registration_rejects_escape_and_symlink(tmp_path):
+    outside = tmp_path.parent / "outside-artifact.txt"
+    outside.write_text("outside", encoding="utf-8")
+    with pytest.raises(ValueError, match="outside evidence"):
+        register_artifact(
+            make_manifest(),
+            tmp_path,
+            outside,
+            role="invalid",
+            artifact_id="outside",
+        )
+    target = tmp_path / "target.txt"
+    target.write_text("target", encoding="utf-8")
+    link = tmp_path / "link.txt"
+    link.symlink_to(target)
+    with pytest.raises(ValueError, match="non-symlink"):
+        register_artifact(
+            make_manifest(),
+            tmp_path,
+            link,
+            role="invalid",
+            artifact_id="link",
+        )

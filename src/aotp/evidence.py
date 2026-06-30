@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import tempfile
+import mimetypes
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -68,6 +69,7 @@ class EvidenceManifest:
     sha256_hashes: dict[str, str] = field(default_factory=dict)
     schema_version: str = "1.0"
     manifest_sha256: str | None = None
+    artifacts: list[dict[str, Any]] = field(default_factory=list)
 
     def validate(self) -> None:
         if self.schema_version != "1.0":
@@ -114,6 +116,34 @@ class EvidenceManifest:
                 raise ValueError("artifact hash paths must remain relative to evidence directory")
             if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
                 raise ValueError("artifact hashes must be lowercase SHA256 digests")
+        for index, artifact in enumerate(self.artifacts):
+            if not isinstance(artifact, dict):
+                raise ValueError(f"artifacts[{index}] must be a mapping")
+            required_artifact = {
+                "artifact_id",
+                "role",
+                "path",
+                "redacted_path",
+                "media_type",
+                "size_bytes",
+                "raw_sha256",
+                "redacted_sha256",
+                "redaction_status",
+            }
+            if set(artifact) != required_artifact:
+                raise ValueError(f"artifacts[{index}] fields are invalid")
+            for path_field in ("path", "redacted_path"):
+                artifact_path = Path(str(artifact[path_field]))
+                if artifact_path.is_absolute() or ".." in artifact_path.parts:
+                    raise ValueError("artifact paths must remain relative to evidence directory")
+            if not isinstance(artifact["size_bytes"], int) or artifact["size_bytes"] < 0:
+                raise ValueError("artifact size must be a non-negative integer")
+            for hash_field in ("raw_sha256", "redacted_sha256"):
+                digest = artifact[hash_field]
+                if len(digest) != 64 or any(
+                    character not in "0123456789abcdef" for character in digest
+                ):
+                    raise ValueError("artifact hashes must be lowercase SHA256 digests")
         encoded = json.dumps(asdict(self), sort_keys=True)
         assert_redacted(encoded)
         assert_value_redacted(asdict(self))
@@ -164,6 +194,60 @@ def load_manifest(path: str | Path) -> EvidenceManifest:
         raise ValueError(f"evidence manifest is invalid: {path}: {exc}") from exc
 
 
+def register_artifact(
+    manifest: EvidenceManifest,
+    evidence_directory: str | Path,
+    artifact_path: str | Path,
+    *,
+    role: str,
+    artifact_id: str,
+    redacted_path: str | Path | None = None,
+    redaction_status: str = "not_required",
+) -> dict[str, Any]:
+    root = Path(evidence_directory).resolve()
+    raw_candidate = Path(artifact_path)
+    raw_candidate = raw_candidate if raw_candidate.is_absolute() else root / raw_candidate
+    if raw_candidate.is_symlink():
+        raise ValueError("artifact must be a regular non-symlink file")
+    raw = raw_candidate.resolve()
+    try:
+        relative = raw.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("artifact path is outside evidence directory") from exc
+    if not raw.is_file():
+        raise ValueError("artifact must be a regular non-symlink file")
+    redacted = raw
+    if redacted_path is not None:
+        redacted_candidate = Path(redacted_path)
+        redacted_candidate = (
+            redacted_candidate if redacted_candidate.is_absolute() else root / redacted_candidate
+        )
+        if redacted_candidate.is_symlink():
+            raise ValueError("redacted artifact must be a regular non-symlink file")
+        redacted = redacted_candidate.resolve()
+        try:
+            redacted.relative_to(root)
+        except ValueError as exc:
+            raise ValueError("redacted artifact path is outside evidence directory") from exc
+        if not redacted.is_file():
+            raise ValueError("redacted artifact must be a regular non-symlink file")
+    record = {
+        "artifact_id": artifact_id,
+        "role": role,
+        "path": relative.as_posix(),
+        "redacted_path": redacted.relative_to(root).as_posix(),
+        "media_type": mimetypes.guess_type(raw.name)[0] or "application/octet-stream",
+        "size_bytes": raw.stat().st_size,
+        "raw_sha256": sha256_file(raw),
+        "redacted_sha256": sha256_file(redacted),
+        "redaction_status": redaction_status,
+    }
+    if any(item["artifact_id"] == artifact_id for item in manifest.artifacts):
+        raise ValueError(f"duplicate artifact id: {artifact_id}")
+    manifest.artifacts.append(record)
+    return record
+
+
 def verify_evidence_directory(directory: str | Path) -> list[str]:
     root = Path(directory)
     failures: list[str] = []
@@ -177,6 +261,29 @@ def verify_evidence_directory(directory: str | Path) -> list[str]:
                 artifact = path.parent / relative
                 if not artifact.is_file() or sha256_file(artifact) != expected:
                     failures.append(f"artifact hash mismatch: {relative}")
+            for artifact in manifest.artifacts:
+                artifact_path = (path.parent / artifact["path"]).resolve()
+                try:
+                    artifact_path.relative_to(path.parent.resolve())
+                except ValueError:
+                    failures.append(f"artifact path escapes evidence directory: {artifact['path']}")
+                    continue
+                if (
+                    not artifact_path.is_file()
+                    or artifact_path.is_symlink()
+                    or sha256_file(artifact_path) != artifact["raw_sha256"]
+                    or artifact_path.stat().st_size != artifact["size_bytes"]
+                ):
+                    failures.append(f"artifact verification failed: {artifact['path']}")
+                redacted_path = (path.parent / artifact["redacted_path"]).resolve()
+                if artifact["redacted_path"] != artifact["path"] and (
+                    not redacted_path.is_file()
+                    or redacted_path.is_symlink()
+                    or sha256_file(redacted_path) != artifact["redacted_sha256"]
+                ):
+                    failures.append(
+                        f"redacted artifact verification failed: {artifact['redacted_path']}"
+                    )
         except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
             failures.append(f"{path}: {exc}")
     return failures

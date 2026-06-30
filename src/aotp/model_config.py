@@ -31,6 +31,41 @@ class LocalModelConfig:
     redact_before_send: bool
     allow_remote_endpoint: bool
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "base_url", _validate_local_url(self.base_url))
+        if (
+            not isinstance(self.default_model, str)
+            or not self.default_model.strip()
+            or not isinstance(self.approved_models, tuple)
+            or not self.approved_models
+            or any(
+                not isinstance(model, str) or not model.strip()
+                for model in self.approved_models
+            )
+            or len(self.approved_models) != len(set(self.approved_models))
+            or self.default_model not in self.approved_models
+        ):
+            raise ConfigError(
+                "local model configuration requires a unique allowlist containing the default"
+            )
+        if (
+            not isinstance(self.timeout_seconds, int)
+            or isinstance(self.timeout_seconds, bool)
+            or self.timeout_seconds <= 0
+            or self.timeout_seconds > MAX_MODEL_TIMEOUT_SECONDS
+        ):
+            raise ConfigError(
+                f"timeout_seconds must be between 1 and {MAX_MODEL_TIMEOUT_SECONDS}"
+            )
+        if (
+            self.structured_json is not True
+            or self.redact_before_send is not True
+            or self.allow_remote_endpoint is not False
+        ):
+            raise ConfigError(
+                "local model configuration cannot weaken JSON, redaction, or endpoint rules"
+            )
+
     def approves(self, model: str) -> bool:
         return model in self.approved_models
 

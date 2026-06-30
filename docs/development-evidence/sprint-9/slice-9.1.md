@@ -8,7 +8,7 @@ Focused validation:
 
 ```text
 ./.venv/bin/python -m pytest -q tests/test_model_config.py
-8 passed
+10 passed
 ```
 
 No model service was contacted. No private scope, target, secret, or evidence was committed.

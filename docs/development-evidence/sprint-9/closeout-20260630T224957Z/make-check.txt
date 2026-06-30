@@ -1,0 +1,11 @@
+Command: make check
+Exit status: 2
+Output:
+python3 -m compileall -q src tests
+python3 -m pytest
+/bin/python3: No module named pytest
+make: *** [Makefile:12: test] Error 1
+
+Fallback command: make PYTHON=.venv/bin/python check
+Exit status: 0
+Result: compile passed; 292 tests passed; repository safety validation passed

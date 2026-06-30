@@ -168,7 +168,13 @@ Bug bounty drafts remain drafts until a human approves them. AOTP has no submiss
 
 ## Local models
 
-The Ollama adapter defaults to `http://localhost:11434`, requests structured JSON, and sanitizes prompts before sending them. Model examples include `qwen3:8b`, `qwen2.5-coder:7b`, `qwen2.5-coder:14b`, `deepseek-r1:8b`, and `qwen3-vl:8b`. Credentials, cookies, bearer tokens, session identifiers, private keys, and email addresses are blocked or redacted. See the [Ollama structured outputs documentation](https://docs.ollama.com/capabilities/structured-outputs).
+The Ollama adapter defaults to `http://localhost:11434`, requires an approved model, sends a
+non-streaming JSON-schema request with bounded time and response size, and sanitizes prompts
+recursively before transport. Planner output can select only an already approved objective.
+Verifier and report assistance can summarize only supplied evidence references and cannot set
+authorization, policy, verdict, confidence, impact, or severity. Invalid, secret-bearing, or
+out-of-schema output fails closed. See the
+[Ollama structured outputs documentation](https://docs.ollama.com/capabilities/structured-outputs).
 
 ## Integration boundaries
 

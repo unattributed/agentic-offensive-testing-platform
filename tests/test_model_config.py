@@ -5,7 +5,11 @@ from copy import deepcopy
 import pytest
 
 from aotp.config import ConfigError, load_yaml
-from aotp.model_config import load_local_model_config, parse_local_model_config
+from aotp.model_config import (
+    LocalModelConfig,
+    load_local_model_config,
+    parse_local_model_config,
+)
 
 
 def _config(project_root):
@@ -56,3 +60,29 @@ def test_model_config_rejects_weakened_rules_and_unbounded_timeout(project_root)
     unbounded["timeout_seconds"] = 31
     with pytest.raises(ConfigError, match="must not exceed"):
         parse_local_model_config(unbounded)
+
+
+def test_direct_model_config_construction_cannot_bypass_loopback_boundary():
+    with pytest.raises(ConfigError, match="loopback"):
+        LocalModelConfig(
+            base_url="https://models.example.invalid:11434",
+            default_model="approved:latest",
+            approved_models=("approved:latest",),
+            timeout_seconds=10,
+            structured_json=True,
+            redact_before_send=True,
+            allow_remote_endpoint=False,
+        )
+
+
+def test_direct_model_config_construction_cannot_weaken_rules():
+    with pytest.raises(ConfigError, match="cannot weaken"):
+        LocalModelConfig(
+            base_url="http://localhost:11434",
+            default_model="approved:latest",
+            approved_models=("approved:latest",),
+            timeout_seconds=10,
+            structured_json=True,
+            redact_before_send=False,
+            allow_remote_endpoint=False,
+        )

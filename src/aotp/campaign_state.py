@@ -70,6 +70,7 @@ class CampaignState:
     finding_candidates: list[str] = field(default_factory=list)
     evidence_directories: list[str] = field(default_factory=list)
     request_counters: dict[str, int] = field(default_factory=lambda: {"total": 0})
+    endpoint_request_counters: dict[str, int] = field(default_factory=dict)
     rate_limit_counters: dict[str, int] = field(default_factory=lambda: {"current_minute": 0})
     consecutive_failures: int = 0
     stop_condition_history: list[str] = field(default_factory=list)
@@ -133,6 +134,7 @@ def validate_state(state: CampaignState) -> None:
                 )
     for counter_name, counter in (
         ("request_counters", state.request_counters),
+        ("endpoint_request_counters", state.endpoint_request_counters),
         ("rate_limit_counters", state.rate_limit_counters),
     ):
         if not isinstance(counter, dict) or any(

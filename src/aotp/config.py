@@ -8,6 +8,11 @@ from typing import Any
 
 import yaml
 
+from .bounded_fuzzing import (
+    FUZZING_SAFE_PAYLOAD_CLASSES,
+    FUZZING_SUPPORTED_ACTIONS,
+    FUZZING_UNSAFE_ACTIONS,
+)
 from .control_panel import PANEL_SAFE_ACTIONS, PANEL_TYPES, PANEL_UNSAFE_ACTIONS
 
 
@@ -45,6 +50,21 @@ class PanelScope:
 
 
 @dataclass(frozen=True)
+class FuzzingScope:
+    authorized: bool
+    state_changing_authorized: bool
+    approved_actions: tuple[str, ...]
+    denied_actions: tuple[str, ...]
+    safe_payload_classes: tuple[str, ...]
+    payload_budget: int
+    request_budget: int
+    per_endpoint_limit: int
+    max_response_bytes: int
+    max_retries: int
+    max_runtime_seconds: int
+
+
+@dataclass(frozen=True)
 class ScopeConfig:
     schema_version: str
     scope_id: str
@@ -53,6 +73,7 @@ class ScopeConfig:
     operator_alias: str
     targets: tuple[TargetScope, ...]
     panels: tuple[PanelScope, ...]
+    fuzzing: FuzzingScope
     allowed_categories: tuple[str, ...]
     forbidden_actions: tuple[str, ...]
     data: dict[str, Any]
@@ -143,6 +164,12 @@ def require_bool(value: Any, field: str) -> bool:
 def require_positive_int(value: Any, field: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
         raise ConfigError(f"{field} must be a positive integer")
+    return value
+
+
+def require_non_negative_int(value: Any, field: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise ConfigError(f"{field} must be a non-negative integer")
     return value
 
 
@@ -309,6 +336,112 @@ def parse_scope(scope: dict[str, Any]) -> ScopeConfig:
         )
     _validate_unique([panel.alias for panel in panels], "service_control_panels panel aliases")
 
+    raw_fuzzing = require_mapping(scope.get("fuzzing"), "fuzzing")
+    _reject_unknown(
+        raw_fuzzing,
+        {
+            "authorized",
+            "state_changing_authorized",
+            "approved_actions",
+            "denied_actions",
+            "safe_payload_classes",
+            "payload_budget",
+            "request_budget",
+            "per_endpoint_limit",
+            "max_response_bytes",
+            "max_retries",
+            "max_runtime_seconds",
+        },
+        "fuzzing",
+    )
+    fuzzing_authorized = require_bool(raw_fuzzing.get("authorized"), "fuzzing.authorized")
+    state_changing_authorized = require_bool(
+        raw_fuzzing.get("state_changing_authorized"),
+        "fuzzing.state_changing_authorized",
+    )
+    approved_fuzzing_actions = require_text_list(
+        raw_fuzzing.get("approved_actions"),
+        "fuzzing.approved_actions",
+    )
+    denied_fuzzing_actions = require_text_list(
+        raw_fuzzing.get("denied_actions"),
+        "fuzzing.denied_actions",
+        allow_empty=False,
+    )
+    _validate_unique(approved_fuzzing_actions, "fuzzing.approved_actions")
+    _validate_unique(denied_fuzzing_actions, "fuzzing.denied_actions")
+    unsupported_fuzzing_actions = sorted(
+        set(approved_fuzzing_actions) - FUZZING_SUPPORTED_ACTIONS
+    )
+    if unsupported_fuzzing_actions:
+        raise ConfigError(
+            "fuzzing.approved_actions contains unsupported actions: "
+            + ", ".join(unsupported_fuzzing_actions)
+        )
+    fuzzing_overlap = sorted(
+        set(approved_fuzzing_actions) & set(denied_fuzzing_actions)
+    )
+    if fuzzing_overlap:
+        raise ConfigError(
+            "fuzzing.approved_actions and denied_actions overlap: "
+            + ", ".join(fuzzing_overlap)
+        )
+    missing_fuzzing_denials = sorted(
+        FUZZING_UNSAFE_ACTIONS - set(denied_fuzzing_actions)
+    )
+    if missing_fuzzing_denials:
+        raise ConfigError(
+            "fuzzing.denied_actions is missing required safety denials: "
+            + ", ".join(missing_fuzzing_denials)
+        )
+    safe_payload_classes = require_text_list(
+        raw_fuzzing.get("safe_payload_classes"),
+        "fuzzing.safe_payload_classes",
+        allow_empty=False,
+    )
+    _validate_unique(safe_payload_classes, "fuzzing.safe_payload_classes")
+    unsupported_payload_classes = sorted(
+        set(safe_payload_classes) - FUZZING_SAFE_PAYLOAD_CLASSES
+    )
+    if unsupported_payload_classes:
+        raise ConfigError(
+            "fuzzing.safe_payload_classes contains unsupported classes: "
+            + ", ".join(unsupported_payload_classes)
+        )
+    fuzzing = FuzzingScope(
+        authorized=fuzzing_authorized,
+        state_changing_authorized=state_changing_authorized,
+        approved_actions=tuple(approved_fuzzing_actions),
+        denied_actions=tuple(denied_fuzzing_actions),
+        safe_payload_classes=tuple(safe_payload_classes),
+        payload_budget=require_positive_int(
+            raw_fuzzing.get("payload_budget"), "fuzzing.payload_budget"
+        ),
+        request_budget=require_positive_int(
+            raw_fuzzing.get("request_budget"), "fuzzing.request_budget"
+        ),
+        per_endpoint_limit=require_positive_int(
+            raw_fuzzing.get("per_endpoint_limit"), "fuzzing.per_endpoint_limit"
+        ),
+        max_response_bytes=require_positive_int(
+            raw_fuzzing.get("max_response_bytes"), "fuzzing.max_response_bytes"
+        ),
+        max_retries=require_non_negative_int(
+            raw_fuzzing.get("max_retries"), "fuzzing.max_retries"
+        ),
+        max_runtime_seconds=require_positive_int(
+            raw_fuzzing.get("max_runtime_seconds"), "fuzzing.max_runtime_seconds"
+        ),
+    )
+    if not fuzzing_authorized and approved_fuzzing_actions:
+        raise ConfigError(
+            "fuzzing.approved_actions must be empty when fuzzing is not authorized"
+        )
+    if state_changing_authorized and not fuzzing_authorized:
+        raise ConfigError(
+            "fuzzing.state_changing_authorized requires fuzzing.authorized"
+        )
+
     allowed_categories = require_text_list(scope.get("allowed_categories"), "allowed_categories", allow_empty=False)
     forbidden_actions = require_text_list(scope.get("forbidden_actions"), "forbidden_actions", allow_empty=False)
     _validate_unique(allowed_categories, "allowed_categories")
@@ -354,6 +487,7 @@ def parse_scope(scope: dict[str, Any]) -> ScopeConfig:
         operator_alias=operator_alias,
         targets=tuple(targets),
         panels=tuple(panels),
+        fuzzing=fuzzing,
         allowed_categories=tuple(allowed_categories),
         forbidden_actions=tuple(forbidden_actions),
         data=scope,

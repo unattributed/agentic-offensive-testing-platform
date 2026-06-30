@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Any
 
 from .config import ConfigError, parse_operator_approval, parse_program_profile, parse_scope
+from .bounded_fuzzing import (
+    collect_fuzzing_actions,
+    collect_fuzzing_stop_signals,
+    fuzzing_boundary_errors,
+)
 from .control_panel import (
     collect_panel_actions,
     collect_panel_observations,
@@ -165,9 +170,41 @@ def evaluate(
         fuzzing = scope.get("fuzzing", {})
         if not fuzzing.get("authorized"):
             reasons.append("fuzzing is not explicitly authorized")
+        requested_fuzzing_actions = collect_fuzzing_actions(objective)
+        if not requested_fuzzing_actions:
+            reasons.append("fuzzing action is missing")
+        approved_fuzzing_actions = set(fuzzing.get("approved_actions", []))
+        denied_fuzzing_actions = set(fuzzing.get("denied_actions", []))
+        explicitly_denied = sorted(
+            action
+            for action in requested_fuzzing_actions
+            if action in denied_fuzzing_actions
+        )
+        if explicitly_denied:
+            reasons.append(
+                "fuzzing action is explicitly denied by scope: "
+                + ", ".join(explicitly_denied)
+            )
+        unapproved_fuzzing_actions = sorted(
+            action
+            for action in requested_fuzzing_actions
+            if action not in approved_fuzzing_actions
+            and action not in denied_fuzzing_actions
+        )
+        if unapproved_fuzzing_actions:
+            reasons.append(
+                "fuzzing action is not explicitly approved: "
+                + ", ".join(unapproved_fuzzing_actions)
+            )
         for field in ("payload_budget", "request_budget", "per_endpoint_limit", "max_runtime_seconds"):
             if not isinstance(fuzzing.get(field), int) or fuzzing[field] <= 0:
                 reasons.append(f"fuzzing.{field} is missing")
+        reasons.extend(fuzzing_boundary_errors(objective, fuzzing))
+        stop_signals = collect_fuzzing_stop_signals(objective)
+        if stop_signals:
+            reasons.append(
+                "fuzzing stop condition detected: " + ", ".join(sorted(stop_signals))
+            )
         if objective.get("state_changing") and not fuzzing.get("state_changing_authorized"):
             reasons.append("state-changing fuzzing is not explicitly authorized")
 

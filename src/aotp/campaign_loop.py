@@ -12,10 +12,12 @@ from typing import Any, Callable
 from .campaign import parse_campaign
 from .campaign_events import append_campaign_event, resolve_event_log, verify_state_event_log
 from .campaign_state import CampaignState, save_state
+from .bounded_fuzzing import collect_fuzzing_stop_signals
 from .control_panel import panel_lockout_risk_detected
 from .evidence import EvidenceManifest, register_artifact, utc_now, write_manifest
 from .executor import execute
 from .panel_evidence import write_panel_evidence_record
+from .fuzzing_evidence import write_fuzzing_evidence_record
 from .policy_gate import evaluate
 from .safety_budget import SafetyBudget
 from .scheduler import schedule
@@ -211,6 +213,78 @@ def _record_panel_lockout_pause(
     )
 
 
+def _record_fuzzing_condition_stop(
+    *,
+    state: CampaignState,
+    scope: dict[str, Any],
+    objective: dict[str, Any],
+    signals: tuple[str, ...],
+    root: Path,
+    base_evidence: Path,
+    state_path: Path,
+) -> None:
+    objective_id = str(objective["id"])
+    iteration_id = f"{state.next_iteration:04d}"
+    evidence_dir = base_evidence / state.campaign_id / iteration_id
+    ordered_signals = sorted(signals)
+    manifest = EvidenceManifest(
+        run_id=_run_id(state, iteration_id, objective_id),
+        timestamp_utc=utc_now(),
+        operator=str(scope.get("operator_alias", "operator")),
+        sponsor_alias=scope["sponsor_alias"],
+        target_alias=str(objective.get("target_alias", "none")),
+        authorization_reference=str(scope["authorization"].get("reference", "")),
+        rules_of_engagement_reference=str(scope["rules_of_engagement"].get("reference", "")),
+        confidentiality_reference=scope["authorization"].get("confidentiality", {}).get("reference"),
+        case_id=objective_id,
+        tool="bounded-fuzzing-safety-stop",
+        verifier_verdict=str(Verdict.STOPPED_BY_POLICY),
+        confidence="not_assessed",
+        campaign_id=state.campaign_id,
+        campaign_iteration_id=iteration_id,
+        parent_test_objective=str(objective.get("title", objective_id)),
+        module_name="bounded_fuzzing",
+        artifact_mapping=list(objective.get("artifact_mapping", [])),
+        target_category=str(objective.get("target_category", "placeholder")),
+        execution_mode="not_executed",
+        policy_decision="stopped by fuzzing safety condition",
+        request_count=0,
+        response_metadata={
+            "stop_conditions": ordered_signals,
+            "request_counters": dict(state.request_counters),
+            "endpoint_request_counters": dict(state.endpoint_request_counters),
+            "rate_limit_counters": dict(state.rate_limit_counters),
+            "consecutive_failures": state.consecutive_failures,
+        },
+    )
+    write_manifest(manifest, evidence_dir)
+    relative_evidence = str(evidence_dir.relative_to(root))
+    state.evidence_directories.append(relative_evidence)
+    state.pending_modules.remove(objective_id)
+    state.stopped_modules.append(objective_id)
+    state.current_objective_id = None
+    state.current_status = "stopped_by_condition"
+    state.stop_condition_history.extend(ordered_signals)
+    state.next_iteration += 1
+    append_campaign_event(
+        state,
+        state_path,
+        event_type="campaign_stop",
+        iteration_id=iteration_id,
+        objective_id=objective_id,
+        module_name="bounded_fuzzing",
+        policy_decision="stopped by fuzzing safety condition",
+        outcome="stopped_by_condition",
+        evidence_directory=relative_evidence,
+        details={
+            "stop_conditions": ordered_signals,
+            "request_counters": dict(state.request_counters),
+            "endpoint_request_counters": dict(state.endpoint_request_counters),
+            "rate_limit_counters": dict(state.rate_limit_counters),
+        },
+    )
+
+
 def run_campaign(
     scope: dict[str, Any],
     scope_path: Path,
@@ -287,6 +361,20 @@ def run_campaign(
         if objective_id in state.reviewed_objectives:
             objective["human_approved"] = True
         if max_steps is not None and steps >= max_steps:
+            break
+        fuzzing_stop_signals = collect_fuzzing_stop_signals(objective)
+        if fuzzing_stop_signals:
+            _record_fuzzing_condition_stop(
+                state=state,
+                scope=scope,
+                objective=objective,
+                signals=fuzzing_stop_signals,
+                root=root,
+                base_evidence=base_evidence,
+                state_path=state_path,
+            )
+            state.last_updated_time = utc_now()
+            save_state(state, state_path)
             break
         if (
             panel_lockout_risk_detected(objective)
@@ -410,11 +498,44 @@ def run_campaign(
                 artifact_id="panel-evidence-record",
                 redaction_status="passed",
             )
+        if (
+            result
+            and objective.get("category") == "bounded_fuzzing"
+            and isinstance(result.response_metadata, dict)
+            and isinstance(result.response_metadata.get("fuzzing_plan"), dict)
+        ):
+            fuzzing_record_path = write_fuzzing_evidence_record(
+                objective,
+                evidence_dir,
+                policy_decision=decision.summary,
+                execution_mode="live_stub" if live else "dry_run",
+                tool=result.tool,
+                request_count=result.request_count,
+                response_metadata=result.response_metadata,
+            )
+            register_artifact(
+                manifest,
+                evidence_dir,
+                fuzzing_record_path,
+                role="bounded_fuzzing_evidence_record",
+                artifact_id="fuzzing-evidence-record",
+                redaction_status="passed",
+            )
+            corpus_reference = result.response_metadata["fuzzing_plan"].get(
+                "corpus_reference"
+            )
+            if isinstance(corpus_reference, dict):
+                manifest.fuzzing_corpus_reference = str(
+                    corpus_reference.get("alias", "")
+                )
         write_manifest(manifest, evidence_dir)
         relative_evidence = str(evidence_dir.relative_to(root))
         if relative_evidence not in state.evidence_directories:
             state.evidence_directories.append(relative_evidence)
         state.request_counters["total"] += manifest.request_count
+        if objective.get("category") == "bounded_fuzzing":
+            for endpoint_alias in objective.get("endpoint_request_budgets", {}):
+                state.endpoint_request_counters.setdefault(str(endpoint_alias), 0)
         budget.record(
             manifest.request_count,
             failed=outcome in {Verdict.FAIL, Verdict.STOPPED_BY_POLICY},

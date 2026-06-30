@@ -9,6 +9,7 @@ from typing import Any
 from .evidence import load_manifest, verify_evidence_directory
 from .finding_candidate import load_candidate
 from .panel_evidence import validate_panel_evidence_record
+from .sbom_review import validate_sbom_record
 from .report_review import manifest_requires_report_review, report_inclusion_allowed
 
 
@@ -19,6 +20,7 @@ def _text(value: Any) -> str:
 def _render_evidence(
     data: dict[str, Any],
     panel_record: dict[str, Any] | None = None,
+    sbom_record: dict[str, Any] | None = None,
 ) -> str:
     mappings = data.get("wstg_mapping") or data.get("artifact_mapping") or []
     lines = [
@@ -49,6 +51,19 @@ def _render_evidence(
                 f"- Evidence status: `{_text(panel_record['report_inclusion_status'])}`",
             ]
         )
+    if sbom_record is not None:
+        lines.extend(["", "#### Recorded SBOM components", ""])
+        for component in sbom_record["components"]:
+            lines.extend(
+                [
+                    f"- `{_text(component['name'])}` version `{_text(component['version'])}`",
+                    f"  - Presence: `{component['presence']}`",
+                    f"  - Reachability: `{component['reachability']}`",
+                    f"  - Exploitability: `{component['exploitability']}`",
+                    f"  - Source SHA256: `{component['source_artifact_sha256']}`",
+                ]
+            )
+        lines.extend(["", sbom_record["caveat"]])
     return "\n".join(lines)
 
 
@@ -95,6 +110,7 @@ def generate_markdown(
         for path, manifest in manifest_entries
     }
     panel_records: dict[str, dict[str, Any]] = {}
+    sbom_records: dict[str, dict[str, Any]] = {}
     for manifest_path, manifest in manifest_entries:
         if not manifest_requires_report_review(manifest):
             continue
@@ -130,6 +146,25 @@ def generate_markdown(
         ):
             raise ValueError("panel evidence record does not match its manifest")
         panel_records[manifest.manifest_sha256 or ""] = record
+    for manifest_path, manifest in manifest_entries:
+        artifacts = [
+            artifact
+            for artifact in manifest.artifacts
+            if artifact.get("role") == "sbom_component_evidence"
+        ]
+        if not artifacts:
+            continue
+        if len(artifacts) != 1:
+            raise ValueError("SBOM evidence requires exactly one component record")
+        record = json.loads(
+            (manifest_path.parent / artifacts[0]["redacted_path"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        validate_sbom_record(record)
+        if record["artifact_alias"] != manifest.sbom_artifact:
+            raise ValueError("SBOM evidence record does not match its manifest")
+        sbom_records[manifest.manifest_sha256 or ""] = record
 
     ready_candidates = []
     excluded_count = 0
@@ -142,8 +177,18 @@ def generate_markdown(
                     f"finding {candidate.finding_id} references evidence outside the report set"
                 )
             _, manifest = matched
-            if candidate.state == "ready_for_report" and report_inclusion_allowed(
-                candidate, manifest
+            sbom_risk_allowed = (
+                manifest.module_name != "sbom_review"
+                or (
+                    candidate.component_presence_only
+                    and candidate.reachability_status == "verified"
+                    and candidate.exploitability_status == "verified"
+                )
+            )
+            if (
+                candidate.state == "ready_for_report"
+                and report_inclusion_allowed(candidate, manifest)
+                and sbom_risk_allowed
             ):
                 ready_candidates.append(candidate)
             else:
@@ -175,6 +220,7 @@ def generate_markdown(
         _render_evidence(
             asdict_manifest(manifest),
             panel_records.get(manifest.manifest_sha256 or ""),
+            sbom_records.get(manifest.manifest_sha256 or ""),
         )
         + "\n"
         for _, manifest in manifest_entries

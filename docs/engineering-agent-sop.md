@@ -49,3 +49,16 @@ Commit messages remain concise and lowercase. Commentary must not contain privat
 ## Closeout
 
 The agent is expected to finish authorized engineering work end to end. Closeout requires passing checks, committed changes, remote synchronization, confirmed `origin/main` state, and a clean worktree. A local-only result is incomplete unless an external blocker prevents publication.
+
+Once all scoped changes are properly reviewed, vetted, and tested, the agent must:
+
+1. stage every scoped change and exclude unrelated work;
+2. write a concise lowercase commit message and complete commit commentary;
+3. create a signed commit and verify its signature;
+4. push a development branch and open the required pull request;
+5. wait for required CI checks, merge only after they pass, and verify post-merge CI;
+6. synchronize local `main` with `origin/main`; and
+7. verify matching commits and a clean worktree.
+
+Do not stop at an uncommitted or branch-only result after validation has passed. If publication is
+blocked, preserve the work and report the exact external blocker.

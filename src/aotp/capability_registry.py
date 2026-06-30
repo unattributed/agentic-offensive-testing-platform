@@ -7,6 +7,7 @@ from typing import Any
 
 from .control_panel import PANEL_SAFE_OBSERVATIONS, PANEL_UNSAFE_ACTIONS
 from .bounded_fuzzing import FUZZING_SAFE_PAYLOAD_CLASSES, FUZZING_UNSAFE_ACTIONS
+from .sbom_review import VULNERABILITY_MAPPING_CONTRACT
 
 @dataclass(frozen=True)
 class AdapterCapability:
@@ -222,6 +223,27 @@ def module_summary() -> dict[str, Any]:
                 "supported_capabilities": sorted(FUZZING_SAFE_PAYLOAD_CLASSES),
                 "evidence_artifacts": ["evidence.json", "fuzzing-evidence.json"],
                 "denied_actions": sorted(FUZZING_UNSAFE_ACTIONS),
+            },
+            {
+                "module_id": "sbom_review",
+                "display_name": "SBOM and dependency review",
+                "default_execution_mode": "dry_run",
+                "network_silent_default": True,
+                "adapter_contracts": [],
+                "required_scope_fields": ["target_alias", "artifact"],
+                "supported_capabilities": [
+                    "component_inventory",
+                    "manifest",
+                    "lockfile",
+                    "sbom",
+                ],
+                "evidence_artifacts": ["evidence.json", "sbom-evidence.json"],
+                "vulnerability_mapping_contract": VULNERABILITY_MAPPING_CONTRACT,
+                "denied_actions": [
+                    "implicit_external_lookup",
+                    "unprovided_artifacts",
+                    "unverified_exploitability_claims",
+                ],
             },
         ]
     }

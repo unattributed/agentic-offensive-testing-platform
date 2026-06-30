@@ -56,6 +56,9 @@ class FindingCandidate:
     report_reviewer: str | None = None
     report_review_reference: str | None = None
     report_review_sha256: str | None = None
+    component_presence_only: bool = False
+    reachability_status: str = "not_applicable"
+    exploitability_status: str = "not_applicable"
     title: str = "Unreviewed observation"
     summary: str = "Evidence requires review."
     evidence_manifest_sha256: str | None = None
@@ -103,6 +106,14 @@ class FindingCandidate:
                     raise ValueError(f"finding candidate requires {name}")
         if self.state in {"confirmed", "ready_for_report"} and not self.human_validated:
             raise ValueError("confirmed findings require human validation")
+        if self.component_presence_only and self.state in {"confirmed", "ready_for_report"}:
+            if (
+                self.reachability_status != "verified"
+                or self.exploitability_status != "verified"
+            ):
+                raise ValueError(
+                    "component presence alone cannot become a confirmed security risk"
+                )
         if self.state == "ready_for_report" and (
             self.severity_candidate == "unrated" or self.evidence_strength == "weak"
         ):
@@ -156,6 +167,7 @@ def create_candidate(
         ]
     )
     now = datetime.now(UTC).isoformat()
+    component_presence_only = manifest.module_name == "sbom_review"
     candidate = FindingCandidate(
         finding_id=finding_id,
         evidence_reference=str(evidence_path),
@@ -172,6 +184,9 @@ def create_candidate(
         report_review_sha256=(
             sha256_file(report_review_path) if report_review_path is not None else None
         ),
+        component_presence_only=component_presence_only,
+        reachability_status="not_assessed" if component_presence_only else "not_applicable",
+        exploitability_status="not_assessed" if component_presence_only else "not_applicable",
         evidence_manifest_sha256=manifest.manifest_sha256,
         verification_reference=str(verification_path),
         verification_sha256=sha256_file(verification_path),

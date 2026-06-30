@@ -107,3 +107,20 @@ def test_artifact_registration_rejects_escape_and_symlink(tmp_path):
             role="invalid",
             artifact_id="link",
         )
+
+# SPRINT4_HEADER_EVIDENCE_TESTS
+from aotp.wstg_case_registry import build_dry_run_record
+
+
+def test_wstg_header_evidence_record_contains_required_fields():
+    record = build_dry_run_record("wstg-security-header-review")
+    assert record["case_id"] == "wstg-security-header-review"
+    assert record["module"] == "wstg_web_application"
+    assert record["target_alias"] == "example-target"
+    assert record["policy_decision"] == "allowed_dry_run"
+    assert record["execution_mode"] == "dry_run"
+    assert record["request_count"] == 0
+    assert record["verifier_verdict"] == "manual_review"
+    assert record["confidence"] == "not_assessed"
+    assert record["artifact_placeholders"]
+    assert record["redaction_status"] == "placeholder_only_no_private_material"

@@ -129,7 +129,7 @@ def scan_value(value: Any, path: str = "$") -> list[RedactionFinding]:
                     RedactionFinding(item_path, "sensitive_field", hashlib.sha256(encoded.encode()).hexdigest())
                 )
             results.extend(scan_value(item, item_path))
-    elif isinstance(value, list):
+    elif isinstance(value, (list, tuple)):
         for index, item in enumerate(value):
             results.extend(scan_value(item, f"{path}[{index}]"))
     elif isinstance(value, str):
@@ -156,7 +156,7 @@ def sanitize_with_report(value: Any, path: str = "$") -> tuple[Any, list[Redacti
     report = scan_value(value, path)
     if isinstance(value, str):
         return redact_text(value), report
-    if isinstance(value, list):
+    if isinstance(value, (list, tuple)):
         cleaned = [sanitize_with_report(item, f"{path}[{index}]")[0] for index, item in enumerate(value)]
         return cleaned, report
     if isinstance(value, dict):

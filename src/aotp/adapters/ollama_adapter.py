@@ -12,6 +12,7 @@ from ..model_config import LocalModelConfig
 from ..redaction import assert_redacted, assert_value_redacted, sanitize_for_model
 
 MAX_RESPONSE_BYTES = 1_048_576
+MAX_PROMPT_BYTES = 262_144
 DEFAULT_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": True,
@@ -94,6 +95,14 @@ def _validate_schema_value(value: Any, schema: dict[str, Any], path: str = "$") 
         raise OllamaResponseError(f"{path} contains an unsupported value")
 
 
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON constant is forbidden: {value}")
+
+
+def _strict_json_loads(value: str | bytes) -> Any:
+    return json.loads(value, parse_constant=_reject_json_constant)
+
+
 @dataclass(frozen=True)
 class OllamaAdapter:
     config: LocalModelConfig = field(default_factory=default_local_model_config)
@@ -126,11 +135,27 @@ class OllamaAdapter:
         response_schema: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         schema = response_schema or DEFAULT_RESPONSE_SCHEMA
+        if (
+            not isinstance(task, str)
+            or not task.strip()
+            or not isinstance(payload, dict)
+            or not isinstance(schema, dict)
+        ):
+            raise OllamaPromptError(
+                "model task, payload, and response schema must be structured"
+            )
         cleaned = sanitize_for_model({"task": task, "payload": payload})
         try:
-            encoded = json.dumps(cleaned, sort_keys=True, separators=(",", ":"))
+            encoded = json.dumps(
+                cleaned,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
         except (TypeError, ValueError) as exc:
             raise OllamaPromptError("model prompt must be JSON-serializable") from exc
+        if len(encoded.encode()) > MAX_PROMPT_BYTES:
+            raise OllamaPromptError("model prompt exceeds the size limit")
         assert_redacted(encoded)
         assert_value_redacted(cleaned)
         return {
@@ -148,11 +173,15 @@ class OllamaAdapter:
         response_schema: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         schema = response_schema or DEFAULT_RESPONSE_SCHEMA
-        body = json.dumps(
-            self.build_prompt(task, payload, schema),
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode()
+        try:
+            body = json.dumps(
+                self.build_prompt(task, payload, schema),
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            ).encode()
+        except (TypeError, ValueError) as exc:
+            raise OllamaPromptError("model request must be JSON-serializable") from exc
         request = urllib.request.Request(
             self.config.base_url.rstrip("/") + "/api/generate",
             data=body,
@@ -169,8 +198,8 @@ class OllamaAdapter:
         if len(raw) > MAX_RESPONSE_BYTES:
             raise OllamaResponseError("local Ollama response exceeds the size limit")
         try:
-            envelope = json.loads(raw)
-        except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            envelope = _strict_json_loads(raw)
+        except (TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise OllamaResponseError("local Ollama service returned invalid JSON") from exc
         if (
             not isinstance(envelope, dict)
@@ -179,8 +208,8 @@ class OllamaAdapter:
         ):
             raise OllamaResponseError("local Ollama response envelope is incomplete")
         try:
-            result = json.loads(envelope["response"])
-        except json.JSONDecodeError as exc:
+            result = _strict_json_loads(envelope["response"])
+        except (ValueError, json.JSONDecodeError) as exc:
             raise OllamaResponseError("local Ollama structured response is invalid JSON") from exc
         _validate_schema_value(result, schema)
         try:

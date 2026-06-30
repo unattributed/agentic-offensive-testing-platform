@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .redaction import assert_redacted
+from .redaction import assert_redacted, assert_value_redacted
 from .verifier import Verdict
 
 
@@ -116,6 +116,7 @@ class EvidenceManifest:
                 raise ValueError("artifact hashes must be lowercase SHA256 digests")
         encoded = json.dumps(asdict(self), sort_keys=True)
         assert_redacted(encoded)
+        assert_value_redacted(asdict(self))
         if self.redaction_status != "passed":
             raise ValueError("evidence redaction did not pass")
         if self.manifest_sha256 is not None and self.manifest_sha256 != manifest_digest(self):

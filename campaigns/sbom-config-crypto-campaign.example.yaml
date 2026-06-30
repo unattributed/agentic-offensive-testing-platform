@@ -32,7 +32,8 @@ objectives:
     priority: 10
     depends_on: []
     requires_human_approval: false
-    parameters: {}
+    parameters:
+      request_budget: 0
   - id: cryptographic-controls-review
     title: Review provided cryptographic configuration evidence
     module: crypto_controls
@@ -45,4 +46,5 @@ objectives:
     depends_on:
       - sbom-dependency-review
     requires_human_approval: false
-    parameters: {}
+    parameters:
+      request_budget: 0

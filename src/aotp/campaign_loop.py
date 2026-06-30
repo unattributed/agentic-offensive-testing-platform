@@ -79,6 +79,70 @@ def _validate_resume_inputs(
         raise ValueError(f"campaign state cannot execute from status: {state.current_status}")
 
 
+def _record_pre_execution_stop(
+    *,
+    state: CampaignState,
+    scope: dict[str, Any],
+    objective: dict[str, Any],
+    reason: str,
+    root: Path,
+    base_evidence: Path,
+) -> None:
+    objective_id = str(objective["id"])
+    iteration_id = f"{state.next_iteration:04d}"
+    evidence_dir = base_evidence / state.campaign_id / iteration_id
+    manifest = EvidenceManifest(
+        run_id=_run_id(state, iteration_id, objective_id),
+        timestamp_utc=utc_now(),
+        operator=str(scope.get("operator_alias", "operator")),
+        sponsor_alias=scope["sponsor_alias"],
+        target_alias=str(objective.get("target_alias", "none")),
+        authorization_reference=str(scope["authorization"].get("reference", "")),
+        rules_of_engagement_reference=str(scope["rules_of_engagement"].get("reference", "")),
+        confidentiality_reference=scope["authorization"].get("confidentiality", {}).get("reference"),
+        case_id=objective_id,
+        tool="safety-budget",
+        verifier_verdict=str(Verdict.STOPPED_BY_POLICY),
+        confidence="not_assessed",
+        campaign_id=state.campaign_id,
+        campaign_iteration_id=iteration_id,
+        parent_test_objective=str(objective.get("title", objective_id)),
+        module_name=str(objective.get("module", "")),
+        wstg_mapping=list(objective.get("wstg_mapping", [])),
+        artifact_mapping=list(objective.get("artifact_mapping", [])),
+        target_category=str(objective.get("target_category", "placeholder")),
+        execution_mode="not_executed",
+        policy_decision=f"stopped by {reason}",
+        request_count=0,
+        response_metadata={"stop_condition": reason},
+    )
+    write_manifest(manifest, evidence_dir)
+    relative_evidence = str(evidence_dir.relative_to(root))
+    state.evidence_directories.append(relative_evidence)
+    state.pending_modules.remove(objective_id)
+    state.stopped_modules.append(objective_id)
+    state.current_objective_id = None
+    state.stop_condition_history.append(reason)
+    state.next_iteration += 1
+    state.events.append(
+        asdict(
+            CampaignEvent(
+                sequence=len(state.events) + 1,
+                event_id=str(uuid.uuid4()),
+                iteration_id=iteration_id,
+                timestamp_utc=utc_now(),
+                event_type="campaign_stop",
+                objective_id=objective_id,
+                module_name=str(objective.get("module", "")),
+                policy_decision=f"stopped by {reason}",
+                outcome=str(Verdict.STOPPED_BY_POLICY),
+                evidence_directory=relative_evidence,
+                details={"stop_condition": reason},
+            )
+        )
+    )
+
+
 def run_campaign(
     scope: dict[str, Any],
     scope_path: Path,
@@ -107,8 +171,12 @@ def run_campaign(
         max_iterations=parsed.limits.max_iterations,
         max_runtime_seconds=parsed.limits.max_runtime_seconds,
         max_requests=min(parsed.limits.max_requests, int(scope["rate_limits"]["max_requests"])),
+        max_requests_per_minute=int(scope["rate_limits"]["requests_per_minute"]),
+        max_consecutive_failures=parsed.limits.max_consecutive_failures,
         iterations=state.next_iteration - 1,
         requests=state.request_counters["total"],
+        current_minute_requests=state.rate_limit_counters["current_minute"],
+        consecutive_failures=state.consecutive_failures,
     )
     invocation_started = clock()
     elapsed_before_invocation = state.elapsed_seconds
@@ -125,12 +193,23 @@ def run_campaign(
         if max_steps is not None and steps >= max_steps:
             break
         elapsed = elapsed_before_invocation + (clock() - invocation_started)
-        if state.operator_stop_requested or not budget.can_continue(elapsed):
+        proposed_requests = int(objective["parameters"]["request_budget"])
+        budget_reason = budget.denial_reason(
+            elapsed_seconds=elapsed,
+            proposed_requests=proposed_requests,
+        )
+        if state.operator_stop_requested or budget_reason:
+            stop_reason = "operator_stop" if state.operator_stop_requested else str(budget_reason)
             state.current_status = (
                 "stopped_by_operator" if state.operator_stop_requested else "stopped_by_budget"
             )
-            state.stop_condition_history.append(
-                "operator_stop" if state.operator_stop_requested else "safety_budget_exhausted"
+            _record_pre_execution_stop(
+                state=state,
+                scope=scope,
+                objective=objective,
+                reason=stop_reason,
+                root=root,
+                base_evidence=base_evidence,
             )
             break
 
@@ -189,7 +268,12 @@ def run_campaign(
         if relative_evidence not in state.evidence_directories:
             state.evidence_directories.append(relative_evidence)
         state.request_counters["total"] += manifest.request_count
-        budget.record(manifest.request_count)
+        budget.record(
+            manifest.request_count,
+            failed=outcome in {Verdict.FAIL, Verdict.STOPPED_BY_POLICY},
+        )
+        state.rate_limit_counters["current_minute"] = budget.current_minute_requests
+        state.consecutive_failures = budget.consecutive_failures
 
         event = CampaignEvent(
             sequence=len(state.events) + 1,

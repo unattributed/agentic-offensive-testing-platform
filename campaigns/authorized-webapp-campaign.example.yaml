@@ -31,7 +31,8 @@ objectives:
     priority: 10
     depends_on: []
     requires_human_approval: false
-    parameters: {}
+    parameters:
+      request_budget: 0
   - id: wstg-authn-session
     title: Plan an authentication and session review
     module: wstg_webapp
@@ -44,4 +45,5 @@ objectives:
     depends_on:
       - wstg-security-headers
     requires_human_approval: false
-    parameters: {}
+    parameters:
+      request_budget: 0

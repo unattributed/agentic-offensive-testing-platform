@@ -218,6 +218,13 @@ def parse_campaign(data: dict[str, Any]) -> CampaignDefinition:
         if len(depends_on) != len(set(depends_on)):
             raise ConfigError(f"{field}.depends_on must not contain duplicates")
         require_mapping(objective.get("parameters"), f"{field}.parameters")
+        request_budget = objective["parameters"].get("request_budget")
+        if (
+            not isinstance(request_budget, int)
+            or isinstance(request_budget, bool)
+            or request_budget < 0
+        ):
+            raise ConfigError(f"{field}.parameters.request_budget must be a non-negative integer")
         if "wstg_mapping" in objective:
             require_text_list(objective["wstg_mapping"], f"{field}.wstg_mapping")
         if "artifact_mapping" in objective:

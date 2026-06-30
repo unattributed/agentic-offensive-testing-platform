@@ -90,3 +90,25 @@ def test_campaign_resume_rejects_changed_scope(project_root, tmp_path, example_s
             state=load_state(state_path),
             state_path=state_path,
         )
+
+
+def test_campaign_budget_denial_creates_evidence_before_execution(
+    project_root, tmp_path, example_scope
+):
+    campaign = load_campaign(
+        str(project_root / "campaigns/authorized-webapp-campaign.example.yaml")
+    ).data
+    campaign["objectives"][0]["parameters"]["request_budget"] = 2
+    campaign["limits"]["max_requests"] = 1
+    state, _ = run_campaign(
+        example_scope,
+        project_root / "config/scope.example.yaml",
+        campaign,
+        workspace=tmp_path,
+    )
+    assert state.current_status == "stopped_by_budget"
+    assert state.stop_condition_history == ["request_limit"]
+    assert state.stopped_modules == ["wstg-security-headers"]
+    evidence = tmp_path / state.evidence_directories[0] / "evidence.json"
+    assert '"tool": "safety-budget"' in evidence.read_text()
+    assert '"request_count": 0' in evidence.read_text()

@@ -30,7 +30,8 @@ objectives:
     priority: 10
     depends_on: []
     requires_human_approval: false
-    parameters: {}
+    parameters:
+      request_budget: 0
   - id: report-quality-review
     title: Score a draft report before manual submission
     module: wstg_webapp
@@ -42,4 +43,5 @@ objectives:
     priority: 20
     depends_on:
       - prior-testing-memory-review
-    parameters: {}
+    parameters:
+      request_budget: 0

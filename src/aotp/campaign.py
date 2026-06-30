@@ -221,6 +221,11 @@ def parse_campaign(data: dict[str, Any]) -> CampaignDefinition:
         "max_runtime_seconds",
         "corpus_reference",
         "detected_stop_signals",
+        "tls_evidence",
+        "cookie_attributes",
+        "token_configuration",
+        "weak_algorithm_indicators",
+        "key_management_metadata",
     }
     for index, raw_objective in enumerate(raw_objectives):
         field = f"objectives[{index}]"

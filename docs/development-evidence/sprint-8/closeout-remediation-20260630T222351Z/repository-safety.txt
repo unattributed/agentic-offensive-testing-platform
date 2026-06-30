@@ -1,0 +1,4 @@
+Command: ./scripts/validate-repository-safety.sh
+Exit status: 0
+Output:
+repository safety validation passed

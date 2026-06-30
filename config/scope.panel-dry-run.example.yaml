@@ -108,9 +108,14 @@ cryptographic_controls:
   authorized: false
   approved_actions: []
   denied_actions:
+    - decryption_attempt
     - destructive_crypto_testing
+    - key_extraction
+    - live_crypto_probe
+    - live_tls_probe
     - private_key_extraction
     - secret_bruteforce
+    - token_replay
 provided_artifacts:
   - artifacts/sbom.placeholder.json
 evidence:

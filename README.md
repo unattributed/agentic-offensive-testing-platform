@@ -1,12 +1,12 @@
 # Agentic Offensive Testing Platform
 
-Agentic Offensive Testing Platform (AOTP) is a private, proprietary framework for bounded, evidence-first offensive security campaigns against explicitly authorized assets. It is designed for candidate evaluations, evaluator reviews, client-authorized demonstrations, and bug bounty style assessments.
+Agentic Offensive Testing Platform (AOTP) is a public source-available, policy-constrained framework for bounded, evidence-first offensive security campaigns against explicitly authorized assets. It is designed for candidate evaluations, evaluator reviews, client-authorized demonstrations, and bug bounty style assessments.
 
-> **Authorized use only.** Scope is authoritative. Safe harbor, an MNDA or confidentiality agreement, evaluator consent, or general authorization never expands technical scope beyond the assets, accounts, services, APIs, windows, and categories in the private scope file.
+> **Authorized use only.** Scope is authoritative. Safe harbor, an MNDA or confidentiality agreement, evaluator consent, public repository visibility, or general authorization never expands technical scope beyond the assets, accounts, services, APIs, windows, and categories in the private scope file.
 
 ## Operating model
 
-**Private-by-default, safe-by-default, live-by-authorization, license-ready.**
+**Public code, private operations, safe-by-default, live-by-authorization, license-aware.**
 
 AOTP is a policy-constrained campaign harness. AI may propose objectives, summarize redacted evidence, classify likely risk, and draft evidence-bound language. AI cannot authorize scope, add targets, override rules of engagement, bypass the policy gate, continue after a stop condition, or submit a report.
 
@@ -47,6 +47,8 @@ Campaign state is JSON under the ignored `.aotp/state/` directory. It records th
 A fresh clone, CI, tests, example files, `make dry-run`, and all quick-start commands send no traffic to third-party targets. Live mode requires a private untracked program profile and scope, non-placeholder written authorization and agreement references, confirmed rules of engagement, confidentiality confirmation when applicable, an allowed window, explicit targets and categories, rate limits, evidence rules, disclosure rules, stop conditions, and `--operator-approved`.
 
 The policy gate denies missing or malformed scope, target or service expansion, forbidden actions, unapproved fuzzing, unapproved control-panel or cryptographic review, unprovided SBOM artifacts, absent human approval, unsafe evidence paths, and failed redaction. Even after a live request passes these checks, version 0.1 returns `manual_review` from a network-silent adapter stub.
+
+Public repository visibility does not make operational use public. Real targets, organization names, profiles, accounts, correspondence, findings, screenshots, reports, traces, generated captures, and evidence must never be committed.
 
 ## Quick start
 
@@ -153,7 +155,7 @@ It can be adapted to a candidate lab, evaluator-provisioned service, client enga
 
 ## Repository and licensing status
 
-This repository is private proprietary intellectual property. No open-source license is granted. See [LICENSE.md](LICENSE.md), [repository redaction policy](docs/repository-redaction-policy.md), [licensing readiness](docs/licensing-readiness.md), and [commercialization plan](docs/commercialization-plan.md).
+This repository is public source-available work with all rights reserved. No open-source license is granted. See [LICENSE.md](LICENSE.md), [repository redaction policy](docs/repository-redaction-policy.md), [licensing readiness](docs/licensing-readiness.md), [commercialization plan](docs/commercialization-plan.md), and [public release risk review](docs/public-release-risk-review.md).
 
 Third-party dependencies are minimal and tracked for later legal review. Generated evidence, profiles, candidate data, and campaign memory stay untracked.
 

@@ -100,3 +100,13 @@ def test_report_refuses_modified_evidence(tmp_path):
 
     with pytest.raises(ValueError, match="evidence verification failed"):
         generate_markdown(tmp_path)
+
+# SPRINT4_HEADER_REPORTER_TESTS
+from aotp.wstg_case_registry import build_dry_run_record
+
+
+def test_header_evidence_does_not_infer_finding_without_human_validation():
+    record = build_dry_run_record("wstg-security-header-review")
+    assert record["verifier_verdict"] == "manual_review"
+    assert "infer_finding_without_evidence" in record["denied_actions"]
+    assert record["confidence"] == "not_assessed"

@@ -67,3 +67,20 @@ def test_github_token_and_jwt_are_blocked():
         "github_token",
         "jwt",
     }
+
+# SPRINT4_EXTERNAL_REFERENCE_REDACTION_TESTS
+import pytest
+from aotp.external_evidence import validate_external_evidence_reference
+
+
+def test_external_reference_requires_redaction_status(tmp_path):
+    reference = {
+        "alias": "storage-state",
+        "relative_path": "browser/storage-state.redacted.json",
+        "sha256": "b" * 64,
+        "provenance": "placeholder contract",
+        "source_project_or_adapter_contract": "playwright",
+        "redaction_status": "unredacted",
+    }
+    with pytest.raises(ValueError):
+        validate_external_evidence_reference(reference, tmp_path)

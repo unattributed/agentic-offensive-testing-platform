@@ -480,3 +480,34 @@ def test_human_approval_and_redaction_fail_closed(example_scope, tmp_path):
     assert not decision.allowed
     assert "human approval is required" in decision.reasons
     assert "redaction checks failed" in decision.reasons
+
+# SPRINT4_AUTHN_SESSION_POLICY_TESTS
+from aotp.wstg_case_registry import build_dry_run_record, get_case
+
+
+def test_authn_session_credential_abuse_is_denied_in_case_model():
+    authn = get_case("wstg-authn-provisioned-account-observation")
+    session = get_case("wstg-session-attribute-observation")
+    denied = set(authn["denied_actions"]) | set(session["denied_actions"])
+    assert {"credential_guessing", "brute_force", "password_spraying", "credential_stuffing"}.issubset(denied)
+    assert {"token_theft", "token_replay", "session_hijacking", "session_replay"}.intersection(denied)
+    assert build_dry_run_record("wstg-authn-provisioned-account-observation")["request_count"] == 0
+
+# SPRINT4_CROSS_ACCOUNT_POLICY_TESTS
+from aotp.wstg_case_registry import build_dry_run_record, get_case
+
+
+def test_human_cross_account_authorization_gate_pauses_without_approval():
+    case = get_case("wstg-authz-cross-account-confirmation")
+    assert case["human_approval_required"] is True
+    assert "access_other_account" in case["denied_actions"]
+    record = build_dry_run_record("wstg-authz-cross-account-confirmation", approved=False)
+    assert record["policy_decision"] == "paused_human_approval_required"
+    assert record["request_count"] == 0
+
+
+def test_cross_account_authorization_gate_allows_only_approved_dry_run_model():
+    record = build_dry_run_record("wstg-authz-cross-account-confirmation", approved=True)
+    assert record["policy_decision"] == "allowed_dry_run"
+    assert record["execution_mode"] == "dry_run"
+    assert record["request_count"] == 0

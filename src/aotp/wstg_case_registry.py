@@ -67,7 +67,32 @@ CASES: list[dict[str, Any]] = [{'adapter_capability_requirements': ['network_sil
   'human_approval_required': False,
   'module': 'wstg_web_application',
   'title': 'Session attribute observation',
-  'wstg': [{'id': 'WSTG-SESS-02', 'name': 'Testing for Cookies Attributes', 'version': '4.2'}]}]
+  'wstg': [{'id': 'WSTG-SESS-02', 'name': 'Testing for Cookies Attributes', 'version': '4.2'}]},
+ {'adapter_capability_requirements': ['network_silent', 'dry_run', 'human_approval_gate'],
+  'approval_scope': 'objective_specific_cross_account_confirmation',
+  'approved_actions': ['model_cross_account_confirmation_objective', 'pause_for_human_approval'],
+  'artifact_placeholders': ['authorization_gate_record'],
+  'case_id': 'wstg-authz-cross-account-confirmation',
+  'denied_actions': ['exploit',
+                     'mutate',
+                     'enumerate',
+                     'bypass',
+                     'access_other_account',
+                     'session_replay'],
+  'evidence_mappings': ['case_id',
+                        'wstg_mapping',
+                        'target_alias',
+                        'policy_decision',
+                        'human_approval_status'],
+  'human_approval_required': True,
+  'module': 'wstg_web_application',
+  'title': 'Cross-account authorization confirmation gate',
+  'wstg': [{'id': 'WSTG-ATHZ-01',
+            'name': 'Testing Directory Traversal File Include',
+            'version': '4.2'},
+           {'id': 'WSTG-ATHZ-04',
+            'name': 'Testing for Insecure Direct Object References',
+            'version': '4.2'}]}]
 
 CASE_INDEX = {case["case_id"]: case for case in CASES}
 

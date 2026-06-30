@@ -13,7 +13,7 @@ def test_dry_run_creates_state_events_and_evidence(project_root, tmp_path, examp
     campaign = load_campaign(str(project_root / "campaigns/authorized-webapp-campaign.example.yaml")).data
     state, state_path = run_campaign(example_scope, scope_path, campaign, workspace=tmp_path)
     assert state.current_status == "completed"
-    assert len(state.events) == 2
+    assert len([event for event in state.events if event["event_type"] == "objective_result"]) == 2
     assert len(state.evidence_directories) == 2
     assert state_path.is_file()
     assert all((tmp_path / Path(item) / "evidence.json").is_file() for item in state.evidence_directories)

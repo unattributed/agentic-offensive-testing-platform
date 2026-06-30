@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .campaign_state import CampaignState, save_state
+from .campaign_events import append_campaign_event, verify_state_event_log
 from .config import ConfigError, parse_review_decision
 from .evidence import sha256_file, utc_now
 
@@ -30,6 +31,9 @@ def apply_review_decision(
 ) -> CampaignState:
     if state.current_status != "paused_for_human_review" or not state.pending_review:
         raise ValueError("campaign is not paused for human review")
+    event_failures = verify_state_event_log(state, state_path)
+    if event_failures:
+        raise ValueError("campaign event log verification failed: " + "; ".join(event_failures))
     review = parse_review_decision(review_data)
     current_time = (now or datetime.now(UTC)).astimezone(UTC)
     decided_at = _parse_time(review.decided_at_utc)
@@ -49,6 +53,15 @@ def apply_review_decision(
     state.pending_review = None
     state.stop_condition_history.append(
         f"{objective_id}: review {review.decision} ({review.decision_id})"
+    )
+    append_campaign_event(
+        state,
+        state_path,
+        event_type="review_decision",
+        objective_id=objective_id,
+        iteration_id=f"{state.next_iteration - 1:04d}",
+        outcome=review.decision,
+        details={"decision_id": review.decision_id, "phase": phase},
     )
     if review.decision == "approved":
         if phase == "pre_execution":
@@ -91,6 +104,13 @@ def request_operator_stop(state: CampaignState, state_path: str | Path) -> Campa
         state.current_objective_id = None
     state.current_status = "stopped_by_operator"
     state.stop_condition_history.append("operator_stop")
+    append_campaign_event(
+        state,
+        state_path,
+        event_type="operator_stop",
+        objective_id=state.current_objective_id,
+        outcome="stopped_by_operator",
+    )
     state.last_updated_time = utc_now()
     save_state(state, state_path)
     return state

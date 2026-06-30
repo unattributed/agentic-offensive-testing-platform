@@ -12,6 +12,7 @@ from .campaign import load_campaign
 from .campaign_loop import run_campaign
 from .campaign_state import load_state, save_state
 from .campaign_control import apply_review_decision, request_operator_stop
+from .campaign_events import resolve_event_log, verify_state_event_log
 from .config import ConfigError, load_yaml, validate_scope_shape
 from .evidence import EvidenceManifest, sha256_file, utc_now, verify_evidence_directory, write_manifest
 from .executor import execute
@@ -79,6 +80,8 @@ def _build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--operator-approved", action="store_true")
     stop = commands.add_parser("campaign-stop")
     stop.add_argument("--state", required=True)
+    events_verify = commands.add_parser("campaign-events-verify")
+    events_verify.add_argument("--state", required=True)
     verify = commands.add_parser("evidence-verify")
     verify.add_argument("--evidence", required=True)
     report = commands.add_parser("report")
@@ -271,6 +274,20 @@ def main(argv: list[str] | None = None) -> int:
             request_operator_stop(state, args.state)
             print(json.dumps({"status": state.current_status, "state": args.state}))
             return 0
+        if args.command == "campaign-events-verify":
+            state = load_state(args.state)
+            failures = verify_state_event_log(state, args.state)
+            print(
+                json.dumps(
+                    {
+                        "valid": not failures,
+                        "event_log": str(resolve_event_log(state, args.state)),
+                        "failures": failures,
+                    },
+                    indent=2,
+                )
+            )
+            return 0 if not failures else 2
         if args.command == "evidence-verify":
             failures = verify_evidence_directory(args.evidence)
             print(json.dumps({"valid": not failures, "failures": failures}, indent=2))

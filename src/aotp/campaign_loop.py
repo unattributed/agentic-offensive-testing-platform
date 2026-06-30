@@ -5,13 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
-from dataclasses import asdict
 from pathlib import Path
 from time import monotonic
 from typing import Any, Callable
 
 from .campaign import parse_campaign
-from .campaign_state import CampaignEvent, CampaignState, save_state
+from .campaign_events import append_campaign_event, resolve_event_log, verify_state_event_log
+from .campaign_state import CampaignState, save_state
 from .evidence import EvidenceManifest, utc_now, write_manifest
 from .executor import execute
 from .policy_gate import evaluate
@@ -55,6 +55,7 @@ def _initialize_state(
         last_updated_time=now,
         current_status="planned",
         pending_modules=[str(item["id"]) for item in objectives],
+        event_log_path=f".aotp/events/{parsed.campaign_id}.jsonl",
     )
 
 
@@ -88,6 +89,7 @@ def _record_pre_execution_stop(
     reason: str,
     root: Path,
     base_evidence: Path,
+    state_path: Path,
 ) -> None:
     objective_id = str(objective["id"])
     iteration_id = f"{state.next_iteration:04d}"
@@ -125,22 +127,17 @@ def _record_pre_execution_stop(
     state.current_objective_id = None
     state.stop_condition_history.append(reason)
     state.next_iteration += 1
-    state.events.append(
-        asdict(
-            CampaignEvent(
-                sequence=len(state.events) + 1,
-                event_id=str(uuid.uuid4()),
-                iteration_id=iteration_id,
-                timestamp_utc=utc_now(),
-                event_type="campaign_stop",
-                objective_id=objective_id,
-                module_name=str(objective.get("module", "")),
-                policy_decision=f"stopped by {reason}",
-                outcome=str(Verdict.STOPPED_BY_POLICY),
-                evidence_directory=relative_evidence,
-                details={"stop_condition": reason},
-            )
-        )
+    append_campaign_event(
+        state,
+        state_path,
+        event_type="campaign_stop",
+        iteration_id=iteration_id,
+        objective_id=objective_id,
+        module_name=str(objective.get("module", "")),
+        policy_decision=f"stopped by {reason}",
+        outcome=str(Verdict.STOPPED_BY_POLICY),
+        evidence_directory=relative_evidence,
+        details={"stop_condition": reason},
     )
 
 
@@ -161,9 +158,34 @@ def run_campaign(
 ) -> tuple[CampaignState, Path]:
     parsed = parse_campaign(campaign)
     root = (workspace or Path.cwd()).resolve()
+    fresh_campaign = state is None
     state = state or _initialize_state(scope, scope_path, campaign)
     _validate_resume_inputs(state, scope_path, campaign)
     state_path = state_path or root / ".aotp" / "state" / f"{state.campaign_id}.json"
+    if fresh_campaign and state_path.exists():
+        raise ValueError("campaign state already exists; use campaign-resume or choose a new campaign id")
+    if fresh_campaign and resolve_event_log(state, state_path).exists():
+        raise ValueError("campaign event log already exists; choose a new campaign id")
+    prior_status = state.current_status
+    if state.events:
+        event_failures = verify_state_event_log(state, state_path)
+        if event_failures:
+            raise ValueError("campaign event log verification failed: " + "; ".join(event_failures))
+    else:
+        append_campaign_event(
+            state,
+            state_path,
+            event_type="campaign_started",
+            outcome="planned",
+            details={"campaign_definition_hash": state.campaign_definition_hash},
+        )
+    if prior_status == "ready_to_resume":
+        append_campaign_event(
+            state,
+            state_path,
+            event_type="campaign_resumed",
+            outcome="running",
+        )
     state.current_status = "running"
     state.last_updated_time = utc_now()
     save_state(state, state_path)
@@ -214,6 +236,7 @@ def run_campaign(
                 reason=stop_reason,
                 root=root,
                 base_evidence=base_evidence,
+                state_path=state_path,
             )
             break
 
@@ -291,19 +314,17 @@ def run_campaign(
         state.rate_limit_counters["current_minute"] = budget.current_minute_requests
         state.consecutive_failures = budget.consecutive_failures
 
-        event = CampaignEvent(
-            sequence=len(state.events) + 1,
-            event_id=str(uuid.uuid4()),
-            iteration_id=iteration_id,
-            timestamp_utc=utc_now(),
+        append_campaign_event(
+            state,
+            state_path,
             event_type="objective_result",
+            iteration_id=iteration_id,
             objective_id=objective_id,
             module_name=str(objective.get("module", "")),
             policy_decision=decision.summary,
             outcome=str(outcome),
             evidence_directory=relative_evidence,
         )
-        state.events.append(asdict(event))
         state.next_iteration += 1
         steps += 1
 
@@ -316,6 +337,17 @@ def run_campaign(
                 "evidence_directory": relative_evidence,
             }
             state.stop_condition_history.append(f"{objective_id}: human approval required")
+            append_campaign_event(
+                state,
+                state_path,
+                event_type="campaign_paused",
+                iteration_id=iteration_id,
+                objective_id=objective_id,
+                module_name=str(objective.get("module", "")),
+                outcome="paused_for_human_review",
+                evidence_directory=relative_evidence,
+                details={"phase": "pre_execution"},
+            )
         elif not decision.allowed:
             state.pending_modules.remove(objective_id)
             state.stopped_modules.append(objective_id)
@@ -331,6 +363,17 @@ def run_campaign(
                 "evidence_directory": relative_evidence,
             }
             state.stop_condition_history.append(f"{objective_id}: human review required")
+            append_campaign_event(
+                state,
+                state_path,
+                event_type="campaign_paused",
+                iteration_id=iteration_id,
+                objective_id=objective_id,
+                module_name=str(objective.get("module", "")),
+                outcome="paused_for_human_review",
+                evidence_directory=relative_evidence,
+                details={"phase": "post_execution"},
+            )
         else:
             state.pending_modules.remove(objective_id)
             state.completed_modules.append(objective_id)
@@ -347,6 +390,13 @@ def run_campaign(
     if state.current_status == "running" and not state.pending_modules:
         state.current_status = "completed"
         state.current_objective_id = None
+        append_campaign_event(
+            state,
+            state_path,
+            event_type="campaign_completed",
+            outcome="completed",
+            details={"iterations": state.next_iteration - 1},
+        )
     state.last_updated_time = utc_now()
     save_state(state, state_path)
     return state, state_path

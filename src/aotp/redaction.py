@@ -23,17 +23,30 @@ PATTERNS: dict[str, re.Pattern[str]] = {
 }
 
 SENSITIVE_KEYS = {
+    "access_token",
     "api_key",
     "authorization",
     "bearer",
+    "client_secret",
     "cookie",
+    "cookie_value",
+    "credential",
+    "credentials",
     "csrf",
+    "id_token",
     "password",
     "private_key",
+    "private_key_material",
+    "raw_cookie",
+    "raw_token",
+    "refresh_token",
     "secret",
+    "secret_key",
     "session",
+    "session_cookie",
     "session_id",
     "token",
+    "token_value",
 }
 
 
@@ -65,21 +78,58 @@ def _sensitive_key(key: str) -> bool:
     normalized = key.lower().replace("-", "_")
     if normalized.endswith(("_reference", "_alias", "_status", "_hash", "_sha256")):
         return False
-    return normalized in SENSITIVE_KEYS
+    return normalized in SENSITIVE_KEYS or normalized.endswith(
+        (
+            "_access_token",
+            "_client_secret",
+            "_cookie_value",
+            "_credential",
+            "_password",
+            "_private_key",
+            "_private_key_material",
+            "_raw_cookie",
+            "_raw_token",
+            "_refresh_token",
+            "_secret",
+            "_secret_key",
+            "_session_cookie",
+            "_token_value",
+        )
+    )
+
+
+def _redacted_placeholder(value: Any) -> bool:
+    return isinstance(value, str) and value.startswith("[REDACTED") and value.endswith("]")
 
 
 def scan_value(value: Any, path: str = "$") -> list[RedactionFinding]:
     results: list[RedactionFinding] = []
     if isinstance(value, dict):
         for key, item in value.items():
-            item_path = f"{path}.{key}"
-            if _sensitive_key(str(key)) and item not in (None, "", [], {}):
+            key_text = str(key)
+            key_matches = findings(key_text)
+            item_path = (
+                f"{path}.[redacted-key]" if key_matches else f"{path}.{key_text}"
+            )
+            for kind in key_matches:
+                results.append(
+                    RedactionFinding(
+                        f"{path}.[redacted-key]",
+                        kind,
+                        hashlib.sha256(key_text.encode()).hexdigest(),
+                    )
+                )
+            if (
+                _sensitive_key(key_text)
+                and item not in (None, "", [], {})
+                and not _redacted_placeholder(item)
+            ):
                 encoded = str(item)
                 results.append(
                     RedactionFinding(item_path, "sensitive_field", hashlib.sha256(encoded.encode()).hexdigest())
                 )
             results.extend(scan_value(item, item_path))
-    elif isinstance(value, list):
+    elif isinstance(value, (list, tuple)):
         for index, item in enumerate(value):
             results.extend(scan_value(item, f"{path}[{index}]"))
     elif isinstance(value, str):
@@ -103,22 +153,27 @@ def assert_value_redacted(value: Any) -> None:
 
 
 def sanitize_with_report(value: Any, path: str = "$") -> tuple[Any, list[RedactionFinding]]:
-    findings = scan_value(value, path)
+    report = scan_value(value, path)
     if isinstance(value, str):
-        return redact_text(value), findings
-    if isinstance(value, list):
+        return redact_text(value), report
+    if isinstance(value, (list, tuple)):
         cleaned = [sanitize_with_report(item, f"{path}[{index}]")[0] for index, item in enumerate(value)]
-        return cleaned, findings
+        return cleaned, report
     if isinstance(value, dict):
         cleaned: dict[str, Any] = {}
-        for key, item in value.items():
-            item_path = f"{path}.{key}"
-            if _sensitive_key(str(key)) and item not in (None, "", [], {}):
-                cleaned[str(key)] = "[REDACTED:sensitive_field]"
+        for index, (key, item) in enumerate(value.items()):
+            key_text = str(key)
+            key_matches = findings(key_text)
+            cleaned_key = f"[REDACTED:key:{index}]" if key_matches else key_text
+            item_path = (
+                f"{path}.[redacted-key]" if key_matches else f"{path}.{key_text}"
+            )
+            if _sensitive_key(key_text) and item not in (None, "", [], {}):
+                cleaned[cleaned_key] = "[REDACTED:sensitive_field]"
             else:
-                cleaned[str(key)] = sanitize_with_report(item, item_path)[0]
-        return cleaned, findings
-    return value, findings
+                cleaned[cleaned_key] = sanitize_with_report(item, item_path)[0]
+        return cleaned, report
+    return value, report
 
 
 def sanitize_for_model(value: Any) -> Any:

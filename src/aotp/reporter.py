@@ -1,42 +1,112 @@
-"""Evidence-only Markdown reporting."""
+"""Verified evidence and finding candidate Markdown reporting."""
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
+from .evidence import load_manifest, verify_evidence_directory
+from .finding_candidate import load_candidate
 
-def _render_record(data: dict[str, Any]) -> str:
+
+def _text(value: Any) -> str:
+    return str(value).replace("\r", " ").replace("\n", " ").strip()
+
+
+def _render_evidence(data: dict[str, Any]) -> str:
     mappings = data.get("wstg_mapping") or data.get("artifact_mapping") or []
     lines = [
-        f"## Case `{data.get('case_id', 'unknown')}`",
+        f"### Case `{_text(data.get('case_id', 'unknown'))}`",
         "",
-        f"- Verdict: `{data.get('verifier_verdict', 'unknown')}`",
-        f"- Target alias: `{data.get('target_alias', 'unknown')}`",
-        f"- Module: `{data.get('module_name') or 'not recorded'}`",
-        f"- Tool: `{data.get('tool', 'unknown')}`",
-        f"- Confidence: `{data.get('confidence', 'unknown')}`",
-        f"- Evidence mappings: `{', '.join(mappings) if mappings else 'none recorded'}`",
-        f"- Redaction: `{data.get('redaction_status', 'unknown')}`",
-        f"- Report status: `{data.get('report_inclusion_status', 'unknown')}`",
+        f"- Verdict: `{_text(data.get('verifier_verdict', 'unknown'))}`",
+        f"- Target alias: `{_text(data.get('target_alias', 'unknown'))}`",
+        f"- Module: `{_text(data.get('module_name') or 'not recorded')}`",
+        f"- Tool: `{_text(data.get('tool', 'unknown'))}`",
+        f"- Confidence: `{_text(data.get('confidence', 'unknown'))}`",
+        f"- Evidence mappings: `{_text(', '.join(mappings) if mappings else 'none recorded')}`",
+        f"- Redaction: `{_text(data.get('redaction_status', 'unknown'))}`",
+        f"- Manifest SHA256: `{_text(data.get('manifest_sha256', 'unknown'))}`",
     ]
     return "\n".join(lines)
 
 
-def generate_markdown(evidence_directory: str | Path) -> str:
-    root = Path(evidence_directory)
-    records: list[dict[str, Any]] = []
-    for path in sorted(root.rglob("evidence.json")):
-        records.append(json.loads(path.read_text(encoding="utf-8")))
+def _render_candidate(candidate) -> str:
+    return "\n".join(
+        [
+            f"## {_text(candidate.title)}",
+            "",
+            f"- Finding ID: `{_text(candidate.finding_id)}`",
+            f"- State: `{candidate.state}`",
+            f"- Target alias: `{_text(candidate.target_alias)}`",
+            f"- Case ID: `{_text(candidate.case_id)}`",
+            f"- Severity candidate: `{candidate.severity_candidate}`",
+            f"- Confidence: `{candidate.confidence}`",
+            f"- Evidence strength: `{candidate.evidence_strength}`",
+            f"- Evidence manifest SHA256: `{candidate.evidence_manifest_sha256}`",
+            f"- Fingerprint: `{candidate.fingerprint}`",
+            "",
+            "### Recorded summary",
+            "",
+            _text(candidate.summary),
+        ]
+    )
+
+
+def generate_markdown(
+    evidence_directory: str | Path,
+    findings_directory: str | Path | None = None,
+) -> str:
+    evidence_root = Path(evidence_directory)
+    failures = verify_evidence_directory(evidence_root)
+    if failures:
+        raise ValueError("evidence verification failed: " + "; ".join(failures))
+    manifests = [
+        load_manifest(path)
+        for path in sorted(evidence_root.rglob("evidence.json"))
+    ]
+    manifest_hashes = {manifest.manifest_sha256 for manifest in manifests}
+
+    ready_candidates = []
+    excluded_count = 0
+    if findings_directory is not None:
+        for path in sorted(Path(findings_directory).rglob("*.json")):
+            candidate = load_candidate(path)
+            if candidate.evidence_manifest_sha256 not in manifest_hashes:
+                raise ValueError(
+                    f"finding {candidate.finding_id} references evidence outside the report set"
+                )
+            if candidate.state == "ready_for_report":
+                ready_candidates.append(candidate)
+            else:
+                excluded_count += 1
+
     lines = [
-        "# AOTP evidence report",
+        "# AOTP human-review draft",
         "",
-        "This report contains recorded evidence fields only. It does not infer vulnerabilities, impact, exploitability, affected assets, or remediation.",
+        "This draft is generated only from integrity-verified evidence and report-ready finding candidates. It does not infer vulnerabilities, impact, exploitability, affected assets, or remediation.",
+        "",
+        f"Verified evidence records: `{len(manifests)}`",
+        f"Report-ready findings: `{len(ready_candidates)}`",
+        f"Excluded non-ready candidates: `{excluded_count}`",
         "",
     ]
-    if not records:
-        lines.append("No evidence records were found.")
+    if ready_candidates:
+        lines.extend(_render_candidate(candidate) + "\n" for candidate in ready_candidates)
     else:
-        lines.extend(_render_record(record) + "\n" for record in records)
+        lines.extend(
+            [
+                "## Finding candidates",
+                "",
+                "No evidence-bound candidate has completed human review for report inclusion.",
+                "",
+            ]
+        )
+    lines.extend(["## Evidence appendix", ""])
+    lines.extend(_render_evidence(asdict_manifest(manifest)) + "\n" for manifest in manifests)
     return "\n".join(lines).rstrip() + "\n"
+
+
+def asdict_manifest(manifest) -> dict[str, Any]:
+    from dataclasses import asdict
+
+    return asdict(manifest)

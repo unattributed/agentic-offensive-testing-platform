@@ -111,6 +111,7 @@ def _build_parser() -> argparse.ArgumentParser:
     finding_transition.add_argument("--human-validated", action="store_true")
     report = commands.add_parser("report")
     report.add_argument("--evidence", required=True)
+    report.add_argument("--findings")
     campaign_report = commands.add_parser("campaign-report")
     campaign_report.add_argument("--state", required=True)
     graph_run = commands.add_parser("campaign-graph-run")
@@ -372,7 +373,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"finding_id": candidate.finding_id, "state": candidate.state}))
             return 0
         if args.command == "report":
-            print(generate_markdown(args.evidence), end="")
+            print(generate_markdown(args.evidence, args.findings), end="")
             return 0
         if args.command == "campaign-report":
             state = load_state(args.state)

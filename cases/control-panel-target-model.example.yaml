@@ -1,0 +1,39 @@
+id: control-panel-target-model
+module: service_control_panel
+category: service_control_panel
+title: Control panel target model dry-run case
+target_alias: local-placeholder
+panel_alias: example-admin-panel
+panel_type: admin_panel
+target_category: generic_management_interface
+action: plan_panel_target_metadata
+service: https
+environment: isolated-example-environment
+requires_human_approval: false
+safe_observation_only: true
+approved_actions:
+  - plan_panel_target_metadata
+denied_actions:
+  - brute_force
+  - credential_attack
+  - credential_guessing
+  - credential_stuffing
+  - default_password_check
+  - destructive_action
+  - destructive_panel_action
+  - login_attempt
+  - lockout_triggering
+  - panel_crawl
+  - password_spraying
+  - session_hijacking
+  - token_replay
+  - unsafe_crawling
+evidence_mappings:
+  - case_id
+  - module
+  - target_alias
+  - panel_alias
+  - panel_type
+  - policy_decision
+  - execution_mode
+  - request_count

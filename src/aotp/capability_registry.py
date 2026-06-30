@@ -5,6 +5,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
+from .control_panel import PANEL_UNSAFE_ACTIONS
+
 @dataclass(frozen=True)
 class AdapterCapability:
     adapter: str
@@ -189,6 +191,15 @@ def module_summary() -> dict[str, Any]:
                 "default_execution_mode": "dry_run",
                 "network_silent_default": True,
                 "adapter_contracts": [adapter["adapter_id"] for adapter in list_adapters()],
-            }
+            },
+            {
+                "module_id": "service_control_panel",
+                "display_name": "Service control panel",
+                "default_execution_mode": "dry_run",
+                "network_silent_default": True,
+                "adapter_contracts": [],
+                "required_scope_fields": ["target_alias", "panel_alias"],
+                "denied_actions": sorted(PANEL_UNSAFE_ACTIONS),
+            },
         ]
     }

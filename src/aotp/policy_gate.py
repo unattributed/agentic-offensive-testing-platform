@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import ConfigError, parse_operator_approval, parse_program_profile, parse_scope
+from .control_panel import denied_panel_actions
 
 
 @dataclass(frozen=True)
@@ -161,8 +162,31 @@ def evaluate(
         if objective.get("state_changing") and not fuzzing.get("state_changing_authorized"):
             reasons.append("state-changing fuzzing is not explicitly authorized")
 
-    if category == "service_control_panel" and not scope.get("service_control_panels", {}).get("authorized"):
-        reasons.append("service control panel testing is not explicitly authorized")
+    if category == "service_control_panel":
+        panel_config = scope.get("service_control_panels", {})
+        if not panel_config.get("authorized"):
+            reasons.append("service control panel testing is not explicitly authorized")
+        panel_alias = objective.get("panel_alias")
+        raw_panels = panel_config.get("panels", [])
+        panel = next(
+            (entry for entry in raw_panels if isinstance(entry, dict) and entry.get("alias") == panel_alias),
+            None,
+        )
+        if not panel_alias:
+            reasons.append("panel alias is missing")
+        elif panel is None:
+            reasons.append("panel alias is not explicitly allowlisted")
+        else:
+            if target_alias != panel.get("target_alias"):
+                reasons.append("panel target alias does not match objective")
+            objective_panel_type = objective.get("panel_type")
+            if objective_panel_type and objective_panel_type != panel.get("panel_type"):
+                reasons.append("panel type does not match scoped panel")
+        unsafe_panel_actions = sorted(denied_panel_actions(objective))
+        if unsafe_panel_actions:
+            reasons.append(
+                "panel action is denied by safety boundary: " + ", ".join(unsafe_panel_actions)
+            )
 
     if category == "sbom_review":
         provided = set(scope.get("provided_artifacts", []))

@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+from .control_panel import PANEL_TYPES
+
 
 class ConfigError(ValueError):
     """Raised when configuration is absent, malformed, or incomplete."""
@@ -33,6 +35,16 @@ class TargetScope:
 
 
 @dataclass(frozen=True)
+class PanelScope:
+    alias: str
+    target_alias: str
+    panel_type: str
+    exposure: str
+    approved_actions: tuple[str, ...]
+    denied_actions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class ScopeConfig:
     schema_version: str
     scope_id: str
@@ -40,12 +52,16 @@ class ScopeConfig:
     sponsor_alias: str
     operator_alias: str
     targets: tuple[TargetScope, ...]
+    panels: tuple[PanelScope, ...]
     allowed_categories: tuple[str, ...]
     forbidden_actions: tuple[str, ...]
     data: dict[str, Any]
 
     def target(self, alias: str) -> TargetScope | None:
         return next((target for target in self.targets if target.alias == alias), None)
+
+    def panel(self, alias: str) -> PanelScope | None:
+        return next((panel for panel in self.panels if panel.alias == alias), None)
 
 
 @dataclass(frozen=True)
@@ -235,6 +251,43 @@ def parse_scope(scope: dict[str, Any]) -> ScopeConfig:
         )
     target_aliases = [target.alias for target in targets]
     _validate_unique(target_aliases, "allowed_targets aliases")
+
+    raw_panel_config = require_mapping(scope.get("service_control_panels"), "service_control_panels")
+    _reject_unknown(raw_panel_config, {"authorized", "panels"}, "service_control_panels")
+    require_bool(raw_panel_config.get("authorized"), "service_control_panels.authorized")
+    raw_panels = raw_panel_config.get("panels", [])
+    raw_panels = require_list(raw_panels, "service_control_panels.panels")
+    panels: list[PanelScope] = []
+    for index, raw_panel in enumerate(raw_panels):
+        field = f"service_control_panels.panels[{index}]"
+        panel = require_mapping(raw_panel, field)
+        _reject_unknown(
+            panel,
+            {"alias", "target_alias", "panel_type", "exposure", "approved_actions", "denied_actions"},
+            field,
+        )
+        panel_type = require_text(panel.get("panel_type"), f"{field}.panel_type")
+        if panel_type not in PANEL_TYPES:
+            raise ConfigError(f"{field}.panel_type is unsupported panel_type: {panel_type}")
+        panel_target_alias = require_text(panel.get("target_alias"), f"{field}.target_alias")
+        if panel_target_alias not in target_aliases:
+            raise ConfigError(f"{field}.target_alias must reference allowed_targets")
+        panels.append(
+            PanelScope(
+                alias=require_text(panel.get("alias"), f"{field}.alias"),
+                target_alias=panel_target_alias,
+                panel_type=panel_type,
+                exposure=require_text(panel.get("exposure"), f"{field}.exposure"),
+                approved_actions=tuple(
+                    require_text_list(panel.get("approved_actions"), f"{field}.approved_actions", allow_empty=False)
+                ),
+                denied_actions=tuple(
+                    require_text_list(panel.get("denied_actions"), f"{field}.denied_actions", allow_empty=False)
+                ),
+            )
+        )
+    _validate_unique([panel.alias for panel in panels], "service_control_panels panel aliases")
+
     allowed_categories = require_text_list(scope.get("allowed_categories"), "allowed_categories", allow_empty=False)
     forbidden_actions = require_text_list(scope.get("forbidden_actions"), "forbidden_actions", allow_empty=False)
     _validate_unique(allowed_categories, "allowed_categories")
@@ -279,6 +332,7 @@ def parse_scope(scope: dict[str, Any]) -> ScopeConfig:
         sponsor_alias=sponsor_alias,
         operator_alias=operator_alias,
         targets=tuple(targets),
+        panels=tuple(panels),
         allowed_categories=tuple(allowed_categories),
         forbidden_actions=tuple(forbidden_actions),
         data=scope,

@@ -458,6 +458,54 @@ def evaluate(
                 reasons.append("program stop conditions review is not confirmed")
             if parsed_profile.program_alias != parsed_scope.program_alias:
                 reasons.append("program profile alias does not match scope")
+            profile_in_scope = set(parsed_profile.in_scope_asset_aliases)
+            profile_out_of_scope = set(parsed_profile.out_of_scope_asset_aliases)
+            configured_target_aliases = {
+                target.alias for target in parsed_scope.targets
+            }
+            if out_of_scope_targets := sorted(
+                configured_target_aliases & profile_out_of_scope
+            ):
+                reasons.append(
+                    "scope contains program out-of-scope asset aliases: "
+                    + ", ".join(out_of_scope_targets)
+                )
+            if unapproved_targets := sorted(
+                configured_target_aliases - profile_in_scope
+            ):
+                reasons.append(
+                    "scope contains asset aliases not approved by program profile: "
+                    + ", ".join(unapproved_targets)
+                )
+            profile_allowed_categories = set(
+                parsed_profile.allowed_testing_categories
+            )
+            profile_forbidden_categories = set(
+                parsed_profile.forbidden_testing_categories
+            )
+            scope_categories = set(parsed_scope.allowed_categories)
+            if forbidden_categories := sorted(
+                scope_categories & profile_forbidden_categories
+            ):
+                reasons.append(
+                    "scope contains program-forbidden testing categories: "
+                    + ", ".join(forbidden_categories)
+                )
+            if unapproved_categories := sorted(
+                scope_categories - profile_allowed_categories
+            ):
+                reasons.append(
+                    "scope contains testing categories not approved by program profile: "
+                    + ", ".join(unapproved_categories)
+                )
+            if missing_prohibitions := sorted(
+                set(parsed_profile.prohibited_actions)
+                - set(parsed_scope.forbidden_actions)
+            ):
+                reasons.append(
+                    "scope omits program-prohibited actions: "
+                    + ", ".join(missing_prohibitions)
+                )
             profile_reference = program_profile.get("authorization_reference")
             if authorization.get("reference") != profile_reference:
                 reasons.append("authorization reference does not match program profile")

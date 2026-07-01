@@ -65,6 +65,13 @@ def authorized_profile(project_root: Path) -> dict:
             "authorization_reference": "authorization-record-2026",
             "safe_harbor_reference": "safe-harbor-record-2026",
             "policy_sha256": "a" * 64,
+            "allowed_testing_categories": [
+                "wstg_webapp",
+                "service_control_panel",
+                "bounded_fuzzing",
+                "sbom_review",
+                "crypto_controls",
+            ],
         }
     )
     return profile

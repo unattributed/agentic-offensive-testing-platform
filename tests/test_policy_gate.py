@@ -275,6 +275,54 @@ def test_program_profile_out_of_scope_and_category_rules_are_authoritative(
     assert "test category is forbidden by program profile" in decision.reasons
 
 
+def test_program_profile_boundaries_apply_to_entire_live_scope(
+    authorized_scope,
+    authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_profile["in_scope_asset_aliases"] = ["different-asset"]
+    authorized_profile["out_of_scope_asset_aliases"] = ["local-placeholder"]
+    authorized_profile["allowed_testing_categories"] = ["sbom_review"]
+    authorized_profile["forbidden_testing_categories"] = ["wstg_webapp"]
+    authorized_profile["prohibited_actions"].append("metadata_export")
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert (
+        "scope contains program out-of-scope asset aliases: local-placeholder"
+        in decision.reasons
+    )
+    assert (
+        "scope contains asset aliases not approved by program profile: local-placeholder"
+        in decision.reasons
+    )
+    assert (
+        "scope contains program-forbidden testing categories: wstg_webapp"
+        in decision.reasons
+    )
+    assert any(
+        reason.startswith(
+            "scope contains testing categories not approved by program profile:"
+        )
+        and "wstg_webapp" in reason
+        for reason in decision.reasons
+    )
+    assert "scope omits program-prohibited actions: metadata_export" in decision.reasons
+
+
 @pytest.mark.parametrize(
     ("term", "reason"),
     (

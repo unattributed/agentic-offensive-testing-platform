@@ -15,6 +15,7 @@ status. Unknown metadata is never treated as approval.
 | Deep Agents | runtime | `>=0.6.12,<0.7` | MIT | Pending legal review |
 | LangChain Ollama | runtime | `>=1.1,<1.2` | MIT | Pending legal review |
 | PyYAML | runtime | `>=6.0,<7` | MIT | Pending legal review |
+| cryptography | runtime | `>=45,<51` | Apache-2.0 OR BSD-3-Clause | Pending legal review |
 | LangGraph | runtime | `>=1.2.7,<1.3` | MIT | Pending legal review |
 | LangGraph SQLite checkpoint | runtime | `>=3.1,<3.2` | MIT | Pending legal review |
 | build | development | `>=1.5,<2` | MIT | Development and package build only |

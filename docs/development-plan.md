@@ -218,7 +218,12 @@ Goal: prepare for private licensing, evaluator access, commercialization, or a l
 | 13.5 commercialization checklist | Cover rights, support, privacy, retention, and release terms | Owners and open items are visible | checklist review | readiness record | commercialization docs | `add commercialization readiness checklist` |
 | 13.6 public release risk review | Audit history, secrets, licenses, claims, and private artifacts | Release is blocked until all risks close | safety and history audit | signed review record | repository-wide | `add public release risk review` |
 
-Sprint acceptance: repository remains private and proprietary; dependency and future-license options are documented; no private assessment material is prepared for release.
+Sprint acceptance: source remains proprietary, operational material remains private, dependency
+and future-license options are documented, and commercial, evaluator, and open-source distribution
+remain blocked until every recorded review closes.
+
+Plan correction: repository visibility is public, not private. Sprint 13 preserves proprietary
+source terms and private operations without claiming that repository visibility is private.
 
 ## Branch and closeout convention
 

@@ -1,0 +1,43 @@
+schema_version: "1.0"
+review_date_utc: "2026-07-01"
+repository_visibility:
+  observed: public
+  evidence_command: gh repo view --json visibility
+source_license_posture: proprietary_all_rights_reserved
+decisions:
+  source_visibility: current_public_review_only
+  commercial_distribution: blocked
+  open_source_license_release: blocked
+  evaluator_distribution: blocked
+  operational_material_release: prohibited
+blockers:
+  - id: PRR-001
+    area: legal_terms
+    status: blocked
+    evidence: LICENSE.md
+    required_action: Obtain counsel approval for any license or distribution terms.
+  - id: PRR-002
+    area: dependency_obligations
+    status: blocked
+    evidence: docs/dependency-license-inventory.json
+    required_action: Complete legal review of direct, transitive, development, and audit-tool obligations.
+  - id: PRR-003
+    area: provenance
+    status: blocked
+    evidence: docs/third-party-provenance-register.md
+    required_action: Resolve every legal_review_required provenance entry.
+  - id: PRR-004
+    area: evaluator_terms
+    status: blocked
+    evidence: docs/evaluator-license-model.md
+    required_action: Replace the non-binding draft with an approved signed agreement.
+  - id: PRR-005
+    area: commercialization
+    status: blocked
+    evidence: docs/commercialization-readiness.yaml
+    required_action: Close every open and blocked commercialization item.
+  - id: PRR-006
+    area: release_artifacts
+    status: blocked
+    evidence: no-approved-record
+    required_action: Approve signed packages, notices, SBOM, provenance, support terms, and release channel.

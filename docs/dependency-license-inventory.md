@@ -1,35 +1,44 @@
 # Dependency license inventory
 
-This inventory is a review aid, not legal advice.
+This is an engineering metadata inventory, not legal advice or a distribution approval.
 
-| Dependency | Purpose | Direct | Version policy | License status | Review action |
-|---|---|---:|---|---|---|
-| Python | Runtime | yes | 3.11 or newer | PSF license, verify distribution | record deployed runtime |
-| PyYAML | YAML parsing | yes | `>=6.0,<7` | MIT, verify installed metadata | review notices before distribution |
-| pytest | Development tests | dev only | `>=8.0,<9` | MIT, verify installed metadata | exclude from runtime package |
-| LangGraph | Durable campaign orchestration | yes | `>=1.2.7,<1.3` | MIT upstream, verified for Sprint 2 | maintain parity tests and inventory transitives |
-| LangGraph SQLite checkpoint | Local durable graph state | yes | `>=3.1,<3.2` | MIT upstream, verified for Sprint 2 | keep database private and review transitive SQLite components |
-| Nuclei templates | Optional external YAML source | no, not vendored | exact commit and bundle hash required | MIT repository, template behavior requires individual review | keep external, signed, allowlisted, and policy-gated |
-| YARA | Optional provided-artifact classifier | no, prospective | not yet pinned | BSD-3-Clause engine, rules retain their own licenses | review engine and each ruleset separately |
-| Yara-Rules community rules | Potential external rules | rejected for vendoring | not applicable | GPL-2.0 ruleset | do not include in proprietary distribution |
-| ai-browser-security-test-suite | External browser evidence references only | no, not imported or vendored | reviewed source commit alias required | source project declares AGPL-3.0-or-later | keep separate and require license review before any dependency or code reuse |
+The machine-readable
+[`dependency-license-inventory.json`](dependency-license-inventory.json) records every installed
+Python distribution in the validated project audit environment. Each record includes its exact
+version, dependency type, installed license metadata, source metadata, and a conservative review
+status. Unknown metadata is never treated as approval.
 
-CI actions are build tooling and must also be reviewed before commercial distribution. Add every future adapter dependency before merge and capture its source, version, SPDX expression, transitive obligations, and redistribution decision.
+## Declared dependencies and tools
 
-## Sprint 2 LangGraph environment snapshot
+| Dependency | Type | Version policy | Installed license metadata | Distribution posture |
+|---|---|---|---|---|
+| PyYAML | runtime | `>=6.0,<7` | MIT | Pending legal review |
+| LangGraph | runtime | `>=1.2.7,<1.3` | MIT | Pending legal review |
+| LangGraph SQLite checkpoint | runtime | `>=3.1,<3.2` | MIT | Pending legal review |
+| build | development | `>=1.5,<2` | MIT | Development and package build only |
+| pytest | development | `>=9.0.3,<10` | MIT | Test environment only |
+| pip-audit | audit tooling | `>=2.10,<3` | Apache-2.0 classifier | Audit environment only |
+| pip-licenses | audit tooling | `>=5.5,<6` | MIT | Audit environment only |
+| ShellCheck | external audit tooling | system package | GPL-3.0-or-later | Never bundled or linked |
+| actions/checkout | CI tooling | commit `de0fac2e` (`v6.0.2`) | MIT | Remote CI action only |
+| actions/setup-python | CI tooling | commit `a309ff8b` (`v6.2.0`) | MIT | Remote CI action only |
 
-The validated environment contained the following orchestration packages. This records package metadata for engineering review and is not a substitute for legal review.
+Python itself and the operating-system distribution require separate deployment review. Workflow
+actions are pinned remote build tooling and are not shipped in the Python package.
 
-| Package | Validated version | Metadata license |
-|---|---:|---|
-| langgraph | 1.2.7 | MIT |
-| langgraph-checkpoint-sqlite | 3.1.0 | MIT |
-| langchain-core | 1.4.8 | MIT |
-| langgraph-checkpoint | 4.1.1 | MIT |
-| langgraph-prebuilt | 1.1.0 | MIT |
-| langgraph-sdk | 0.4.2 | MIT |
-| pydantic | 2.13.4 | MIT |
-| xxhash | 3.8.0 | BSD-2-Clause |
-| aiosqlite | 0.22.1 | package metadata did not state a license; manual review required |
-| sqlite-vec | 0.1.9 | metadata states MIT and Apache-2.0 |
-| langsmith | 0.9.3 | MIT; installed transitively but no tracing or remote service is enabled |
+## Review status meanings
+
+- `owner_controlled_proprietary`: this project and its all-rights-reserved license.
+- `metadata_recorded_pending_legal_review`: permissive-looking installed metadata was recorded but
+  is not a legal approval.
+- `notice_and_file_scope_review`: installed metadata includes MPL terms that require notice and
+  file-scope analysis before distribution.
+- `distribution_blocked_pending_legal_review`: installed metadata includes a GPL-family term.
+- `manual_metadata_review_required`: installed metadata was missing or ambiguous.
+
+The inventory includes transitive packages introduced by runtime, development, and audit roots.
+Before distribution, legal review must confirm upstream license texts, notices, source terms,
+trademarks, and whether each dependency is shipped, linked, invoked externally, or excluded.
+
+Optional template ecosystems and external adapters remain unvendored. Their repositories, rule
+sets, and data files retain separate licenses and require source-specific review before use.

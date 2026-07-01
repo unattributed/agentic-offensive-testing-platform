@@ -1,75 +1,64 @@
 # Public release risk review
 
-## Current status
+This is an engineering risk review, not legal advice.
 
-AOTP is public source-available with all rights reserved. The public repository contains framework code, policy logic, documentation, examples, tests, and inert placeholder material. Operational profiles, scopes, targets, credentials, correspondence, findings, reports, screenshots, traces, generated captures, campaign memory, and real assessment evidence must remain outside the repository.
+## Current posture
 
-## Release decision
+Repository metadata was observed as `PUBLIC` on 2026-07-01. The source remains proprietary and
+all rights reserved. Public visibility permits source review only under the repository terms; it
+does not create an open-source grant, commercial distribution approval, evaluator license, or
+operational authorization.
 
-Public visibility is acceptable only for source review, portfolio review, and evaluator discussion. Public visibility does not authorize operational use, redistribution, sublicensing, or live testing.
+Real operational material remains private and prohibited from the repository. This includes
+profiles, scopes, targets, accounts, credentials, correspondence, evidence, screenshots, findings,
+reports, traces, captures, and campaign memory.
 
-The current license remains all rights reserved. No open-source license is granted.
+## Decisions
 
-## Public-risk controls
+| Decision scope | Status |
+|---|---|
+| Existing source visibility for review | Current public posture |
+| Commercial distribution | Blocked |
+| Open-source licensing release | Blocked |
+| Evaluator distribution | Blocked |
+| Operational material release | Prohibited |
 
-- Example scopes remain dry-run safe.
-- Live testing requires private untracked program profiles, private scopes, explicit authorization references, rules-of-engagement confirmation, allowed windows, rate limits, evidence rules, disclosure rules, stop conditions, and operator approval.
-- The policy gate remains authoritative before execution.
-- Initial live adapters remain network-silent stubs.
-- AOTP has no automatic report submission adapter.
-- Generated state and evidence remain under ignored paths.
-- Repository safety validation blocks common private evidence paths and common secret forms.
-- Security reports that include sensitive material must use private channels.
+The machine-readable
+[`public-release-risk-review.yaml`](public-release-risk-review.yaml) records each blocker, evidence
+reference, and required action. No release decision may be inferred from repository visibility or
+passing engineering tests.
 
-## Public repository review checklist
+## Controls verified
 
-| Area | Status | Notes |
-|---|---|---|
-| Repository visibility | public | Confirmed by repository metadata. |
-| License posture | source-available, all rights reserved | `LICENSE.md` states no open-source grant. |
-| README posture | aligned | README describes public code and private operations. |
-| Contribution posture | aligned | External contributions require owner authorization. |
-| Security reporting | aligned | Sensitive reports must not be public issues. |
-| Private material policy | aligned | Real targets, findings, screenshots, and evidence are prohibited. |
-| Evidence paths | aligned | `.aotp/`, evidence, reports, screenshots, traces, private files, keys, and HAR files are ignored. |
-| Reference project boundary | aligned | OSMAP and browser-suite integrations use clean-room contracts only. |
-| Live adapter posture | aligned | Live adapters are not enabled by default. |
-| Commercial posture | pending | Commercial path remains undecided and requires legal review. |
+- Package metadata declares `LicenseRef-Proprietary` and includes `LICENSE.md`.
+- Repository safety validation rejects common private paths and secret forms.
+- Reachable history is audited for prohibited paths and secret patterns.
+- Example scopes and campaigns remain placeholders and network-silent.
+- Live execution remains separately authorized and policy-gated.
+- Report packages remain drafts until named-human review.
+- No automatic submission transport exists.
+- Dependency metadata and conservative review statuses are tracked.
+- External influences require provenance and an accepted merge decision.
+- Commercialization and evaluator distribution remain explicitly blocked.
 
-## Required recurring checks
+## Blocking conditions
 
-Before every public-facing sprint closeout, run and record:
+Legal terms, dependency obligations, unresolved provenance, evaluator terms, commercialization
+items, and release artifacts are not approved. Counsel and accountable owner roles must close
+their items with current evidence. An engineering test or source audit cannot close those reviews.
+
+## Required recurring validation
 
 ```bash
-python3 -m compileall src tests
+python3 scripts/audit-proprietary-license.py
+python3 scripts/generate-dependency-license-inventory.py
+python3 scripts/audit-commercial-release-readiness.py
+python3 -m compileall -q src tests scripts
 python3 -m pytest
 ./scripts/validate-repository-safety.sh
-make test
+./scripts/audit-repository-release.sh
+make check
 ```
 
-Before every merge, review:
-
-```bash
-git status --short
-git diff --cached --stat
-git diff --cached
-```
-
-Search for private or stale posture language:
-
-```bash
-rg -n "private repository|repository remains private|private proprietary|open-source license is granted|real target|credential|cookie|token|screenshot|proxy capture|finding" .
-```
-
-Review results manually because the safety validator is a coarse defense, not a substitute for human review.
-
-## Known limitations
-
-- This document is an engineering risk review, not legal advice.
-- Git history has not been deeply rewritten or independently audited in this document.
-- Dependency license inventory remains an engineering review aid and requires legal review before commercial distribution.
-- Public repository visibility increases the importance of private operational hygiene, issue triage, and contribution controls.
-
-## Sprint 4.0 closeout note
-
-Sprint 4.0 exists to align repository language with the current public visibility before Sprint 4 continues. Sprint 4.1 and later must continue to treat operational material as private and must not introduce live network behavior by default.
+The review must be updated when visibility, licensing, dependencies, external sources, release
+contents, operational behavior, or commercial plans change.

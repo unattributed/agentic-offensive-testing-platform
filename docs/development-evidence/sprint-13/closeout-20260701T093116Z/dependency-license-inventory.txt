@@ -1,0 +1,2 @@
+dependency license inventory written: /tmp/dependency-license-inventory-sprint13.json
+dependency_count=69

@@ -1,0 +1,5 @@
+Python 3.13.5
+pytest 9.1.1
+build 1.5.0
+git 2.47.3
+GitHub CLI 2.46.0

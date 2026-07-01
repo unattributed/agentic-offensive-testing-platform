@@ -1,0 +1,369 @@
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - setuptools>=77.0.3
+* Getting build dependencies for sdist...
+running egg_info
+writing src/agentic_offensive_testing_platform.egg-info/PKG-INFO
+writing dependency_links to src/agentic_offensive_testing_platform.egg-info/dependency_links.txt
+writing entry points to src/agentic_offensive_testing_platform.egg-info/entry_points.txt
+writing requirements to src/agentic_offensive_testing_platform.egg-info/requires.txt
+writing top-level names to src/agentic_offensive_testing_platform.egg-info/top_level.txt
+reading manifest file 'src/agentic_offensive_testing_platform.egg-info/SOURCES.txt'
+adding license file 'LICENSE.md'
+writing manifest file 'src/agentic_offensive_testing_platform.egg-info/SOURCES.txt'
+* Building sdist...
+running sdist
+running egg_info
+writing src/agentic_offensive_testing_platform.egg-info/PKG-INFO
+writing dependency_links to src/agentic_offensive_testing_platform.egg-info/dependency_links.txt
+writing entry points to src/agentic_offensive_testing_platform.egg-info/entry_points.txt
+writing requirements to src/agentic_offensive_testing_platform.egg-info/requires.txt
+writing top-level names to src/agentic_offensive_testing_platform.egg-info/top_level.txt
+reading manifest file 'src/agentic_offensive_testing_platform.egg-info/SOURCES.txt'
+adding license file 'LICENSE.md'
+writing manifest file 'src/agentic_offensive_testing_platform.egg-info/SOURCES.txt'
+running check
+creating agentic_offensive_testing_platform-0.1.0
+creating agentic_offensive_testing_platform-0.1.0/src/agentic_offensive_testing_platform.egg-info
+creating agentic_offensive_testing_platform-0.1.0/src/aotp
+creating agentic_offensive_testing_platform-0.1.0/src/aotp/adapters
+creating agentic_offensive_testing_platform-0.1.0/src/aotp/modules
+creating agentic_offensive_testing_platform-0.1.0/tests
+copying files to agentic_offensive_testing_platform-0.1.0...
+copying LICENSE.md -> agentic_offensive_testing_platform-0.1.0
+copying README.md -> agentic_offensive_testing_platform-0.1.0
+copying pyproject.toml -> agentic_offensive_testing_platform-0.1.0
+copying src/agentic_offensive_testing_platform.egg-info/PKG-INFO -> agentic_offensive_testing_platform-0.1.0/src/agentic_offensive_testing_platform.egg-info
+copying src/agentic_offensive_testing_platform.egg-info/SOURCES.txt -> agentic_offensive_testing_platform-0.1.0/src/agentic_offensive_testing_platform.egg-info
+copying src/agentic_offensive_testing_platform.egg-info/dependency_links.txt -> agentic_offensive_testing_platform-0.1.0/src/agentic_offensive_testing_platform.egg-info
+copying src/agentic_offensive_testing_platform.egg-info/entry_points.txt -> agentic_offensive_testing_platform-0.1.0/src/agentic_offensive_testing_platform.egg-info
+copying src/agentic_offensive_testing_platform.egg-info/requires.txt -> agentic_offensive_testing_platform-0.1.0/src/agentic_offensive_testing_platform.egg-info
+copying src/agentic_offensive_testing_platform.egg-info/top_level.txt -> agentic_offensive_testing_platform-0.1.0/src/agentic_offensive_testing_platform.egg-info
+copying src/aotp/__init__.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/adapter_contract.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/adapter_examples.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/bounded_fuzzing.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/campaign.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/campaign_control.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/campaign_events.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/campaign_loop.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/campaign_memory.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/campaign_state.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/capability_registry.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/cli.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/config.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/control_panel.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/crypto_review.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/demo_release.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/evidence.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/executor.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/external_evidence.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/finding_candidate.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/finding_lifecycle.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/fuzzing_evidence.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/human_approval.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/langgraph_orchestration.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/metrics.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/model_config.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/panel_evidence.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/planner.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/policy_gate.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/redaction.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/report_package.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/report_quality.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/report_review.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/reporter.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/safety_budget.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/sbom_review.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/scheduler.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/sprint4_cli.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/submission_gate.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/template_registry.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/verifier.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/wstg_case_registry.py -> agentic_offensive_testing_platform-0.1.0/src/aotp
+copying src/aotp/adapters/__init__.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/adapters
+copying src/aotp/adapters/ai_browser_suite_adapter.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/adapters
+copying src/aotp/adapters/mitmproxy_adapter.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/adapters
+copying src/aotp/adapters/ollama_adapter.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/adapters
+copying src/aotp/adapters/osmap_adapter.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/adapters
+copying src/aotp/adapters/playwright_adapter.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/adapters
+copying src/aotp/adapters/zap_adapter.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/adapters
+copying src/aotp/modules/__init__.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/modules
+copying src/aotp/modules/bounded_fuzzing.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/modules
+copying src/aotp/modules/crypto_controls_review.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/modules
+copying src/aotp/modules/sbom_review.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/modules
+copying src/aotp/modules/service_control_panel_misconfig.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/modules
+copying src/aotp/modules/wstg_webapp.py -> agentic_offensive_testing_platform-0.1.0/src/aotp/modules
+copying tests/test_adapter_contract.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_adapter_examples.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_architecture_authority.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_bounded_fuzzing.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_browser_suite_contract.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_campaign.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_campaign_control.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_campaign_events.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_campaign_loop.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_campaign_memory.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_campaign_state.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_capability_registry.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_case_registry.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_cli.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_config.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_control_panel_campaign.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_control_panel_safe_observations.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_control_panel_targets.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_crypto_controls.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_demo_report.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_evaluator_demo.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_evidence_manifest.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_finding_candidate.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_finding_lifecycle.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_fuzzing_authorization.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_human_approval.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_langgraph_orchestration.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_licensing_readiness.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_metrics.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_mitmproxy_contract.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_model_assistance.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_model_config.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_ollama_adapter.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_ollama_prompt_safety.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_osmap_contract.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_panel_evidence_records.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_planner.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_playwright_contract.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_policy_gate.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_redaction.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_release_check.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_report_package.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_report_quality.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_report_review_gating.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_reporter.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_repository_release_audit.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_repository_safety.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_safety_budget.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_sbom_review.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_scheduler.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_submission_gate.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_template_registry.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_verifier.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying tests/test_zap_contract.py -> agentic_offensive_testing_platform-0.1.0/tests
+copying src/agentic_offensive_testing_platform.egg-info/SOURCES.txt -> agentic_offensive_testing_platform-0.1.0/src/agentic_offensive_testing_platform.egg-info
+Writing agentic_offensive_testing_platform-0.1.0/setup.cfg
+Creating tar archive
+removing 'agentic_offensive_testing_platform-0.1.0' (and everything under it)
+* Building wheel from sdist
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - setuptools>=77.0.3
+* Getting build dependencies for wheel...
+running egg_info
+writing src/agentic_offensive_testing_platform.egg-info/PKG-INFO
+writing dependency_links to src/agentic_offensive_testing_platform.egg-info/dependency_links.txt
+writing entry points to src/agentic_offensive_testing_platform.egg-info/entry_points.txt
+writing requirements to src/agentic_offensive_testing_platform.egg-info/requires.txt
+writing top-level names to src/agentic_offensive_testing_platform.egg-info/top_level.txt
+reading manifest file 'src/agentic_offensive_testing_platform.egg-info/SOURCES.txt'
+adding license file 'LICENSE.md'
+writing manifest file 'src/agentic_offensive_testing_platform.egg-info/SOURCES.txt'
+* Building wheel...
+running bdist_wheel
+running build
+running build_py
+creating build/lib/aotp
+copying src/aotp/wstg_case_registry.py -> build/lib/aotp
+copying src/aotp/verifier.py -> build/lib/aotp
+copying src/aotp/template_registry.py -> build/lib/aotp
+copying src/aotp/submission_gate.py -> build/lib/aotp
+copying src/aotp/sprint4_cli.py -> build/lib/aotp
+copying src/aotp/scheduler.py -> build/lib/aotp
+copying src/aotp/sbom_review.py -> build/lib/aotp
+copying src/aotp/safety_budget.py -> build/lib/aotp
+copying src/aotp/reporter.py -> build/lib/aotp
+copying src/aotp/report_review.py -> build/lib/aotp
+copying src/aotp/report_quality.py -> build/lib/aotp
+copying src/aotp/report_package.py -> build/lib/aotp
+copying src/aotp/redaction.py -> build/lib/aotp
+copying src/aotp/policy_gate.py -> build/lib/aotp
+copying src/aotp/planner.py -> build/lib/aotp
+copying src/aotp/panel_evidence.py -> build/lib/aotp
+copying src/aotp/model_config.py -> build/lib/aotp
+copying src/aotp/metrics.py -> build/lib/aotp
+copying src/aotp/langgraph_orchestration.py -> build/lib/aotp
+copying src/aotp/human_approval.py -> build/lib/aotp
+copying src/aotp/fuzzing_evidence.py -> build/lib/aotp
+copying src/aotp/finding_lifecycle.py -> build/lib/aotp
+copying src/aotp/finding_candidate.py -> build/lib/aotp
+copying src/aotp/external_evidence.py -> build/lib/aotp
+copying src/aotp/executor.py -> build/lib/aotp
+copying src/aotp/evidence.py -> build/lib/aotp
+copying src/aotp/demo_release.py -> build/lib/aotp
+copying src/aotp/crypto_review.py -> build/lib/aotp
+copying src/aotp/control_panel.py -> build/lib/aotp
+copying src/aotp/config.py -> build/lib/aotp
+copying src/aotp/cli.py -> build/lib/aotp
+copying src/aotp/capability_registry.py -> build/lib/aotp
+copying src/aotp/campaign_state.py -> build/lib/aotp
+copying src/aotp/campaign_memory.py -> build/lib/aotp
+copying src/aotp/campaign_loop.py -> build/lib/aotp
+copying src/aotp/campaign_events.py -> build/lib/aotp
+copying src/aotp/campaign_control.py -> build/lib/aotp
+copying src/aotp/campaign.py -> build/lib/aotp
+copying src/aotp/bounded_fuzzing.py -> build/lib/aotp
+copying src/aotp/adapter_examples.py -> build/lib/aotp
+copying src/aotp/adapter_contract.py -> build/lib/aotp
+copying src/aotp/__init__.py -> build/lib/aotp
+creating build/lib/aotp/modules
+copying src/aotp/modules/wstg_webapp.py -> build/lib/aotp/modules
+copying src/aotp/modules/service_control_panel_misconfig.py -> build/lib/aotp/modules
+copying src/aotp/modules/sbom_review.py -> build/lib/aotp/modules
+copying src/aotp/modules/crypto_controls_review.py -> build/lib/aotp/modules
+copying src/aotp/modules/bounded_fuzzing.py -> build/lib/aotp/modules
+copying src/aotp/modules/__init__.py -> build/lib/aotp/modules
+creating build/lib/aotp/adapters
+copying src/aotp/adapters/zap_adapter.py -> build/lib/aotp/adapters
+copying src/aotp/adapters/playwright_adapter.py -> build/lib/aotp/adapters
+copying src/aotp/adapters/osmap_adapter.py -> build/lib/aotp/adapters
+copying src/aotp/adapters/ollama_adapter.py -> build/lib/aotp/adapters
+copying src/aotp/adapters/mitmproxy_adapter.py -> build/lib/aotp/adapters
+copying src/aotp/adapters/ai_browser_suite_adapter.py -> build/lib/aotp/adapters
+copying src/aotp/adapters/__init__.py -> build/lib/aotp/adapters
+running egg_info
+writing src/agentic_offensive_testing_platform.egg-info/PKG-INFO
+writing dependency_links to src/agentic_offensive_testing_platform.egg-info/dependency_links.txt
+writing entry points to src/agentic_offensive_testing_platform.egg-info/entry_points.txt
+writing requirements to src/agentic_offensive_testing_platform.egg-info/requires.txt
+writing top-level names to src/agentic_offensive_testing_platform.egg-info/top_level.txt
+reading manifest file 'src/agentic_offensive_testing_platform.egg-info/SOURCES.txt'
+adding license file 'LICENSE.md'
+writing manifest file 'src/agentic_offensive_testing_platform.egg-info/SOURCES.txt'
+installing to build/bdist.linux-x86_64/wheel
+running install
+running install_lib
+creating build/bdist.linux-x86_64/wheel
+creating build/bdist.linux-x86_64/wheel/aotp
+creating build/bdist.linux-x86_64/wheel/aotp/adapters
+copying build/lib/aotp/adapters/__init__.py -> build/bdist.linux-x86_64/wheel/./aotp/adapters
+copying build/lib/aotp/adapters/ai_browser_suite_adapter.py -> build/bdist.linux-x86_64/wheel/./aotp/adapters
+copying build/lib/aotp/adapters/mitmproxy_adapter.py -> build/bdist.linux-x86_64/wheel/./aotp/adapters
+copying build/lib/aotp/adapters/ollama_adapter.py -> build/bdist.linux-x86_64/wheel/./aotp/adapters
+copying build/lib/aotp/adapters/osmap_adapter.py -> build/bdist.linux-x86_64/wheel/./aotp/adapters
+copying build/lib/aotp/adapters/playwright_adapter.py -> build/bdist.linux-x86_64/wheel/./aotp/adapters
+copying build/lib/aotp/adapters/zap_adapter.py -> build/bdist.linux-x86_64/wheel/./aotp/adapters
+creating build/bdist.linux-x86_64/wheel/aotp/modules
+copying build/lib/aotp/modules/__init__.py -> build/bdist.linux-x86_64/wheel/./aotp/modules
+copying build/lib/aotp/modules/bounded_fuzzing.py -> build/bdist.linux-x86_64/wheel/./aotp/modules
+copying build/lib/aotp/modules/crypto_controls_review.py -> build/bdist.linux-x86_64/wheel/./aotp/modules
+copying build/lib/aotp/modules/sbom_review.py -> build/bdist.linux-x86_64/wheel/./aotp/modules
+copying build/lib/aotp/modules/service_control_panel_misconfig.py -> build/bdist.linux-x86_64/wheel/./aotp/modules
+copying build/lib/aotp/modules/wstg_webapp.py -> build/bdist.linux-x86_64/wheel/./aotp/modules
+copying build/lib/aotp/__init__.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/adapter_contract.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/adapter_examples.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/bounded_fuzzing.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/campaign.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/campaign_control.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/campaign_events.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/campaign_loop.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/campaign_memory.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/campaign_state.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/capability_registry.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/cli.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/config.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/control_panel.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/crypto_review.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/demo_release.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/evidence.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/executor.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/external_evidence.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/finding_candidate.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/finding_lifecycle.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/fuzzing_evidence.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/human_approval.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/langgraph_orchestration.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/metrics.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/model_config.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/panel_evidence.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/planner.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/policy_gate.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/redaction.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/report_package.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/report_quality.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/report_review.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/reporter.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/safety_budget.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/sbom_review.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/scheduler.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/sprint4_cli.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/submission_gate.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/template_registry.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/verifier.py -> build/bdist.linux-x86_64/wheel/./aotp
+copying build/lib/aotp/wstg_case_registry.py -> build/bdist.linux-x86_64/wheel/./aotp
+running install_egg_info
+Copying src/agentic_offensive_testing_platform.egg-info to build/bdist.linux-x86_64/wheel/./agentic_offensive_testing_platform-0.1.0-py3.13.egg-info
+running install_scripts
+creating build/bdist.linux-x86_64/wheel/agentic_offensive_testing_platform-0.1.0.dist-info/WHEEL
+creating '/tmp/aotp-sprint0-dist/.tmp-g663tbjd/agentic_offensive_testing_platform-0.1.0-py3-none-any.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'agentic_offensive_testing_platform-0.1.0.dist-info/licenses/LICENSE.md'
+adding 'aotp/__init__.py'
+adding 'aotp/adapter_contract.py'
+adding 'aotp/adapter_examples.py'
+adding 'aotp/bounded_fuzzing.py'
+adding 'aotp/campaign.py'
+adding 'aotp/campaign_control.py'
+adding 'aotp/campaign_events.py'
+adding 'aotp/campaign_loop.py'
+adding 'aotp/campaign_memory.py'
+adding 'aotp/campaign_state.py'
+adding 'aotp/capability_registry.py'
+adding 'aotp/cli.py'
+adding 'aotp/config.py'
+adding 'aotp/control_panel.py'
+adding 'aotp/crypto_review.py'
+adding 'aotp/demo_release.py'
+adding 'aotp/evidence.py'
+adding 'aotp/executor.py'
+adding 'aotp/external_evidence.py'
+adding 'aotp/finding_candidate.py'
+adding 'aotp/finding_lifecycle.py'
+adding 'aotp/fuzzing_evidence.py'
+adding 'aotp/human_approval.py'
+adding 'aotp/langgraph_orchestration.py'
+adding 'aotp/metrics.py'
+adding 'aotp/model_config.py'
+adding 'aotp/panel_evidence.py'
+adding 'aotp/planner.py'
+adding 'aotp/policy_gate.py'
+adding 'aotp/redaction.py'
+adding 'aotp/report_package.py'
+adding 'aotp/report_quality.py'
+adding 'aotp/report_review.py'
+adding 'aotp/reporter.py'
+adding 'aotp/safety_budget.py'
+adding 'aotp/sbom_review.py'
+adding 'aotp/scheduler.py'
+adding 'aotp/sprint4_cli.py'
+adding 'aotp/submission_gate.py'
+adding 'aotp/template_registry.py'
+adding 'aotp/verifier.py'
+adding 'aotp/wstg_case_registry.py'
+adding 'aotp/adapters/__init__.py'
+adding 'aotp/adapters/ai_browser_suite_adapter.py'
+adding 'aotp/adapters/mitmproxy_adapter.py'
+adding 'aotp/adapters/ollama_adapter.py'
+adding 'aotp/adapters/osmap_adapter.py'
+adding 'aotp/adapters/playwright_adapter.py'
+adding 'aotp/adapters/zap_adapter.py'
+adding 'aotp/modules/__init__.py'
+adding 'aotp/modules/bounded_fuzzing.py'
+adding 'aotp/modules/crypto_controls_review.py'
+adding 'aotp/modules/sbom_review.py'
+adding 'aotp/modules/service_control_panel_misconfig.py'
+adding 'aotp/modules/wstg_webapp.py'
+adding 'agentic_offensive_testing_platform-0.1.0.dist-info/METADATA'
+adding 'agentic_offensive_testing_platform-0.1.0.dist-info/WHEEL'
+adding 'agentic_offensive_testing_platform-0.1.0.dist-info/entry_points.txt'
+adding 'agentic_offensive_testing_platform-0.1.0.dist-info/top_level.txt'
+adding 'agentic_offensive_testing_platform-0.1.0.dist-info/RECORD'
+removing build/bdist.linux-x86_64/wheel
+Successfully built agentic_offensive_testing_platform-0.1.0.tar.gz and agentic_offensive_testing_platform-0.1.0-py3-none-any.whl

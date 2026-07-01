@@ -64,8 +64,18 @@ aotp list-modules
 aotp dry-run --scope config/scope.example.yaml
 aotp campaign-plan \
   --scope config/scope.example.yaml \
-  --campaign campaigns/authorized-webapp-campaign.example.yaml
+    --campaign campaigns/authorized-webapp-campaign.example.yaml
 ```
+
+Run the complete network-silent evaluator demonstration:
+
+```bash
+./scripts/run-evaluator-demo.sh /tmp/aotp-evaluator-demo
+```
+
+The output summary must match `examples/demo/dry-run-summary.example.json`. See
+[the evaluator walkthrough](docs/demo-script.md) and
+[the v0.1 release checklist](docs/releases/v0.1-checklist.md).
 
 Before any live case, run the non-executing `aotp policy-check` with the private scope, program profile, approval record, case, `--live`, and `--operator-approved`. It returns a structured allow or deny decision and creates no evidence or network traffic.
 

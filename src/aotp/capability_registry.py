@@ -10,6 +10,7 @@ from .bounded_fuzzing import FUZZING_SAFE_PAYLOAD_CLASSES, FUZZING_UNSAFE_ACTION
 from .sbom_review import VULNERABILITY_MAPPING_CONTRACT
 from .crypto_review import CRYPTO_UNSAFE_ACTIONS
 from .adapters.playwright_adapter import CONTRACT as PLAYWRIGHT_CONTRACT
+from .adapters.zap_adapter import CONTRACT as ZAP_CONTRACT
 
 @dataclass(frozen=True)
 class AdapterCapability:
@@ -58,20 +59,9 @@ REGISTRY: dict[str, AdapterCapability] = {
     ),
 }
 
-RICH_ADAPTERS: list[dict[str, Any]] = [PLAYWRIGHT_CONTRACT.as_dict(),
- {'adapter_id': 'zap',
-  'default_execution_mode': 'dry_run',
-  'denied_actions': ['active_scan_by_default', 'live_use_without_approval', 'unscoped_spider'],
-  'display_name': 'OWASP ZAP web security contract',
-  'live_readiness_status': 'deferred',
-  'network_silent_default': True,
-  'optional_dependency_status': 'optional_not_required',
-  'provenance_requirements': ['adapter_id', 'zap_version', 'policy_profile', 'sha256'],
-  'required_approvals': ['future_live_readiness_approval', 'explicit_spider_approval'],
-  'required_evidence_handling': ['redaction_required', 'local_only'],
-  'required_scope_fields': ['target_alias', 'allowed_urls', 'rate_limits', 'evidence_rules'],
-  'source_reference': 'https://www.zaproxy.org/docs/automate/automation-framework/',
-  'supported_capabilities': ['passive_scan_future_contract', 'limited_spider_future_contract']},
+RICH_ADAPTERS: list[dict[str, Any]] = [
+ ZAP_CONTRACT.as_dict(),
+ PLAYWRIGHT_CONTRACT.as_dict(),
  {'adapter_id': 'mitmproxy',
   'default_execution_mode': 'dry_run',
   'denied_actions': ['unscoped_interception',

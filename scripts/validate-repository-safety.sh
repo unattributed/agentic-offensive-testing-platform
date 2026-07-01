@@ -29,9 +29,9 @@ if [ -n "$bad_names" ]; then
   exit 1
 fi
 
-scan_files=$(printf '%s\n' "$files" | grep -Ev '^(scripts/validate-repository-safety\.sh|tests/test_redaction\.py)$' || true)
+scan_files=$(printf '%s\n' "$files" | grep -Ev '^(scripts/(validate-repository-safety|audit-repository-release)\.sh|tests/(test_redaction|test_repository_safety)\.py)$' || true)
 if [ -n "$scan_files" ]; then
-  findings=$(printf '%s\n' "$scan_files" | xargs grep -nEI \
+  findings=$(printf '%s\n' "$scan_files" | xargs grep -niE \
     '(AKIA[0-9A-Z]{16}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|authorization:[[:space:]]*bearer[[:space:]]+[A-Za-z0-9._~+/=-]{8,}|cookie:[[:space:]]*[^[:space:]]+|session[_-]?id[[:space:]]*[:=][[:space:]]*[A-Za-z0-9._~+/=-]{8,})' 2>/dev/null || true)
   if [ -n "$findings" ]; then
     echo "repository safety failed: likely secret or private evidence"

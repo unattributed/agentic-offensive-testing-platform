@@ -178,9 +178,17 @@ out-of-schema output fails closed. See the
 
 ## Integration boundaries
 
-Playwright, ZAP, and mitmproxy are optional future adapters with declared supported, required, and denied actions. Their designs reference the official [Playwright tracing](https://playwright.dev/docs/trace-viewer), [ZAP Automation Framework](https://www.zaproxy.org/docs/automate/automation-framework/), and [mitmproxy](https://docs.mitmproxy.org/stable/) documentation.
+Playwright, ZAP, and mitmproxy are optional deferred adapters with validated, network-silent
+contracts. Live execution is disabled and the default request budget is zero. Their designs
+reference the official [Playwright API](https://playwright.dev/docs/api/class-page),
+[ZAP Automation Framework](https://www.zaproxy.org/docs/automate/automation-framework/), and
+[mitmproxy addon](https://docs.mitmproxy.org/stable/addons/overview/) documentation.
 
-OSMAP and `ai-browser-security-test-suite` are optional local integration points, not dependencies. AOTP uses clean-room contracts and external evidence references instead of vendored code. This preserves repository and licensing boundaries, including the browser suite's separate license obligations.
+OSMAP and `ai-browser-security-test-suite` are external-reference-only integration points, not
+dependencies. AOTP uses clean-room contracts, safe aliases, and redacted hashed evidence
+references instead of imported processes or vendored code. This preserves repository and
+licensing boundaries, including the browser suite's separate AGPL-3.0-or-later review obligation.
+Alias-only non-executing examples are under `examples/adapters/`.
 
 ## Evaluation positioning
 

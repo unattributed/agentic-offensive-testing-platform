@@ -102,7 +102,7 @@ def authorized_approval(authorized_scope_sha256: str) -> dict:
         "operator_alias": "example-operator",
         "decision": "approved",
         "approved_at_utc": "2026-06-29T00:00:00Z",
-        "valid_until_utc": "2026-07-01T00:00:00Z",
+        "valid_until_utc": "2027-01-01T00:00:00Z",
         "scope_sha256": authorized_scope_sha256,
         "authorization_reference": "authorization-record-2026",
         "objective_ids": ["authorized-security-headers"],

@@ -96,3 +96,25 @@ def test_provenance_policy_blocks_unclear_material(project_root):
     assert "Only a provenance decision of `accepted` permits merge" in contributing
     assert "any other status blocks merge" in template
     assert "No source or prose copied" in register
+
+
+def test_evaluator_model_is_non_binding_and_legally_blocked(project_root):
+    model = (project_root / "docs/evaluator-license-model.md").read_text(
+        encoding="utf-8"
+    )
+    assert "DRAFT FOR LEGAL REVIEW. NOT A LICENSE. DO NOT USE OR SIGN." in model
+    assert "No rights are granted by this engineering draft." in model
+    for required in (
+        "Proposed limited grant",
+        "Proposed restrictions",
+        "Confidentiality and data handling",
+        "Retention, return, and deletion",
+        "Feedback and intellectual property",
+        "Support and security",
+        "Term, suspension, and termination",
+        "Warranty, liability, and compliance",
+        "Approval record required before use",
+    ):
+        assert required in model
+    assert "[OWNER LEGAL NAME AND ADDRESS]" in model
+    assert "repository-owner signature and evaluator signature" in model

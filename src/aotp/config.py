@@ -88,6 +88,8 @@ class ScopeConfig:
 @dataclass(frozen=True)
 class ProgramProfile:
     schema_version: str
+    profile_id: str
+    data_classification: str
     program_alias: str
     in_scope_asset_aliases: tuple[str, ...]
     out_of_scope_asset_aliases: tuple[str, ...]
@@ -503,6 +505,8 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
         profile,
         {
             "schema_version",
+            "profile_id",
+            "data_classification",
             "program_alias",
             "platform_reference",
             "accepted_policy_date",
@@ -526,6 +530,12 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
     schema_version = require_text(profile.get("schema_version"), "schema_version")
     if schema_version != SUPPORTED_SCHEMA_VERSION:
         raise ConfigError(f"unsupported schema_version: {schema_version}")
+    profile_id = require_text(profile.get("profile_id"), "profile_id")
+    data_classification = require_text(
+        profile.get("data_classification"), "data_classification"
+    )
+    if data_classification != "private":
+        raise ConfigError("data_classification must be private")
     program_alias = require_text(profile.get("program_alias"), "program_alias")
     for field in (
         "platform_reference",
@@ -567,6 +577,8 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
         )
     return ProgramProfile(
         schema_version=schema_version,
+        profile_id=profile_id,
+        data_classification=data_classification,
         program_alias=program_alias,
         in_scope_asset_aliases=tuple(in_scope),
         out_of_scope_asset_aliases=tuple(out_of_scope),

@@ -23,6 +23,8 @@ def test_example_scope_is_structurally_valid(project_root):
 def test_example_program_profile_is_structurally_valid(project_root):
     loaded = load_yaml(project_root / "config/program-profile.example.yaml")
     profile = parse_program_profile(loaded.data)
+    assert profile.profile_id == "example-profile"
+    assert profile.data_classification == "private"
     assert profile.program_alias == "example-program"
     assert profile.in_scope_asset_aliases == ("local-placeholder",)
 
@@ -44,6 +46,13 @@ def test_program_profile_rejects_scope_contradictions(project_root):
     profile = load_yaml(project_root / "config/program-profile.example.yaml").data
     profile["out_of_scope_asset_aliases"] = ["local-placeholder"]
     with pytest.raises(ConfigError, match="both in and out of scope"):
+        parse_program_profile(profile)
+
+
+def test_program_profile_requires_private_classification(project_root):
+    profile = load_yaml(project_root / "config/program-profile.example.yaml").data
+    profile["data_classification"] = "public"
+    with pytest.raises(ConfigError, match="must be private"):
         parse_program_profile(profile)
 
 

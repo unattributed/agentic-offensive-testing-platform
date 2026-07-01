@@ -1,4 +1,6 @@
 schema_version: "1.0"
+profile_id: example-profile
+data_classification: private
 program_alias: example-program
 platform_reference: example-only
 accepted_policy_date: "2000-01-01"

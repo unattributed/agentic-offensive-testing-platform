@@ -29,3 +29,6 @@ State and evidence are local, ignored artifacts. Reports read those artifacts an
 LangGraph is the durable orchestration implementation around the deterministic state and policy contracts. Its SQLite checkpoint persistence and interrupt model provide campaign pause, approval, process restart, and recovery. Policy evaluation and deterministic adapters remain outside model control.
 
 The graph preserves JSON state compatibility, idempotent step behavior, stable campaign and iteration identifiers, policy decisions before side effects, and evidence commits before checkpoint advancement. See [langgraph-orchestration.md](langgraph-orchestration.md).
+
+The v0.1 authority and bypass review is recorded in
+[architecture-authority-review.md](architecture-authority-review.md).

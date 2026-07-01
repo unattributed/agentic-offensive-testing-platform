@@ -1,0 +1,15 @@
+{
+  "campaign_id": "example-webapp-dry-run",
+  "completed_objectives": [
+    "wstg-security-headers",
+    "wstg-authn-session"
+  ],
+  "demonstration_data": "placeholder_only",
+  "evidence_records": 2,
+  "network_mode": "network_silent",
+  "report_limitations_declared": true,
+  "report_ready_findings": 0,
+  "request_count": 0,
+  "schema_version": "1.0",
+  "status": "completed"
+}

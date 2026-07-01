@@ -1,0 +1,8 @@
+Command: python3 -m pytest -q
+Exit status: 1
+Output:
+/bin/python3: No module named pytest
+
+Fallback command: ./.venv/bin/python -m pytest -q
+Exit status: 0
+Result: 369 passed

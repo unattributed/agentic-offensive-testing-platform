@@ -368,17 +368,41 @@ Development evidence: `src/aotp/wstg/strategy_map.py`,
 `src/aotp/wstg/error_handling.py`, `src/aotp/wstg/input_boundary.py`,
 `src/aotp/wstg/browser_metadata.py`, `docs/sprint-17-wstg-campaign-coverage.md`,
 `tests/test_wstg_strategy_map.py`, `tests/test_wstg_objective_generator.py`,
-`tests/test_wstg_coverage.py`, `tests/test_wstg_auth_boundary.py`, and
-`tests/test_wstg_session_management.py`.
+`tests/test_wstg_coverage.py`, `tests/test_wstg_auth_boundary.py`,
+`tests/test_wstg_session_management.py`, and `tests/test_wstg_error_input_browser.py`.
 
 Sprint acceptance: WSTG objectives derive from scope and ROE, execution stays approved, coverage
 dispositions are explicit, evidence maps back to categories, and the agent explains continuation
 or stop.
 
+### Sprint 17 Follow-up: WSTG Execution Adapter Contract
+
+Goal: close the Sprint 17 carry-forward gap by adding an OSMAP-inspired execution adapter
+contract that converts generated WSTG objectives into governed execution requests, redacted
+evidence references, OSMAP-style execution results, coverage updates, and evidence-bound finding
+candidates. This is a Sprint 17 hardening slice, not the Sprint 18 authenticated workflow.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 17F.1 | Define a WSTG execution request contract | Request binds one generated objective to a governed tool or app-specific runner |
+| 17F.2 | Define redacted evidence references | Absolute paths, path escape, and unredacted artifacts are rejected |
+| 17F.3 | Define OSMAP-style result statuses | Status includes pass, fail, warning, skip, and not_applicable |
+| 17F.4 | Convert results into coverage records | Coverage ledger receives tested or skipped dispositions with evidence or reasons |
+| 17F.5 | Gate finding candidates | Candidates are emitted only for failed, evidence-backed results |
+
+Development evidence: `src/aotp/wstg/execution_adapter.py`,
+`docs/sprint-17-followup-wstg-execution-adapters.md`,
+`tests/test_wstg_execution_adapter.py`, and exported symbols in `src/aotp/wstg/__init__.py`.
+
+Follow-up acceptance: the adapter contract remains network-silent, does not grant execution
+authority, rejects unsafe evidence references, maps execution outcomes to the Sprint 17 coverage
+ledger, and creates candidate findings only when redacted evidence supports a failed result.
+
 ## Sprint 18: Authenticated OSMAP and Clearbox Workflow
 
 Goal: productize authenticated, metadata-safe, source-informed testing of owned or authorized
-targets.
+targets by consuming the Sprint 17 follow-up execution adapter contract rather than redefining
+it.
 
 | Slice | Implementation tasks | Acceptance checks |
 |---|---|---|
@@ -387,8 +411,8 @@ targets.
 | 18.3 | Classify and route cookies, CSRF values, and tokens | ROE selects vaulted or memory-only handling |
 | 18.4 | Review an OSMAP local repository or zip | Source remains local and produces safe metadata |
 | 18.5 | Build source-derived route and auth maps | Maps contain routes and auth requirements |
-| 18.6 | Generate OSMAP WSTG candidates | Hints do not grant execution authority |
-| 18.7 | Execute governed authenticated route checks | Classified evidence is produced |
+| 18.6 | Generate OSMAP WSTG candidates through the Sprint 17 follow-up adapter contract | Hints do not grant execution authority |
+| 18.7 | Execute governed authenticated route checks through approved tools or app-specific runners | Classified evidence is produced and mapped back to adapter results |
 | 18.8 | Verify logout and post-logout boundaries | Cleanup and invalidated-session behavior are recorded |
 | 18.9 | Review candidate findings agentically | Candidates remain evidence-bound |
 | 18.10 | Build the authenticated campaign package | Draft includes evidence references and limitations |

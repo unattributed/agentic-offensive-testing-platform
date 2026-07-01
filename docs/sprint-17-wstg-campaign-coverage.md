@@ -4,7 +4,7 @@ Sprint 17 adds a WSTG-aligned campaign coverage engine for generating approved o
 
 ## Scope
 
-The sprint implements a planning and coverage layer. It does not grant execution authority by itself. Generated objectives must still be governed by the active rules of engagement, request budgets, native tool registry, and evidence classification policy.
+The sprint implements a planning and coverage layer. It does not grant execution authority by itself. Generated objectives must still be governed by the active rules of engagement, request budgets, native tool registry, and evidence classification policy. The Sprint 17 follow-up document records the separate execution-adapter contract that consumes these objectives without weakening this authority boundary.
 
 ## Delivered slices
 
@@ -37,7 +37,12 @@ Coverage records must use one of the explicit dispositions:
 - `blocked`
 - `deferred`
 
-Tested records require evidence references. Non-tested records require reasons. The coverage report renders objective status, evidence references, and the next continue or stop decision without creating vulnerability findings.
+Tested records require evidence references. Non-tested records require reasons. The coverage report renders objective status, evidence references, and the next continue or stop decision. The base Sprint 17 coverage layer does not create vulnerability findings; `docs/sprint-17-followup-wstg-execution-adapters.md` defines the later Sprint 17 follow-up contract for optional evidence-bound finding candidates from failed execution results.
+
+
+## Follow-up hardening
+
+The closed Sprint 17 follow-up is `Sprint 17 Follow-up: WSTG Execution Adapter Contract`. It adds `src/aotp/wstg/execution_adapter.py` and `tests/test_wstg_execution_adapter.py` so generated objectives can be converted into governed execution requests, redacted evidence references, OSMAP-style execution results, coverage updates, and evidence-bound finding candidates. The follow-up remains network-silent by itself and does not grant live execution authority.
 
 ## Validation
 

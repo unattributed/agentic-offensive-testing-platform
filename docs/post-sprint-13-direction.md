@@ -40,3 +40,7 @@ campaign context is active, the classification permits access, and all access, r
 and report-inclusion controls are enforced.
 
 Normal evidence and public report packages must not accidentally contain raw vault material.
+
+## Current implementation checkpoint
+
+As of main commit `ba1c484dc6a5cbc967a229059003c1472dde9499`, the post-Sprint 13 direction has advanced through Sprint 17 and its follow-up. The current implementation includes the local Deep Agent runtime, campaign-governed native tool registry, sensitive evidence vault, WSTG campaign coverage engine, and the WSTG execution adapter contract. The adapter contract preserves OSMAP-style testing discipline while remaining network-silent by itself; live authenticated workflows remain governed by later sprint scope, ROE, approvals, budgets, redaction, and evidence controls.

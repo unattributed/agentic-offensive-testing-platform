@@ -11,6 +11,7 @@ plan.
 | ZAP | `dry_run` | passive scan and limited spider placeholders | Disabled |
 | mitmproxy | `dry_run` | authorized local capture placeholders | Disabled |
 | OSMAP | `external_reference_only` | case aliases and external evidence references | Disabled |
+| WSTG execution adapter | `contract_only` | governed execution request, result, evidence, coverage, and finding-candidate contracts | Disabled by itself |
 | browser-suite | `external_reference_only` | artifact classes and external evidence references | Disabled |
 
 Every contract requires explicit private scope and policy approval. Network-capable contracts also
@@ -23,15 +24,18 @@ configuration, deterministic policy integration, dependency and license review, 
 redaction, evidence integrity, negative tests, and explicit operator review before changing any
 live-execution flag.
 
-Sprint 14 now implements the first accepted portion of the post-Sprint 13 tool path: Deep Agent
-proposal, exact objective and argument validation, bounded HTTP and TLS metadata execution, and
-classified evidence capture. Broader registry risk tiers and Parrot wrappers remain Sprint 15.
-MCP is not part of this core path.
+Post-`ba1c484`, the accepted post-Sprint 13 tool path includes Sprint 14 Deep Agent metadata
+execution, Sprint 15 campaign-governed native tool enforcement, Sprint 16 sensitive evidence vault
+handling, Sprint 17 WSTG objective and coverage planning, and the Sprint 17 follow-up WSTG
+execution adapter contract. The adapter contract defines governed execution requests, OSMAP-style
+results, redacted evidence references, coverage updates, and evidence-bound finding candidates, but
+it is network-silent by itself and does not invoke a process. MCP is not part of this core path.
 
 OSMAP and browser-suite remain separate projects. Their bridges validate metadata references only.
-They do not import source code, invoke a process, or commit generated evidence. Browser-suite
-references additionally require a separate license review record because the source project
-declares `AGPL-3.0-or-later`.
+They do not import source code, invoke a process, or commit generated evidence. The Sprint 17
+follow-up makes the OSMAP-style result discipline reusable without vendoring or executing OSMAP.
+Browser-suite references additionally require a separate license review record because the source
+project declares `AGPL-3.0-or-later`.
 
 The examples in `examples/adapters/deferred-adapters.placeholder.yaml` contain aliases only. The
 parser rejects target URLs, enabled execution, nonzero request budgets, missing requirements,

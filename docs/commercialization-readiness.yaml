@@ -1,0 +1,82 @@
+schema_version: "1.0"
+decision: blocked
+decision_scope: commercial_distribution_or_service_launch
+items:
+  - id: CR-001
+    area: ownership_and_rights
+    owner_role: repository_owner
+    status: blocked
+    required_action: Verify contributor, generated-material, and third-party rights with counsel.
+    evidence: CONTRIBUTING.md and docs/third-party-provenance-register.md
+  - id: CR-002
+    area: dependency_licenses_and_notices
+    owner_role: legal_counsel
+    status: blocked
+    required_action: Review every shipped dependency, license text, notice, and source obligation.
+    evidence: docs/dependency-license-inventory.json
+  - id: CR-003
+    area: customer_and_evaluator_terms
+    owner_role: legal_counsel
+    status: blocked
+    required_action: Approve final customer and evaluator agreements.
+    evidence: docs/evaluator-license-model.md
+  - id: CR-004
+    area: support_and_service_levels
+    owner_role: product_owner
+    status: open
+    required_action: Define supported versions, response targets, maintenance, and exclusions.
+    evidence: SECURITY.md
+  - id: CR-005
+    area: privacy_and_data_processing
+    owner_role: privacy_counsel
+    status: blocked
+    required_action: Complete data map, lawful-basis review, processor terms, and privacy notices.
+    evidence: docs/repository-redaction-policy.md
+  - id: CR-006
+    area: retention_return_and_deletion
+    owner_role: security_owner
+    status: blocked
+    required_action: Approve retention periods, deletion verification, backup handling, and legal holds.
+    evidence: docs/evaluator-license-model.md
+  - id: CR-007
+    area: security_response
+    owner_role: security_owner
+    status: open
+    required_action: Define production incident, vulnerability, notification, and remediation commitments.
+    evidence: SECURITY.md
+  - id: CR-008
+    area: export_sanctions_and_acceptable_use
+    owner_role: legal_counsel
+    status: blocked
+    required_action: Review export classification, sanctions screening, territory, and prohibited use.
+    evidence: no-approved-record
+  - id: CR-009
+    area: trademarks_and_brand
+    owner_role: repository_owner
+    status: open
+    required_action: Clear product name, marks, domains, and attribution rules.
+    evidence: no-approved-record
+  - id: CR-010
+    area: warranty_liability_and_indemnity
+    owner_role: legal_counsel
+    status: blocked
+    required_action: Approve disclaimers, liability limits, indemnity, governing law, and venue.
+    evidence: docs/evaluator-license-model.md
+  - id: CR-011
+    area: pricing_tax_and_billing
+    owner_role: commercial_owner
+    status: open
+    required_action: Define pricing, taxes, payment terms, refunds, and revenue recognition review.
+    evidence: no-approved-record
+  - id: CR-012
+    area: release_terms_and_package
+    owner_role: release_owner
+    status: blocked
+    required_action: Approve package contents, notices, license terms, SBOM, signing, and distribution channel.
+    evidence: docs/public-release-risk-review.md
+  - id: CR-013
+    area: insurance_and_operational_capacity
+    owner_role: commercial_owner
+    status: open
+    required_action: Review insurance, staffing, continuity, and subcontractor requirements.
+    evidence: no-approved-record

@@ -7,6 +7,8 @@ import sys
 import zipfile
 from pathlib import Path
 
+import yaml
+
 
 def _load_script(project_root: Path, name: str):
     path = project_root / "scripts" / name
@@ -118,3 +120,36 @@ def test_evaluator_model_is_non_binding_and_legally_blocked(project_root):
         assert required in model
     assert "[OWNER LEGAL NAME AND ADDRESS]" in model
     assert "repository-owner signature and evaluator signature" in model
+
+
+def test_commercialization_checklist_has_owners_and_visible_open_items(
+    project_root,
+):
+    checklist = yaml.safe_load(
+        (
+            project_root / "docs/commercialization-readiness.yaml"
+        ).read_text(encoding="utf-8")
+    )
+    assert checklist["schema_version"] == "1.0"
+    assert checklist["decision"] == "blocked"
+    items = checklist["items"]
+    assert len({item["id"] for item in items}) == len(items)
+    required_areas = {
+        "ownership_and_rights",
+        "dependency_licenses_and_notices",
+        "support_and_service_levels",
+        "privacy_and_data_processing",
+        "retention_return_and_deletion",
+        "security_response",
+        "export_sanctions_and_acceptable_use",
+        "trademarks_and_brand",
+        "warranty_liability_and_indemnity",
+        "pricing_tax_and_billing",
+        "release_terms_and_package",
+    }
+    assert required_areas.issubset({item["area"] for item in items})
+    assert all(item["owner_role"] for item in items)
+    assert all(item["required_action"] for item in items)
+    assert all(item["evidence"] for item in items)
+    assert all(item["status"] in {"open", "blocked", "complete"} for item in items)
+    assert any(item["status"] == "blocked" for item in items)

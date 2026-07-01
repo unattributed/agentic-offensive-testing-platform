@@ -1,9 +1,25 @@
 # Commercialization plan
 
-AOTP is currently public source-available with all rights reserved. No commercial, open-source, open-core, evaluator, or managed-service licensing path is selected by this document.
+AOTP is currently public source-available with all rights reserved. No commercial, open-source,
+open-core, evaluator, or managed-service licensing path is approved by this document.
 
-Potential future paths are continued source-available portfolio use, commercial licensing, limited evaluator licensing, managed client delivery, or a later open-source or open-core release.
+## Current decision
 
-Readiness work includes provenance review, dependency license inventory, contributor assignments, trademark review, security support terms, privacy and retention terms, export and sanctions review where applicable, warranty and liability language, pricing, and recurring public-release redaction audits. Legal counsel should review any external license or commercial use.
+Commercial distribution and service launch are `blocked`. The machine-readable
+[commercialization readiness checklist](commercialization-readiness.yaml) assigns every open or
+blocked item to an owner role and records the required action and current evidence.
 
-Private operational material remains outside the repository for every path. This includes real profiles, scopes, targets, accounts, correspondence, generated evidence, screenshots, reports, findings, traces, and campaign memory.
+Potential future paths are continued source-available portfolio use, commercial licensing,
+limited evaluator licensing, managed client delivery, or a later reviewed open-source or open-core
+release. Selecting a path does not close its legal, security, privacy, support, and operational
+requirements.
+
+## Decision rule
+
+Launch remains blocked while any checklist item is `open` or `blocked`. A status may move to
+`complete` only when its owner role links an approved, current record. Engineering evidence alone
+cannot close legal, privacy, tax, export, trademark, or contractual review.
+
+Private operational material remains outside every distribution and service repository. This
+includes real profiles, scopes, targets, accounts, correspondence, generated evidence,
+screenshots, reports, findings, traces, and campaign memory.

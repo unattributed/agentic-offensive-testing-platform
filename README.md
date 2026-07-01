@@ -36,7 +36,7 @@ agent proposal -> approved objective -> native tool registry
                                 human gate -> evidence-only report
 ```
 
-Each iteration reads the scope and rules of engagement, obtains a structured agent proposal, evaluates it at the deterministic policy gate, invokes only a registered and approved tool, captures classified evidence, records state, updates candidate references, and decides whether to continue, pause, or stop. The existing deterministic scheduler remains the v0.1 reference implementation while the Sprint 14 Deep Agent runtime is built.
+Each iteration reads the scope and rules of engagement, obtains a structured agent proposal, evaluates it at the deterministic policy gate, invokes only a registered and approved tool, captures classified evidence, records state, updates candidate references, and decides whether to continue, pause, or stop. The existing deterministic scheduler remains the v0.1 reference implementation. Sprint 14 adds a separate accepted Deep Agent runtime for three bounded metadata iterations.
 
 Campaign state is JSON under the ignored `.aotp/state/` directory. It records the scope hash, authorization and rules-of-engagement references, timestamps, module dispositions, finding candidate references, evidence directories, counters, events, and stop history.
 
@@ -188,6 +188,12 @@ Verifier and report assistance can summarize only supplied evidence references a
 authorization, policy, verdict, confidence, impact, or severity. Invalid, secret-bearing, or
 out-of-schema output fails closed. See the
 [Ollama structured outputs documentation](https://docs.ollama.com/capabilities/structured-outputs).
+
+Sprint 14 adds a LangChain Deep Agent supervisor on the stricter
+`http://127.0.0.1:11434` endpoint. It validates an installed tool-capable model, emits strict
+proposals, runs exactly the approved HTTP, TLS, and robots/security.txt metadata objectives, and
+writes four-request due-diligence evidence under `.aotp/campaigns/`. See the
+[Sprint 14 runtime and operator demo](docs/sprint-14-ollama-deep-agent-runtime.md).
 
 ## Integration boundaries
 

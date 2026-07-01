@@ -1,0 +1,8 @@
+command: .venv/bin/python -m pip check
+result: passed
+output: No broken requirements found.
+
+command: .venv/bin/pip-audit
+result: passed
+output: No known vulnerabilities found.
+note: The local proprietary project itself is not published on PyPI and was skipped as expected.

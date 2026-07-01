@@ -1,0 +1,3 @@
+command: bash scripts/validate-repository-safety.sh
+result: passed
+output: repository safety validation passed

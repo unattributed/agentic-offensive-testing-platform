@@ -1,0 +1,30 @@
+{
+  "branch": "sprint/14-ollama-deep-agent-runtime",
+  "slices_completed": [
+    "14.1",
+    "14.2",
+    "14.3",
+    "14.4",
+    "14.5",
+    "14.6",
+    "14.7",
+    "14.8",
+    "14.9",
+    "14.10"
+  ],
+  "ollama_loopback_only": true,
+  "configured_model_available": true,
+  "configured_model_tool_capable": true,
+  "deep_agent_supervisor_started": true,
+  "structured_proposal_generated": true,
+  "malformed_proposals_denied": true,
+  "out_of_scope_proposals_denied": true,
+  "approved_metadata_tools_executed": true,
+  "evidence_written_and_hashed": true,
+  "agent_received_prior_evidence_summaries": true,
+  "iterations_completed": 3,
+  "target_request_count": 4,
+  "due_diligence_report_generated": true,
+  "mcp_code_path_exists": false,
+  "private_live_evidence_tracked": false
+}

@@ -1,4 +1,4 @@
-"""Deterministic planning with schema-bound advisory model suggestions."""
+"""Deterministic planning with schema-bound, policy-gated model proposals."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any
 
 
 class PlannerSuggestionError(ValueError):
-    """Raised when advisory output exceeds the approved objective boundary."""
+    """Raised when model output exceeds the approved objective boundary."""
 
 
 @dataclass(frozen=True)
@@ -69,7 +69,7 @@ def validate_ai_suggestion(suggestion: dict[str, Any], approved: list[dict[str, 
     ]
     normalized = {
         "objective_id": suggestion.get("objective_id", suggestion.get("id")),
-        "rationale": suggestion.get("rationale", "advisory suggestion"),
+        "rationale": suggestion.get("rationale", "policy-gated suggestion"),
     }
     if set(suggestion) - {"id", "objective_id", "rationale"}:
         return False
@@ -86,7 +86,7 @@ def request_planning_suggestion(
 ) -> PlannerSuggestion:
     approved = list(_approved_ids(approved_objective_ids))
     result = adapter.generate(
-        "Suggest one objective ID from the approved list. This is advisory only.",
+        "Propose one objective ID from the approved list. The AOTP policy gate decides execution.",
         {"approved_objective_ids": approved},
         planner_response_schema(approved),
     )

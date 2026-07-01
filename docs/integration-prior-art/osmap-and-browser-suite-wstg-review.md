@@ -33,7 +33,7 @@ OSMAP and `ai-browser-security-test-suite` remain separate projects. Sprint 4 us
 
 ## How OSMAP informs WSTG case and mapping design
 
-OSMAP informs AOTP's WSTG design through taxonomy discipline, version-aware mapping fields, scenario matrix thinking, evidence-first WSTG execution flow, explicit closeout records, and release-gate expectations. AOTP converts those ideas into static dry-run case registry records and policy-gated case execution models.
+OSMAP informs AOTP's WSTG design through taxonomy discipline, version-aware mapping fields, scenario matrix thinking, evidence-first WSTG execution flow, explicit closeout records, and release-gate expectations. The v0.1 implementation converts those ideas into dry-run case registry records and policy-gated case execution models. Sprint 14 onward extends that foundation into campaign-governed native tool execution without importing OSMAP code.
 
 ## How the browser suite informs browser evidence modeling
 

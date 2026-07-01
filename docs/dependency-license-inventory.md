@@ -20,9 +20,11 @@ status. Unknown metadata is never treated as approval.
 | pip-audit | audit tooling | `>=2.10,<3` | Apache-2.0 classifier | Audit environment only |
 | pip-licenses | audit tooling | `>=5.5,<6` | MIT | Audit environment only |
 | ShellCheck | external audit tooling | system package | GPL-3.0-or-later | Never bundled or linked |
+| actions/checkout | CI tooling | commit `de0fac2e` (`v6.0.2`) | MIT | Remote CI action only |
+| actions/setup-python | CI tooling | commit `a309ff8b` (`v6.2.0`) | MIT | Remote CI action only |
 
-Python itself and the operating-system distribution require separate deployment review. GitHub
-workflow actions are remote build tooling and are not shipped in the Python package.
+Python itself and the operating-system distribution require separate deployment review. Workflow
+actions are pinned remote build tooling and are not shipped in the Python package.
 
 ## Review status meanings
 

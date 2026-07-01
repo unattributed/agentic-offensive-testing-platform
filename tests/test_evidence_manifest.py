@@ -154,3 +154,30 @@ def test_external_evidence_path_policy_rejects_escape_and_absolute(tmp_path):
         validate_external_evidence_reference(dict(base, relative_path="../secret.txt"), tmp_path)
     with pytest.raises(ValueError):
         validate_external_evidence_reference(dict(base, relative_path="/tmp/secret.txt"), tmp_path)
+
+
+def test_external_evidence_reference_rejects_unknown_fields(tmp_path):
+    reference = {
+        "alias": "dom",
+        "relative_path": "browser/dom.json",
+        "sha256": VALID_SHA,
+        "provenance": "local dry-run",
+        "source_project_or_adapter_contract": "browser-suite",
+        "redaction_status": "redacted",
+        "execute": True,
+    }
+    with pytest.raises(ValueError, match="unknown fields"):
+        validate_external_evidence_reference(reference, tmp_path)
+
+
+def test_external_evidence_reference_rejects_secret_provenance(tmp_path):
+    reference = {
+        "alias": "dom",
+        "relative_path": "browser/dom.json",
+        "sha256": VALID_SHA,
+        "provenance": "Bearer " + "abc.def.ghi123",
+        "source_project_or_adapter_contract": "browser-suite",
+        "redaction_status": "redacted",
+    }
+    with pytest.raises(ValueError, match="redaction check failed"):
+        validate_external_evidence_reference(reference, tmp_path)

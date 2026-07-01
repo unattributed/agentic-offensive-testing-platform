@@ -118,6 +118,8 @@ def parse_placeholder_examples(data: dict[str, Any]) -> tuple[PlaceholderIntegra
             f"{field}.approval_requirements",
             allow_empty=False,
         )
+        if len(approvals) != len(set(approvals)):
+            raise ConfigError(f"{field}.approval_requirements must be unique")
         if set(approvals) != set(contract["required_approvals"]):
             raise ConfigError(f"{field}.approval_requirements must declare every requirement")
         scope_aliases = _safe_alias_mapping(
@@ -131,6 +133,8 @@ def parse_placeholder_examples(data: dict[str, Any]) -> tuple[PlaceholderIntegra
             f"{field}.evidence_handling",
             allow_empty=False,
         )
+        if len(evidence_handling) != len(set(evidence_handling)):
+            raise ConfigError(f"{field}.evidence_handling must be unique")
         if set(evidence_handling) != set(contract["required_evidence_handling"]):
             raise ConfigError(f"{field}.evidence_handling must declare every requirement")
         provenance_aliases = _safe_alias_mapping(
@@ -139,11 +143,12 @@ def parse_placeholder_examples(data: dict[str, Any]) -> tuple[PlaceholderIntegra
         )
         if set(provenance_aliases) != set(contract["provenance_requirements"]):
             raise ConfigError(f"{field}.provenance_aliases must cover provenance requirements")
+        example_id = require_text(example.get("example_id"), f"{field}.example_id")
+        if SAFE_ALIAS.fullmatch(example_id) is None:
+            raise ConfigError(f"{field}.example_id must be a safe placeholder alias")
         plans.append(
             PlaceholderIntegrationPlan(
-                example_id=require_text(
-                    example.get("example_id"), f"{field}.example_id"
-                ),
+                example_id=example_id,
                 adapter_id=adapter_id,
                 execution_mode=execution_mode,
                 requested_capabilities=tuple(capabilities),

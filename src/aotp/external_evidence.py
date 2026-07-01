@@ -5,8 +5,18 @@ import re
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from .redaction import assert_value_redacted
+
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 ALLOWED_REDACTION = {"redacted", "placeholder_only", "not_applicable_redacted_source"}
+REFERENCE_FIELDS = {
+    "alias",
+    "relative_path",
+    "sha256",
+    "provenance",
+    "source_project_or_adapter_contract",
+    "redaction_status",
+}
 
 
 def _has_symlink_between(root: Path, target: Path) -> bool:
@@ -21,6 +31,13 @@ def _has_symlink_between(root: Path, target: Path) -> bool:
 
 
 def validate_external_evidence_reference(reference: dict[str, Any], evidence_root: str | Path) -> dict[str, Any]:
+    if not isinstance(reference, dict):
+        raise ValueError("external evidence reference must be a mapping")
+    unknown = sorted(set(reference) - REFERENCE_FIELDS)
+    if unknown:
+        raise ValueError(
+            "external evidence reference contains unknown fields: " + ", ".join(unknown)
+        )
     required = ["alias", "relative_path", "sha256", "provenance", "source_project_or_adapter_contract", "redaction_status"]
     missing = [field for field in required if not reference.get(field)]
     if missing:
@@ -41,7 +58,7 @@ def validate_external_evidence_reference(reference: dict[str, Any], evidence_roo
         raise ValueError("external evidence reference must not be a symlink")
     if target.exists() and _has_symlink_between(root, target):
         raise ValueError("external evidence reference path contains a symlink")
-    return {
+    result = {
         "alias": str(reference["alias"]),
         "relative_path": str(rel),
         "sha256": digest,
@@ -49,3 +66,5 @@ def validate_external_evidence_reference(reference: dict[str, Any], evidence_roo
         "source_project_or_adapter_contract": str(reference["source_project_or_adapter_contract"]),
         "redaction_status": str(reference["redaction_status"]),
     }
+    assert_value_redacted(result)
+    return result

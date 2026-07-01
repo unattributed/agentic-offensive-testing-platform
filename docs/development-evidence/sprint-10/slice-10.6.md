@@ -13,7 +13,7 @@ Focused validation:
 
 ```text
 ./.venv/bin/python -m pytest -q tests/test_adapter_examples.py
-10 passed
+13 passed
 ```
 
 Repository safety validation passed. No adapter dependency was imported and no external process or

@@ -68,6 +68,21 @@ def test_placeholder_examples_reject_real_target_values(project_root):
         parse_placeholder_examples(data)
 
 
+def test_placeholder_examples_reject_unsafe_example_id(project_root):
+    data = _examples(project_root)
+    data["examples"][0]["example_id"] = "https://target.example.invalid"
+    with pytest.raises(ConfigError, match="safe placeholder alias"):
+        parse_placeholder_examples(data)
+
+
+@pytest.mark.parametrize("field", ["approval_requirements", "evidence_handling"])
+def test_placeholder_examples_reject_duplicate_requirements(project_root, field):
+    data = _examples(project_root)
+    data["examples"][0][field].append(data["examples"][0][field][0])
+    with pytest.raises(ConfigError, match="must be unique"):
+        parse_placeholder_examples(data)
+
+
 def test_placeholder_examples_reject_unsupported_capability(project_root):
     data = _examples(project_root)
     data["examples"][0]["requested_capabilities"].append("active_execution")

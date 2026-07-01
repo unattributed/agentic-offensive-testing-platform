@@ -57,6 +57,13 @@ class AdapterContract:
                 raise ValueError(f"adapter contract {field} must contain unique non-empty text")
         if self.default_execution_mode not in {"dry_run", "external_reference_only"}:
             raise ValueError("adapter contract default execution mode is unsafe")
+        if self.live_readiness_status not in {"deferred", "external_reference_only"}:
+            raise ValueError("adapter contract live readiness status is invalid")
+        if self.optional_dependency_status not in {
+            "not_a_dependency",
+            "optional_not_required",
+        }:
+            raise ValueError("adapter contract optional dependency status is invalid")
         if self.network_silent_default is not True:
             raise ValueError("adapter contracts must default to network silent")
         if self.live_execution_enabled is not False:

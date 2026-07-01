@@ -28,6 +28,16 @@ from .model_proposal_gate import (
     evaluate_model_proposal,
 )
 from .model_proposals import ModelProposal
+from .request_budget import RequestBudget
+from .roe import RulesOfEngagement
+from .tool_registry import (
+    NativeToolCall,
+    NativeToolRegistry,
+    ToolExecutionDenied,
+    ToolRegistryError,
+    build_default_native_tool_registry,
+)
+from .tool_risk_tiers import ToolRiskTier
 
 
 class AgenticCampaignError(RuntimeError):
@@ -58,6 +68,8 @@ ToolExecutor = Callable[[ModelProposal], ToolExecutionResult]
 
 
 def execute_native_tool(proposal: ModelProposal) -> ToolExecutionResult:
+    """Legacy direct executor retained for injected tests and emergency local fallback."""
+
     arguments = proposal.arguments_dict
     if proposal.tool_name == "http_metadata":
         return fetch_http_metadata(str(arguments["url"]))
@@ -70,6 +82,52 @@ def execute_native_tool(proposal: ModelProposal) -> ToolExecutionResult:
     if proposal.tool_name == "well_known_text":
         return fetch_well_known_metadata(str(arguments["base_url"]))
     raise AgenticCampaignError("proposal references an unregistered native tool")
+
+
+def build_campaign_tool_roe(policy: AgentCampaignPolicy) -> RulesOfEngagement:
+    """Translate the active campaign policy into registry ROE."""
+
+    return RulesOfEngagement(
+        campaign_id=policy.campaign_id,
+        target_alias=policy.target_alias,
+        authorization_reference=policy.authorization_reference,
+        operator_approved=policy.operator_approved,
+        allowed_tool_names=frozenset(objective.tool_name for objective in policy.objectives),
+        allowed_risk_tiers=frozenset({ToolRiskTier.PASSIVE_METADATA}),
+        allowed_hosts=frozenset({policy.host}),
+        allowed_ports=frozenset({policy.port}),
+        allowed_schemes=frozenset({"https"}),
+        evidence_classifications=frozenset({"public"}),
+    )
+
+
+def execute_registry_native_tool(
+    proposal: ModelProposal,
+    *,
+    policy: AgentCampaignPolicy,
+    budget: RequestBudget,
+    workspace: AgentCampaignWorkspace,
+    registry: NativeToolRegistry,
+) -> ToolExecutionResult:
+    """Execute a model proposal through the Sprint 15 governed registry."""
+
+    native_result = registry.execute(
+        NativeToolCall(
+            campaign_id=policy.campaign_id,
+            target_alias=proposal.target_alias,
+            tool_name=proposal.tool_name,
+            arguments=proposal.arguments_dict,
+            proposal_id=proposal.objective_id,
+        ),
+        build_campaign_tool_roe(policy),
+        budget,
+        workspace=workspace,
+    )
+    return ToolExecutionResult(
+        tool_name=native_result.tool_name,
+        request_count=native_result.request_count,
+        result=native_result.result,
+    )
 
 
 def _write_denial(
@@ -140,7 +198,8 @@ def run_agentic_campaign(
     supervisor: ProposalSupervisor,
     policy: AgentCampaignPolicy,
     workspace: AgentCampaignWorkspace,
-    tool_executor: ToolExecutor = execute_native_tool,
+    tool_executor: ToolExecutor | None = None,
+    native_tool_registry: NativeToolRegistry | None = None,
 ) -> AgenticCampaignResult:
     supervisor_status = supervisor.start()
     workspace.write_json(
@@ -157,6 +216,8 @@ def run_agentic_campaign(
     completed: set[str] = set()
     summaries: list[EvidenceSummary] = []
     request_count = 0
+    registry_budget = RequestBudget(max_requests=policy.max_requests)
+    registry = native_tool_registry or build_default_native_tool_registry()
     for iteration in range(1, policy.max_iterations + 1):
         remaining = policy.remaining(completed)
         if not remaining:
@@ -204,8 +265,19 @@ def run_agentic_campaign(
             )
             raise AgenticCampaignError("campaign request budget exceeded")
         try:
-            result = tool_executor(proposal)
-        except (KeyError, TypeError, ValueError, NativeToolError) as exc:
+            if tool_executor is None:
+                result = execute_registry_native_tool(
+                    proposal,
+                    policy=policy,
+                    budget=registry_budget,
+                    workspace=workspace,
+                    registry=registry,
+                )
+            else:
+                result = tool_executor(proposal)
+        except ToolExecutionDenied as exc:
+            raise AgenticCampaignError("governed native tool was denied by registry") from exc
+        except (KeyError, TypeError, ValueError, NativeToolError, ToolRegistryError) as exc:
             workspace.write_json(
                 "evidence",
                 f"iteration-{iteration:02d}-failed",

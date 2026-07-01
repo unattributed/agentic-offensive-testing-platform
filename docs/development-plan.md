@@ -289,6 +289,29 @@ Sprint acceptance: approved FOSS tools execute within scope and budget, denied c
 evidence, arbitrary shell execution is impossible, and results returned to the agent follow ROE
 and evidence classification.
 
+### Sprint 15 Follow-up: Tool Governance Hardening
+
+Goal: close the senior-review findings before Sprint 16 depends on governed native tools for
+sensitive evidence handling.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 15A.1 | Close nmap target expansion edge cases | Nmap denies CIDR, wildcard, comma, and numeric range target expressions |
+| 15A.2 | Reserve request budget before tool execution | Failed launched tools still consume budget |
+| 15A.3 | Route the active campaign loop through the registry | Default agent execution uses ROE, registry, and request budget |
+| 15A.4 | Record successful registry-mediated executions | Executed governed tool calls create evidence records |
+| 15A.5 | Add redirect and crawl scope regressions | Playwright and ZAP tests deny out-of-origin navigation or crawl output |
+
+Development evidence: `src/aotp/tool_registry.py`, `src/aotp/agentic_campaign_loop.py`,
+`src/aotp/agent_tools/nmap_governed.py`, `src/aotp/agent_tools/playwright_passive.py`,
+`src/aotp/agent_tools/zap_passive.py`, `docs/sprint-15-governance-hardening.md`,
+`tests/test_tool_registry.py`, `tests/test_nmap_governed.py`, `tests/test_playwright_passive.py`,
+`tests/test_zap_passive.py`, and `tests/test_agentic_campaign_loop.py`.
+
+Sprint acceptance: Sprint 15 governed tools are fail-closed against target expansion, consume
+budget at launch, provide success and denial evidence, govern the active campaign loop, and
+block out-of-origin browser or passive scanner evidence before Sprint 16 begins.
+
 ## Sprint 16: Sensitive Evidence Vault and PoC Material Handling
 
 Goal: encrypt sensitive campaign proof, allow authorized agent and tool use during campaign

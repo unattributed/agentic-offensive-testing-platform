@@ -29,6 +29,24 @@ def validate_browser_metadata_url(url: str) -> str:
     return url
 
 
+def _origin_tuple(url: str) -> tuple[str, str, int]:
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or parsed.hostname is None:
+        raise PlaywrightPassiveError("Playwright passive URL has no comparable origin")
+    default_port = 443 if parsed.scheme == "https" else 80
+    return parsed.scheme, parsed.hostname.lower().rstrip("."), parsed.port or default_port
+
+
+def validate_same_origin_navigation(start_url: str, final_url: str) -> str:
+    """Reject browser navigation that leaves the approved origin."""
+
+    validate_browser_metadata_url(start_url)
+    validate_browser_metadata_url(final_url)
+    if _origin_tuple(start_url) != _origin_tuple(final_url):
+        raise PlaywrightPassiveError("Playwright passive navigation left the approved origin")
+    return final_url
+
+
 def _collect_with_playwright(url: str, *, timeout_ms: int) -> dict[str, Any]:
     try:
         from playwright.sync_api import sync_playwright
@@ -44,9 +62,10 @@ def _collect_with_playwright(url: str, *, timeout_ms: int) -> dict[str, Any]:
             frame_count = len(page.frames)
             link_count = page.locator("a[href]").count()
             form_count = page.locator("form").count()
+            final_url = validate_same_origin_navigation(url, page.url)
             return {
                 "url": url,
-                "final_url": page.url,
+                "final_url": final_url,
                 "status": response.status if response is not None else None,
                 "title": title[:200],
                 "frame_count": frame_count,
@@ -70,6 +89,9 @@ def collect_playwright_passive_metadata(
         raise PlaywrightPassiveError("Playwright passive timeout must be from 1000 to 60000 ms")
     try:
         result = collector(safe_url) if collector is not None else _collect_with_playwright(safe_url, timeout_ms=timeout_ms)
+        if not isinstance(result, dict) or not isinstance(result.get("final_url"), str):
+            raise PlaywrightPassiveError("Playwright passive collector must return a final_url")
+        validate_same_origin_navigation(safe_url, result["final_url"])
     except PlaywrightPassiveError:
         raise
     except Exception as exc:

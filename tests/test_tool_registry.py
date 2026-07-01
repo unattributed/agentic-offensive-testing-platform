@@ -163,3 +163,63 @@ def test_denied_tool_evidence_redacts_credential_like_arguments(tmp_path):
     record = json.loads(evidence_files[0].read_text(encoding="utf-8"))
     assert record["proposal_arguments"]["url"] == "<redacted-url-credentials>"
     assert record["proposal_arguments"]["token"] == "<redacted>"
+
+
+def test_budget_is_consumed_when_executor_fails_after_approval():
+    def executor(_arguments):
+        raise RuntimeError("tool failed after launch")
+
+    registry = NativeToolRegistry(
+        (
+            NativeToolSpec(
+                name="http_metadata",
+                description="test",
+                risk_tier=ToolRiskTier.PASSIVE_METADATA,
+                arguments=(ToolArgument("url", str),),
+                request_cost=1,
+                evidence_classification="public",
+                executor=executor,
+            ),
+        )
+    )
+    budget = RequestBudget(max_requests=1)
+    call = NativeToolCall(
+        campaign_id="campaign-1",
+        target_alias="target-1",
+        tool_name="http_metadata",
+        arguments={"url": "https://example.com/"},
+    )
+    with pytest.raises(RuntimeError):
+        registry.execute(call, _roe(), budget)
+    assert budget.snapshot().used_requests == 1
+
+
+def test_successful_tool_call_is_written_as_campaign_evidence(tmp_path):
+    workspace = AgentCampaignWorkspace.create(tmp_path / "workspace", program_alias="program", run_id="run-1")
+    registry = NativeToolRegistry(
+        (
+            NativeToolSpec(
+                name="http_metadata",
+                description="test",
+                risk_tier=ToolRiskTier.PASSIVE_METADATA,
+                arguments=(ToolArgument("url", str),),
+                request_cost=1,
+                evidence_classification="public",
+                executor=lambda _arguments: {"ok": True},
+            ),
+        )
+    )
+    call = NativeToolCall(
+        campaign_id="campaign-1",
+        target_alias="target-1",
+        tool_name="http_metadata",
+        arguments={"url": "https://example.com/"},
+    )
+    result = registry.execute(call, _roe(), RequestBudget(max_requests=1), workspace=workspace)
+    evidence_files = sorted(workspace.evidence.glob("executed-http_metadata-*.json"))
+    assert len(evidence_files) == 1
+    record = json.loads(evidence_files[0].read_text(encoding="utf-8"))
+    assert result.evidence_path == str(evidence_files[0].relative_to(workspace.path))
+    assert record["allowed"] is True
+    assert record["executed"] is True
+    assert record["result"] == {"ok": True}

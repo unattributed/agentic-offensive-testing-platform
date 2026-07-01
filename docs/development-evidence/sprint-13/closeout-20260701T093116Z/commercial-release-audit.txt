@@ -1,0 +1,7 @@
+commercial release readiness audit passed
+repository_visibility=public
+source_license=proprietary_all_rights_reserved
+commercial_distribution=blocked
+open_source_license_release=blocked
+evaluator_distribution=blocked
+operational_material_release=prohibited

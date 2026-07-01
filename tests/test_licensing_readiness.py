@@ -71,3 +71,28 @@ def test_tracked_dependency_inventory_is_valid(project_root):
         )
     )
     assert module.validate_inventory(inventory) == []
+
+
+def test_provenance_policy_blocks_unclear_material(project_root):
+    policy = (
+        project_root / "docs/third-party-attribution-policy.md"
+    ).read_text(encoding="utf-8")
+    contributing = (project_root / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    template = (
+        project_root / ".github/pull_request_template.md"
+    ).read_text(encoding="utf-8")
+    register = (
+        project_root / "docs/third-party-provenance-register.md"
+    ).read_text(encoding="utf-8")
+
+    for required in (
+        "immutable version",
+        "exact license expression",
+        "clean-room",
+        "legal_review_required",
+        "missing or incomplete",
+    ):
+        assert required in policy
+    assert "Only a provenance decision of `accepted` permits merge" in contributing
+    assert "any other status blocks merge" in template
+    assert "No source or prose copied" in register

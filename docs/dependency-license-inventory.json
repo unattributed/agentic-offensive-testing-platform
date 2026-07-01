@@ -97,7 +97,7 @@
       "version": "3.4.7"
     },
     {
-      "dependency_type": "transitive",
+      "dependency_type": "direct_runtime",
       "license_metadata": "Apache-2.0 OR BSD-3-Clause",
       "name": "cryptography",
       "review_status": "metadata_recorded_pending_legal_review",

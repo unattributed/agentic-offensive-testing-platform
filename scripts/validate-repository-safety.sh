@@ -40,4 +40,8 @@ if [ -n "$scan_files" ]; then
   fi
 fi
 
+if [ -x "scripts/validate-vault-leakage.sh" ]; then
+  scripts/validate-vault-leakage.sh
+fi
+
 echo "repository safety validation passed"

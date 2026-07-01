@@ -27,3 +27,13 @@ vault-backed material for authorized analysis, validation, replay, and reproduci
 
 Sensitive annex export and any report inclusion require explicit human approval. The normal report
 excludes raw vault material by default and may refer to an approved, separately packaged annex.
+
+
+## Sprint 16 implementation note
+
+The implemented vault stores sensitive material as authenticated ciphertext and safe metadata.
+Normal evidence references `vault://` handles only. Raw agent and tool access goes through
+`agent_vault_access`, which logs every allowed or denied read. PoC workspaces and sensitive annexes
+consume handles rather than plaintext, and repository safety delegates to
+`scripts/validate-vault-leakage.sh` to catch tracked plaintext vault markers or generated vault
+paths.

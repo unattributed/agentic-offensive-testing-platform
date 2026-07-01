@@ -10,7 +10,7 @@ Agentic Offensive Testing Platform (AOTP) is a public source-available, policy-c
 
 AOTP is a policy-constrained campaign harness. After Sprint 13, the product direction is a local Ollama model with a LangChain Deep Agent supervisor, AOTP subagents and skills, and campaign-governed native tools. The agent may plan, request and execute approved tools, analyze classified evidence, and adapt the next test. It cannot authorize scope, add targets, override rules of engagement, bypass the policy gate, continue after a stop condition, or submit a report.
 
-AOTP is not an uncontrolled autonomous pentest bot, program enrollment tool, target scraper, high-volume scanner, automatic report submitter, or guarantee of bug bounty income. The v0.1 live adapters are intentionally network-silent stubs; Sprint 14 onward progressively replaces them with real, typed native tools governed by campaign ROE, budgets, evidence rules, and human steering.
+AOTP is not an uncontrolled autonomous pentest bot, program enrollment tool, target scraper, high-volume scanner, automatic report submitter, or guarantee of bug bounty income. The v0.1 live adapters were intentionally network-silent stubs; Sprint 14 onward progressively replaces them with real, typed native tools governed by campaign ROE, budgets, evidence rules, and human steering. As of `ba1c484`, the WSTG layer includes objective and coverage planning plus a network-silent execution adapter contract for governed requests, OSMAP-style results, redacted evidence references, coverage updates, and evidence-bound finding candidates.
 
 ## Campaign loop
 
@@ -197,12 +197,18 @@ writes four-request due-diligence evidence under `.aotp/campaigns/`. See the
 
 ## Integration boundaries
 
-Playwright, ZAP, and mitmproxy currently have validated, network-silent v0.1 contracts. The
-post-Sprint 13 plan progressively implements campaign-governed native wrappers. Live execution
-remains disabled until the corresponding sprint acceptance proofs pass. Their designs
-reference the official [Playwright API](https://playwright.dev/docs/api/class-page),
+Playwright, ZAP, and mitmproxy have validated, network-silent v0.1 contracts. The post-Sprint 13
+plan progressively implements campaign-governed native wrappers only after their acceptance
+proofs pass. Their designs reference the official
+[Playwright API](https://playwright.dev/docs/api/class-page),
 [ZAP Automation Framework](https://www.zaproxy.org/docs/automate/automation-framework/), and
 [mitmproxy addon](https://docs.mitmproxy.org/stable/addons/overview/) documentation.
+
+Sprint 17 and its follow-up add a reusable WSTG campaign layer: version-aware objective
+generation, explicit coverage dispositions, next-objective selection, coverage reporting, and a
+network-silent execution adapter contract for governed tool or app-specific runner results. The
+contract does not execute network requests by itself. Live execution still requires campaign ROE,
+request budgets, evidence classification, redaction, and any required human approval.
 
 OSMAP and `ai-browser-security-test-suite` are external-reference-only integration points, not
 dependencies. AOTP uses clean-room contracts, safe aliases, and redacted hashed evidence

@@ -33,7 +33,7 @@ OSMAP and `ai-browser-security-test-suite` remain separate projects. Sprint 4 us
 
 ## How OSMAP informs WSTG case and mapping design
 
-OSMAP informs AOTP's WSTG design through taxonomy discipline, version-aware mapping fields, scenario matrix thinking, evidence-first WSTG execution flow, explicit closeout records, and release-gate expectations. The v0.1 implementation converts those ideas into dry-run case registry records and policy-gated case execution models. Sprint 14 onward extends that foundation into campaign-governed native tool execution without importing OSMAP code.
+OSMAP informs AOTP's WSTG design through taxonomy discipline, version-aware mapping fields, scenario matrix thinking, evidence-first WSTG execution flow, explicit closeout records, and release-gate expectations. The v0.1 implementation converts those ideas into dry-run case registry records and policy-gated case execution models. Sprint 14 onward extends that foundation into campaign-governed native tool execution without importing OSMAP code. Sprint 17 adds reusable WSTG coverage planning, and the Sprint 17 follow-up adds an OSMAP-inspired execution adapter contract without copying, vendoring, or invoking OSMAP.
 
 ## How the browser suite informs browser evidence modeling
 
@@ -54,4 +54,4 @@ Path policy rejects path escape, symlink abuse, redaction bypass, malformed SHA2
 
 ## Deferred live adapter readiness
 
-Future live readiness remains deferred for Playwright navigation, ZAP passive or spider work, mitmproxy capture, OSMAP external process execution, and browser-suite external process execution. Future work must add explicit approvals, private scope requirements, dependency checks, redaction checks, and live adapter validation before any network-capable behavior is enabled.
+Future live readiness remains deferred for Playwright navigation, ZAP passive or spider work, mitmproxy capture, OSMAP external process execution, and browser-suite external process execution unless a later sprint implements and validates a specific governed wrapper. The Sprint 17 follow-up execution adapter is a contract-only bridge: it can record governed execution intent, OSMAP-style result semantics, redacted evidence references, coverage updates, and evidence-bound finding candidates, but it does not enable network-capable behavior. Future work must add explicit approvals, private scope requirements, dependency checks, redaction checks, and live adapter validation before any network-capable behavior is enabled.

@@ -1,0 +1,154 @@
+schema_version: "1.0"
+examples:
+  - example_id: playwright-placeholder
+    adapter_id: playwright
+    execution_mode: dry_run
+    execute: false
+    request_budget: 0
+    requested_capabilities:
+      - navigation_placeholder
+      - dom_placeholder
+      - screenshot_placeholder
+      - trace_placeholder
+    approval_requirements:
+      - explicit_private_scope
+      - policy_gate_approval
+      - future_live_readiness_approval
+    scope_field_aliases:
+      target_alias: target-placeholder
+      allowed_urls: allowed-url-set-placeholder
+      rate_limits: rate-limit-profile-placeholder
+      evidence_rules: evidence-rules-placeholder
+    evidence_handling:
+      - redaction_required
+      - local_only
+      - placeholder_by_default
+      - artifact_hash_required
+    provenance_aliases:
+      adapter_id: playwright-adapter-placeholder
+      version: version-placeholder
+      local_path_alias: local-install-placeholder
+      sha256: sha256-placeholder
+  - example_id: zap-placeholder
+    adapter_id: zap
+    execution_mode: dry_run
+    execute: false
+    request_budget: 0
+    requested_capabilities:
+      - passive_scan_placeholder
+      - limited_spider_placeholder
+    approval_requirements:
+      - explicit_private_scope
+      - policy_gate_approval
+      - future_live_readiness_approval
+      - explicit_spider_approval
+    scope_field_aliases:
+      target_alias: target-placeholder
+      allowed_urls: allowed-url-set-placeholder
+      rate_limits: rate-limit-profile-placeholder
+      spider_limits: spider-limit-profile-placeholder
+      evidence_rules: evidence-rules-placeholder
+    evidence_handling:
+      - redaction_required
+      - local_only
+      - artifact_hash_required
+      - passive_metadata_only_by_default
+    provenance_aliases:
+      adapter_id: zap-adapter-placeholder
+      zap_version: version-placeholder
+      policy_profile: policy-profile-placeholder
+      sha256: sha256-placeholder
+  - example_id: mitmproxy-placeholder
+    adapter_id: mitmproxy
+    execution_mode: dry_run
+    execute: false
+    request_budget: 0
+    requested_capabilities:
+      - authorized_local_capture_placeholder
+      - proxy_capture_placeholder
+    approval_requirements:
+      - explicit_private_scope
+      - policy_gate_approval
+      - future_live_readiness_approval
+      - local_capture_authorization
+    scope_field_aliases:
+      target_alias: target-placeholder
+      allowed_proxy_context: proxy-context-placeholder
+      rate_limits: rate-limit-profile-placeholder
+      evidence_rules: evidence-rules-placeholder
+    evidence_handling:
+      - redaction_required
+      - credential_stripping_required
+      - local_only
+      - private_ca_material_excluded
+      - artifact_hash_required
+    provenance_aliases:
+      adapter_id: mitmproxy-adapter-placeholder
+      mitmproxy_version: version-placeholder
+      capture_alias: capture-placeholder
+      sha256: sha256-placeholder
+  - example_id: osmap-placeholder
+    adapter_id: osmap
+    execution_mode: external_reference_only
+    execute: false
+    request_budget: 0
+    requested_capabilities:
+      - explicit_case_alias_bridge
+      - external_local_evidence_reference
+      - wstg_mapping_provenance
+    approval_requirements:
+      - explicit_private_scope
+      - policy_gate_approval
+      - external_reference_review
+    scope_field_aliases:
+      case_alias: case-placeholder
+      evidence_alias: evidence-placeholder
+      relative_path: relative-path-placeholder
+      sha256: sha256-placeholder
+      provenance: provenance-placeholder
+      source_commit_alias: source-commit-placeholder
+    evidence_handling:
+      - redaction_required
+      - artifact_hash_required
+      - clean_room_mapping_only
+      - no_implicit_live_run
+      - no_vendored_code
+    provenance_aliases:
+      source_project: osmap-project-placeholder
+      source_commit_alias: source-commit-placeholder
+      case_alias: case-placeholder
+      sha256: sha256-placeholder
+      redaction_status: redaction-status-placeholder
+  - example_id: browser-suite-placeholder
+    adapter_id: browser-suite
+    execution_mode: external_reference_only
+    execute: false
+    request_budget: 0
+    requested_capabilities:
+      - evidence_class_mapping
+      - external_browser_evidence_reference
+    approval_requirements:
+      - explicit_private_scope
+      - policy_gate_approval
+      - external_reference_review
+      - license_obligation_review
+    scope_field_aliases:
+      artifact_class: artifact-class-placeholder
+      evidence_alias: evidence-placeholder
+      relative_path: relative-path-placeholder
+      sha256: sha256-placeholder
+      provenance: provenance-placeholder
+      source_commit_alias: source-commit-placeholder
+    evidence_handling:
+      - redaction_required
+      - artifact_hash_required
+      - no_implicit_live_run
+      - no_vendored_code
+      - separate_license_obligations_documented
+    provenance_aliases:
+      source_project: browser-suite-project-placeholder
+      source_commit_alias: source-commit-placeholder
+      artifact_class: artifact-class-placeholder
+      sha256: sha256-placeholder
+      redaction_status: redaction-status-placeholder
+      license_review_reference: license-review-placeholder

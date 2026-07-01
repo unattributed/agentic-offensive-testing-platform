@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+root=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
 cd "$root"
 python=${PYTHON:-"$root/.venv/bin/python"}
 if [ ! -x "$python" ]; then

@@ -447,6 +447,15 @@ def evaluate(
         elif missing_stops := sorted(required_stops - stop_conditions):
             reasons.append("required stop conditions are missing: " + ", ".join(missing_stops))
         if parsed_profile is not None:
+            checklist = parsed_profile.policy_checklist
+            if not checklist.policy_accepted:
+                reasons.append("program policy acceptance is not confirmed")
+            if not checklist.safe_harbor_reviewed:
+                reasons.append("program safe harbor review is not confirmed")
+            if not checklist.disclosure_rules_reviewed:
+                reasons.append("program disclosure rules review is not confirmed")
+            if not checklist.stop_conditions_reviewed:
+                reasons.append("program stop conditions review is not confirmed")
             if parsed_profile.program_alias != parsed_scope.program_alias:
                 reasons.append("program profile alias does not match scope")
             profile_reference = program_profile.get("authorization_reference")

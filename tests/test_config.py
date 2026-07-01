@@ -25,6 +25,7 @@ def test_example_program_profile_is_structurally_valid(project_root):
     profile = parse_program_profile(loaded.data)
     assert profile.profile_id == "example-profile"
     assert profile.data_classification == "private"
+    assert profile.policy_checklist.policy_accepted is True
     assert profile.program_alias == "example-program"
     assert profile.in_scope_asset_aliases == ("local-placeholder",)
 
@@ -53,6 +54,13 @@ def test_program_profile_requires_private_classification(project_root):
     profile = load_yaml(project_root / "config/program-profile.example.yaml").data
     profile["data_classification"] = "public"
     with pytest.raises(ConfigError, match="must be private"):
+        parse_program_profile(profile)
+
+
+def test_program_profile_policy_checklist_rejects_unknown_terms(project_root):
+    profile = load_yaml(project_root / "config/program-profile.example.yaml").data
+    profile["policy_checklist"]["implicit_consent"] = True
+    with pytest.raises(ConfigError, match="policy_checklist contains unknown fields"):
         parse_program_profile(profile)
 
 

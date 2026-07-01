@@ -25,3 +25,8 @@ report_format_expectations: human-reviewed-markdown
 disclosure_rules: no-automatic-or-public-disclosure
 emergency_stop_condition: operator-stop
 sensitive_workflow_notes: require-human-approval
+policy_checklist:
+  policy_accepted: true
+  safe_harbor_reviewed: true
+  disclosure_rules_reviewed: true
+  stop_conditions_reviewed: true

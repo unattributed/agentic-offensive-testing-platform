@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from aotp.policy_gate import evaluate
 
 
@@ -271,6 +273,48 @@ def test_program_profile_out_of_scope_and_category_rules_are_authoritative(
     assert not decision.allowed
     assert "target is explicitly out of scope in program profile" in decision.reasons
     assert "test category is forbidden by program profile" in decision.reasons
+
+
+@pytest.mark.parametrize(
+    ("term", "reason"),
+    (
+        ("policy_accepted", "program policy acceptance is not confirmed"),
+        ("safe_harbor_reviewed", "program safe harbor review is not confirmed"),
+        (
+            "disclosure_rules_reviewed",
+            "program disclosure rules review is not confirmed",
+        ),
+        (
+            "stop_conditions_reviewed",
+            "program stop conditions review is not confirmed",
+        ),
+    ),
+)
+def test_incomplete_program_policy_checklist_denies_live_execution(
+    term,
+    reason,
+    authorized_scope,
+    authorized_profile,
+    authorized_approval,
+    authorized_scope_sha256,
+    authorized_objective,
+    authorized_now,
+    tmp_path,
+):
+    authorized_profile["policy_checklist"][term] = False
+    decision = evaluate(
+        authorized_scope,
+        authorized_objective,
+        program_profile=authorized_profile,
+        operator_approval=authorized_approval,
+        scope_sha256=authorized_scope_sha256,
+        live=True,
+        operator_approved=True,
+        workspace=tmp_path,
+        now=authorized_now,
+    )
+    assert not decision.allowed
+    assert reason in decision.reasons
 
 
 def test_live_rate_limit_cannot_exceed_program_limit(

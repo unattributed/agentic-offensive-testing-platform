@@ -13,6 +13,7 @@ from .adapters.playwright_adapter import CONTRACT as PLAYWRIGHT_CONTRACT
 from .adapters.zap_adapter import CONTRACT as ZAP_CONTRACT
 from .adapters.mitmproxy_adapter import CONTRACT as MITMPROXY_CONTRACT
 from .adapters.osmap_adapter import CONTRACT as OSMAP_CONTRACT
+from .adapters.ai_browser_suite_adapter import CONTRACT as BROWSER_SUITE_CONTRACT
 
 @dataclass(frozen=True)
 class AdapterCapability:
@@ -66,24 +67,8 @@ RICH_ADAPTERS: list[dict[str, Any]] = [
  PLAYWRIGHT_CONTRACT.as_dict(),
  MITMPROXY_CONTRACT.as_dict(),
  OSMAP_CONTRACT.as_dict(),
- {'adapter_id': 'browser-suite',
-  'default_execution_mode': 'external_reference_only',
-  'denied_actions': ['dependency_import',
-                     'vendored_code',
-                     'implicit_live_execution',
-                     'generated_evidence_commitment'],
-  'display_name': 'ai-browser-security-test-suite external evidence contract',
-  'live_readiness_status': 'not_applicable_external_reference_only',
-  'network_silent_default': True,
-  'optional_dependency_status': 'not_a_dependency',
-  'provenance_requirements': ['source_project', 'artifact_class', 'sha256', 'redaction_status'],
-  'required_approvals': ['external_reference_review', 'license_obligation_review'],
-  'required_evidence_handling': ['no_vendored_code',
-                                 'no_implicit_live_run',
-                                 'separate_license_obligations_documented'],
-  'required_scope_fields': ['evidence_alias', 'relative_path', 'sha256', 'provenance'],
-  'source_reference': 'https://github.com/unattributed/ai-browser-security-test-suite',
-  'supported_capabilities': ['external_browser_evidence_reference', 'evidence_class_mapping']}]
+ BROWSER_SUITE_CONTRACT.as_dict(),
+]
 
 
 def _legacy_adapter_contract(adapter_id: str, capability: AdapterCapability) -> dict[str, Any]:

@@ -12,6 +12,7 @@ This inventory is a review aid, not legal advice.
 | Nuclei templates | Optional external YAML source | no, not vendored | exact commit and bundle hash required | MIT repository, template behavior requires individual review | keep external, signed, allowlisted, and policy-gated |
 | YARA | Optional provided-artifact classifier | no, prospective | not yet pinned | BSD-3-Clause engine, rules retain their own licenses | review engine and each ruleset separately |
 | Yara-Rules community rules | Potential external rules | rejected for vendoring | not applicable | GPL-2.0 ruleset | do not include in proprietary distribution |
+| ai-browser-security-test-suite | External browser evidence references only | no, not imported or vendored | reviewed source commit alias required | source project declares AGPL-3.0-or-later | keep separate and require license review before any dependency or code reuse |
 
 CI actions are build tooling and must also be reviewed before commercial distribution. Add every future adapter dependency before merge and capture its source, version, SPDX expression, transitive obligations, and redistribution decision.
 

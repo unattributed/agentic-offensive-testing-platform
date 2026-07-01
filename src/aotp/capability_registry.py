@@ -9,6 +9,7 @@ from .control_panel import PANEL_SAFE_OBSERVATIONS, PANEL_UNSAFE_ACTIONS
 from .bounded_fuzzing import FUZZING_SAFE_PAYLOAD_CLASSES, FUZZING_UNSAFE_ACTIONS
 from .sbom_review import VULNERABILITY_MAPPING_CONTRACT
 from .crypto_review import CRYPTO_UNSAFE_ACTIONS
+from .adapters.playwright_adapter import CONTRACT as PLAYWRIGHT_CONTRACT
 
 @dataclass(frozen=True)
 class AdapterCapability:
@@ -57,24 +58,7 @@ REGISTRY: dict[str, AdapterCapability] = {
     ),
 }
 
-RICH_ADAPTERS: list[dict[str, Any]] = [{'adapter_id': 'playwright',
-  'default_execution_mode': 'dry_run',
-  'denied_actions': ['live_navigation_by_default',
-                     'unscoped_browser_capture',
-                     'credential_capture'],
-  'display_name': 'Playwright browser evidence contract',
-  'live_readiness_status': 'deferred',
-  'network_silent_default': True,
-  'optional_dependency_status': 'optional_not_required',
-  'provenance_requirements': ['adapter_id', 'version', 'local_path_alias', 'sha256'],
-  'required_approvals': ['future_live_readiness_approval'],
-  'required_evidence_handling': ['redaction_required', 'local_only', 'placeholder_by_default'],
-  'required_scope_fields': ['target_alias', 'allowed_urls', 'evidence_rules'],
-  'source_reference': 'https://playwright.dev/docs/trace-viewer',
-  'supported_capabilities': ['navigation_placeholder',
-                             'dom_placeholder',
-                             'screenshot_placeholder',
-                             'trace_placeholder']},
+RICH_ADAPTERS: list[dict[str, Any]] = [PLAYWRIGHT_CONTRACT.as_dict(),
  {'adapter_id': 'zap',
   'default_execution_mode': 'dry_run',
   'denied_actions': ['active_scan_by_default', 'live_use_without_approval', 'unscoped_spider'],

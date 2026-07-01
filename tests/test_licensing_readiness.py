@@ -153,3 +153,22 @@ def test_commercialization_checklist_has_owners_and_visible_open_items(
     assert all(item["evidence"] for item in items)
     assert all(item["status"] in {"open", "blocked", "complete"} for item in items)
     assert any(item["status"] == "blocked" for item in items)
+
+
+def test_public_release_review_stays_blocked_and_auditable(project_root):
+    module = _load_script(
+        project_root, "audit-commercial-release-readiness.py"
+    )
+    assert module.audit(project_root, run_repository_commands=False) == []
+    review = yaml.safe_load(
+        (
+            project_root / "docs/public-release-risk-review.yaml"
+        ).read_text(encoding="utf-8")
+    )
+    assert review["repository_visibility"]["observed"] == "public"
+    assert review["source_license_posture"] == "proprietary_all_rights_reserved"
+    assert review["decisions"]["commercial_distribution"] == "blocked"
+    assert review["decisions"]["open_source_license_release"] == "blocked"
+    assert review["decisions"]["evaluator_distribution"] == "blocked"
+    assert review["decisions"]["operational_material_release"] == "prohibited"
+    assert all(item["status"] == "blocked" for item in review["blockers"])

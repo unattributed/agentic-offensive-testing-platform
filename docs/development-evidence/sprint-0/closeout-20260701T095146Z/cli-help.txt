@@ -1,0 +1,8 @@
+usage: aotp [-h]
+            {validate-config,list-cases,list-modules,fuzzing-corpus-reference,template-source-verify,policy-check,dry-run,run-case,campaign-plan,campaign-run,campaign-resume,campaign-stop,campaign-events-verify,evidence-verify,evidence-verdict,finding-create,report-review-create,finding-transition,report,campaign-report,campaign-graph-run,campaign-graph-resume} ...
+
+positional arguments:
+  {validate-config,list-cases,list-modules,fuzzing-corpus-reference,template-source-verify,policy-check,dry-run,run-case,campaign-plan,campaign-run,campaign-resume,campaign-stop,campaign-events-verify,evidence-verify,evidence-verdict,finding-create,report-review-create,finding-transition,report,campaign-report,campaign-graph-run,campaign-graph-resume}
+
+options:
+  -h, --help            show this help message and exit

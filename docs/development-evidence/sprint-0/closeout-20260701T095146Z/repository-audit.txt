@@ -1,0 +1,7 @@
+repository safety validation passed
+repository release audit passed
+tracked_files=399
+history_commits=98
+historical_paths=376
+tracked_symlinks=0
+history_secret_findings=0

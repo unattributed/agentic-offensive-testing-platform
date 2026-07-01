@@ -23,8 +23,9 @@ configuration, deterministic policy integration, dependency and license review, 
 redaction, evidence integrity, negative tests, and explicit operator review before changing any
 live-execution flag.
 
-The post-Sprint 13 tool path is Deep Agent proposal, native registry lookup, risk-tier and ROE
-evaluation, human steering when required, bounded FOSS execution, and classified evidence capture.
+Sprint 14 now implements the first accepted portion of the post-Sprint 13 tool path: Deep Agent
+proposal, exact objective and argument validation, bounded HTTP and TLS metadata execution, and
+classified evidence capture. Broader registry risk tiers and Parrot wrappers remain Sprint 15.
 MCP is not part of this core path.
 
 OSMAP and browser-suite remain separate projects. Their bridges validate metadata references only.

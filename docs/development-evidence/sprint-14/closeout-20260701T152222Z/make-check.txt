@@ -1,0 +1,5 @@
+command: PATH="$PWD/.venv/bin:$PATH" make check
+result: passed
+tests: 453
+pytest_time_seconds: 10.98
+repository_safety: passed

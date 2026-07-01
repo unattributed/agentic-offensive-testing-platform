@@ -1,0 +1,25 @@
+{
+  "status": "completed",
+  "model": "gemma4:latest",
+  "model_digest": "c6eb396dbd5992bbe3f5cdb947e8bbc0ee413d7c17e2beaae69f5d569cf982eb",
+  "cpu_inference": true,
+  "run_id_sha256": "e01e9a7d88cc1e2f7d857e6d8d0faa2b70af1dc6862c28cf63bec567175271cf",
+  "iterations": 3,
+  "request_count": 4,
+  "completed_tool_classes": [
+    "http_metadata",
+    "tls_metadata",
+    "well_known_text"
+  ],
+  "artifact_sha256": [
+    "72483301e0a0a1c6505f745eecfd5cdaa714921c959796aa4be0b19ac17dc310",
+    "f147b81880e160338ee39787e5387b3314f0732d109b7ab648bd3531ca750557",
+    "b369afe3e6c355b3686a005450fc6bd5d8d7c209ab4503e7aef874ea1c3ac34f"
+  ],
+  "report_generated": true,
+  "credentials_used": false,
+  "state_changing_actions": false,
+  "payload_injection": false,
+  "exploitation": false,
+  "target_or_authorization_material_included": false
+}

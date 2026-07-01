@@ -1,0 +1,2 @@
+command: .venv/bin/python -m compileall -q src tests scripts
+result: passed

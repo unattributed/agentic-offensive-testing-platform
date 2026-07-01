@@ -1,0 +1,3 @@
+command: shellcheck scripts/run-sprint14-agentic-mailhost-demo.sh
+result: passed
+shellcheck_version: 0.10.0

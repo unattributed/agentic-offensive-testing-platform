@@ -1,0 +1,7 @@
+python=3.13.5
+ollama=0.30.11
+deepagents=0.6.12
+langchain-ollama=1.1.0
+langgraph=1.2.7
+pytest=9.1.1
+shellcheck=0.10.0

@@ -12,6 +12,7 @@ from .crypto_review import CRYPTO_UNSAFE_ACTIONS
 from .adapters.playwright_adapter import CONTRACT as PLAYWRIGHT_CONTRACT
 from .adapters.zap_adapter import CONTRACT as ZAP_CONTRACT
 from .adapters.mitmproxy_adapter import CONTRACT as MITMPROXY_CONTRACT
+from .adapters.osmap_adapter import CONTRACT as OSMAP_CONTRACT
 
 @dataclass(frozen=True)
 class AdapterCapability:
@@ -64,27 +65,7 @@ RICH_ADAPTERS: list[dict[str, Any]] = [
  ZAP_CONTRACT.as_dict(),
  PLAYWRIGHT_CONTRACT.as_dict(),
  MITMPROXY_CONTRACT.as_dict(),
- {'adapter_id': 'osmap',
-  'default_execution_mode': 'external_reference_only',
-  'denied_actions': ['dependency_import',
-                     'vendored_code',
-                     'implicit_live_execution',
-                     'generated_evidence_commitment'],
-  'display_name': 'OSMAP external local evidence contract',
-  'live_readiness_status': 'not_applicable_external_reference_only',
-  'network_silent_default': True,
-  'optional_dependency_status': 'not_a_dependency',
-  'provenance_requirements': ['source_project',
-                              'commit_or_bundle_alias',
-                              'sha256',
-                              'redaction_status'],
-  'required_approvals': ['external_reference_review'],
-  'required_evidence_handling': ['no_vendored_code',
-                                 'no_implicit_live_run',
-                                 'clean_room_mapping_only'],
-  'required_scope_fields': ['evidence_alias', 'relative_path', 'sha256', 'provenance'],
-  'source_reference': 'https://github.com/unattributed/OSMAP',
-  'supported_capabilities': ['external_local_evidence_reference', 'wstg_mapping_provenance']},
+ OSMAP_CONTRACT.as_dict(),
  {'adapter_id': 'browser-suite',
   'default_execution_mode': 'external_reference_only',
   'denied_actions': ['dependency_import',

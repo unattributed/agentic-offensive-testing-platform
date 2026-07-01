@@ -1,0 +1,25 @@
+/bin/python3 -m compileall -q src tests
+/bin/python3 -m pytest
+........................................................................ [ 18%]
+........................................................................ [ 36%]
+........................................................................ [ 54%]
+........................................................................ [ 72%]
+........................................................................ [ 90%]
+.......................................                                  [100%]
+399 passed in 21.07s
+./scripts/validate-repository-safety.sh
+repository safety validation passed
+repository safety validation passed
+repository release audit passed
+tracked_files=323
+history_commits=87
+historical_paths=322
+tracked_symlinks=0
+history_secret_findings=0
+v0.1 release check passed
+version=0.1.0
+validation_mode=full
+repository_safety=passed
+history_audit=passed
+demo_summary=matched
+placeholder_report=matched

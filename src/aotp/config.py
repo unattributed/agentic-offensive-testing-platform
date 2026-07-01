@@ -86,14 +86,25 @@ class ScopeConfig:
 
 
 @dataclass(frozen=True)
+class ProgramPolicyChecklist:
+    policy_accepted: bool
+    safe_harbor_reviewed: bool
+    disclosure_rules_reviewed: bool
+    stop_conditions_reviewed: bool
+
+
+@dataclass(frozen=True)
 class ProgramProfile:
     schema_version: str
+    profile_id: str
+    data_classification: str
     program_alias: str
     in_scope_asset_aliases: tuple[str, ...]
     out_of_scope_asset_aliases: tuple[str, ...]
     prohibited_actions: tuple[str, ...]
     allowed_testing_categories: tuple[str, ...]
     forbidden_testing_categories: tuple[str, ...]
+    policy_checklist: ProgramPolicyChecklist
     data: dict[str, Any]
 
 
@@ -503,6 +514,8 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
         profile,
         {
             "schema_version",
+            "profile_id",
+            "data_classification",
             "program_alias",
             "platform_reference",
             "accepted_policy_date",
@@ -520,12 +533,19 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
             "disclosure_rules",
             "emergency_stop_condition",
             "sensitive_workflow_notes",
+            "policy_checklist",
         },
         "program profile",
     )
     schema_version = require_text(profile.get("schema_version"), "schema_version")
     if schema_version != SUPPORTED_SCHEMA_VERSION:
         raise ConfigError(f"unsupported schema_version: {schema_version}")
+    profile_id = require_text(profile.get("profile_id"), "profile_id")
+    data_classification = require_text(
+        profile.get("data_classification"), "data_classification"
+    )
+    if data_classification != "private":
+        raise ConfigError("data_classification must be private")
     program_alias = require_text(profile.get("program_alias"), "program_alias")
     for field in (
         "platform_reference",
@@ -549,6 +569,37 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
         profile.get("allowed_testing_categories"), "allowed_testing_categories", allow_empty=False
     )
     forbidden = require_text_list(profile.get("forbidden_testing_categories"), "forbidden_testing_categories")
+    raw_checklist = require_mapping(
+        profile.get("policy_checklist"), "policy_checklist"
+    )
+    _reject_unknown(
+        raw_checklist,
+        {
+            "policy_accepted",
+            "safe_harbor_reviewed",
+            "disclosure_rules_reviewed",
+            "stop_conditions_reviewed",
+        },
+        "policy_checklist",
+    )
+    checklist = ProgramPolicyChecklist(
+        policy_accepted=require_bool(
+            raw_checklist.get("policy_accepted"),
+            "policy_checklist.policy_accepted",
+        ),
+        safe_harbor_reviewed=require_bool(
+            raw_checklist.get("safe_harbor_reviewed"),
+            "policy_checklist.safe_harbor_reviewed",
+        ),
+        disclosure_rules_reviewed=require_bool(
+            raw_checklist.get("disclosure_rules_reviewed"),
+            "policy_checklist.disclosure_rules_reviewed",
+        ),
+        stop_conditions_reviewed=require_bool(
+            raw_checklist.get("stop_conditions_reviewed"),
+            "policy_checklist.stop_conditions_reviewed",
+        ),
+    )
     for values, field in (
         (in_scope, "in_scope_asset_aliases"),
         (out_of_scope, "out_of_scope_asset_aliases"),
@@ -567,12 +618,15 @@ def parse_program_profile(profile: dict[str, Any]) -> ProgramProfile:
         )
     return ProgramProfile(
         schema_version=schema_version,
+        profile_id=profile_id,
+        data_classification=data_classification,
         program_alias=program_alias,
         in_scope_asset_aliases=tuple(in_scope),
         out_of_scope_asset_aliases=tuple(out_of_scope),
         prohibited_actions=tuple(prohibited),
         allowed_testing_categories=tuple(allowed),
         forbidden_testing_categories=tuple(forbidden),
+        policy_checklist=checklist,
         data=profile,
     )
 

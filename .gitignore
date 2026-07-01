@@ -17,6 +17,8 @@ private/
 config/private-*.yaml
 config/*.private.yaml
 config/program-profile.yaml
+config/program-profiles/
+config/*.program-profile.private.yaml
 examples/**/private-*.yaml
 campaign-memory*.json
 *.pem

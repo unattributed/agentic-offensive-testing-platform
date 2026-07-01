@@ -1,0 +1,7 @@
+reachable_history_secret_findings=0
+dangling_object_sensitive_pattern_matches=1
+dangling_object_confirmed_secret_findings=0
+
+One unreachable local blob contains the deliberately assembled bearer-pattern negative test
+fixture from an intermediate unstaged edit. It contains no credential and is not reachable from
+any ref or included in repository history.

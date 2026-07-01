@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+root=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
 python=${AOTP_DEMO_PYTHON:-"$root/.venv/bin/python"}
 if [ ! -x "$python" ]; then
   echo "demo failed: set AOTP_DEMO_PYTHON to a Python with project dependencies" >&2
@@ -20,7 +20,7 @@ else
   workspace=$(mktemp -d "${TMPDIR:-/tmp}/aotp-demo.XXXXXXXX")
   temporary=true
 fi
-workspace=$(CDPATH= cd -- "$workspace" && pwd)
+workspace=$(CDPATH='' cd -- "$workspace" && pwd)
 if [ -e "$workspace/.aotp" ]; then
   echo "demo failed: workspace already contains .aotp state" >&2
   exit 2

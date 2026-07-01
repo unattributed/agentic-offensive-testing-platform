@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 import zipfile
@@ -39,3 +40,34 @@ def test_built_wheel_declares_proprietary_license(project_root, tmp_path):
         assert "License-Expression: LicenseRef-Proprietary" in metadata
         assert "License-File: LICENSE.md" in metadata
         assert any(name.endswith(".dist-info/licenses/LICENSE.md") for name in archive.namelist())
+
+
+def test_dependency_inventory_covers_declared_and_transitive_packages(project_root):
+    module = _load_script(
+        project_root, "generate-dependency-license-inventory.py"
+    )
+    inventory = module.generate(project_root)
+    assert module.validate_inventory(inventory) == []
+    categories = {
+        record["dependency_type"] for record in inventory["dependencies"]
+    }
+    assert {
+        "project",
+        "direct_runtime",
+        "direct_development",
+        "direct_audit_tool",
+        "transitive",
+    }.issubset(categories)
+    assert all(record["review_status"] for record in inventory["dependencies"])
+
+
+def test_tracked_dependency_inventory_is_valid(project_root):
+    module = _load_script(
+        project_root, "generate-dependency-license-inventory.py"
+    )
+    inventory = json.loads(
+        (project_root / "docs/dependency-license-inventory.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert module.validate_inventory(inventory) == []

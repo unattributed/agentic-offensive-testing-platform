@@ -174,7 +174,10 @@ Bounded fuzzing is network-silent in this release. Private corpora are reduced t
 reference records, planned request budgets are evidence-bound, and safety signals stop campaigns
 before execution.
 
-Bug bounty drafts remain drafts until a human approves them. AOTP has no submission adapter.
+Bug bounty report packages contain a redaction-checked draft and verified evidence-manifest hashes.
+They remain draft, pending human review, and manual-only. A separate named-human approval must bind
+the exact package digest before the gate returns `approved_for_manual_submission`. AOTP has no
+submission adapter or transport path.
 
 ## Local models
 

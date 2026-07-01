@@ -24,9 +24,10 @@ Acceptance proof:
 
 Validation: 18 Sprint 11 focused tests and 369 full project tests passed in the repository virtual
 environment. The final audit covered 311 tracked files, 77 commits, and 301 historical paths,
-with zero tracked symlinks and zero historical secret findings. The system Python lacks `pytest`,
-so unmodified `make check` cannot complete its test phase; the project-environment release command
-passed.
+with zero tracked symlinks and zero historical secret findings. At the original closeout, system
+Python lacked `pytest`, so unmodified `make check` could not complete its test phase. Before Sprint
+12 closeout, the missing test dependency was installed and upgraded to a non-vulnerable supported
+version; system-Python `make check` and the full release command then passed.
 
 Timestamped closeout evidence:
 [`closeout-20260701T032355Z`](closeout-20260701T032355Z/README.md).

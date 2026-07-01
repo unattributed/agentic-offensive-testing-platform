@@ -225,6 +225,381 @@ remain blocked until every recorded review closes.
 Plan correction: repository visibility is public, not private. Sprint 13 preserves proprietary
 source terms and private operations without claiming that repository visibility is private.
 
+## Sprint 14: Ollama Deep Agent Campaign Runtime
+
+Goal: build the first real agentic campaign loop using local Ollama plus LangChain Deep Agents,
+with no MCP. The agent plans, calls governed native tools, analyzes evidence summaries, and chooses
+the next test.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 14.1 | Bootstrap Ollama Deep Agent and validate the local model | Ollama is detected on `127.0.0.1` only; configured model is available |
+| 14.2 | Create `.aotp/campaigns/<program>/<run-id>/` bounded workspace | State and artifacts cannot escape the workspace |
+| 14.3 | Define Deep Agent supervisor and subagents | Supervisor and delegated roles start with bounded context |
+| 14.4 | Define structured test-objective and tool-call proposal schema | Agent emits valid structured proposal JSON |
+| 14.5 | Gate model-proposed objectives | Malformed and out-of-scope proposals are denied |
+| 14.6 | Add HTTP metadata, TLS metadata, robots, and security.txt native tools | Approved metadata tools execute; no unregistered tool path exists |
+| 14.7 | Return classified evidence summaries to the agent | Evidence is written, hashed, classified, and summarized |
+| 14.8 | Run a three-iteration campaign loop | Agent analyzes each summary and completes at least three iterations |
+| 14.9 | Demonstrate a no-credential campaign on an authorized owned target | Live proof remains in scope and produces a due-diligence result |
+| 14.10 | Document the sprint and operator demo | Report draft or no-finding summary is generated; no MCP code path exists |
+
+Development evidence: `src/aotp/deep_agent/bootstrap.py`,
+`src/aotp/deep_agent/supervisor.py`, `src/aotp/deep_agent/subagents.py`,
+`src/aotp/agent_workspace.py`, `src/aotp/agentic_campaign_loop.py`,
+`src/aotp/model_proposals.py`, `src/aotp/model_proposal_gate.py`,
+`src/aotp/agent_tools/http_metadata.py`, `src/aotp/agent_tools/tls_metadata.py`,
+`src/aotp/evidence_summarizer.py`, `docs/sprint-14-ollama-deep-agent-runtime.md`,
+`scripts/run-sprint14-agentic-mailhost-demo.sh`, `tests/test_agent_workspace.py`,
+`tests/test_model_proposals.py`, `tests/test_model_proposal_gate.py`, and
+`tests/test_agentic_campaign_loop.py`.
+
+Sprint acceptance: the local supervisor produces governed structured proposals, approved metadata
+tools execute, evidence feeds the next decision for at least three iterations, output is
+evidence-linked, and no MCP path exists.
+
+## Sprint 15: Campaign-Governed Native Tool Registry
+
+Goal: make every real tool typed, risk-tiered, scoped, budgeted, logged, classified, and approved
+under human-defined ROE.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 15.1 | Implement the native tool registry | Agent requests map only to registered tools |
+| 15.2 | Define risk tiers from passive metadata to exploitation validation | Every tool call resolves to a documented risk tier |
+| 15.3 | Add ROE-driven tool permissions | Tools not allowed by ROE are denied |
+| 15.4 | Enforce request budgets and rate limits | Over-budget calls are denied before execution |
+| 15.5 | Add a constrained Parrot campaign shell | Shell cannot run arbitrary commands |
+| 15.6 | Add a single-host, single-service governed nmap wrapper | Arguments and targets outside scope are denied |
+| 15.7 | Add an OWASP ZAP passive baseline wrapper | Approved passive execution is bounded and captured |
+| 15.8 | Add a Playwright passive browser metadata wrapper | Browser collection remains scoped and classified |
+| 15.9 | Record denied calls as campaign evidence | Denial reason and proposal are evidence-bound |
+| 15.10 | Generate a FOSS tool inventory | Availability never grants authority |
+
+Development evidence: `src/aotp/tool_registry.py`, `src/aotp/tool_risk_tiers.py`,
+`src/aotp/roe.py`, `src/aotp/request_budget.py`,
+`src/aotp/agent_tools/campaign_shell.py`, `src/aotp/agent_tools/nmap_governed.py`,
+`src/aotp/agent_tools/zap_passive.py`, `src/aotp/agent_tools/playwright_passive.py`,
+`src/aotp/tool_inventory.py`, `docs/sprint-15-campaign-governed-tools.md`,
+`tests/test_tool_registry.py`, `tests/test_tool_risk_tiers.py`,
+`tests/test_request_budget.py`, `tests/test_campaign_shell.py`,
+`tests/test_nmap_governed.py`, and `tests/test_zap_passive.py`.
+
+Sprint acceptance: approved FOSS tools execute within scope and budget, denied calls become
+evidence, arbitrary shell execution is impossible, and results returned to the agent follow ROE
+and evidence classification.
+
+## Sprint 16: Sensitive Evidence Vault and PoC Material Handling
+
+Goal: encrypt sensitive campaign proof, allow authorized agent and tool use during campaign
+iterations, support PoC construction, and prevent leakage into normal evidence, git, or reports.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 16.1 | Define `public`, `restricted`, `secret`, `poc_sensitive`, `recipient_only`, and `do_not_store` | Secret-like output is classified automatically |
+| 16.2 | Implement encrypted campaign-sensitive storage | Sensitive material is encrypted before persistence |
+| 16.3 | Add vault handles across campaign iterations | Normal evidence references handles without raw values |
+| 16.4 | Store campaign keys, hashes, passwords, tokens, private keys, and proof material | Authorized campaign material persists safely |
+| 16.5 | Enforce authorized raw agent access | Access denies outside active campaign ROE |
+| 16.6 | Add secret-bearing in-memory tool interfaces | Approved tools use material without argv or log leakage |
+| 16.7 | Add a classified PoC workspace | Vault-backed material can build reproducible proof |
+| 16.8 | Implement sensitive annex export | Annex stays separate from the normal report |
+| 16.9 | Block unencrypted vault leakage in repository safety | Tracked plaintext sensitive material fails validation |
+| 16.10 | Gate vault export, report inclusion, and campaign handoff | Each action requires explicit human approval |
+
+Development evidence: `src/aotp/evidence_classifier.py`, `src/aotp/sensitive_vault.py`,
+`src/aotp/vault_handles.py`, `src/aotp/campaign_key_store.py`,
+`src/aotp/agent_vault_access.py`, `src/aotp/secret_bearing_tools.py`,
+`src/aotp/poc_workspace.py`, `src/aotp/sensitive_annex.py`,
+`src/aotp/report_export_policy.py`, `scripts/validate-vault-leakage.sh`,
+`docs/sprint-16-sensitive-evidence-vault.md`, `tests/test_evidence_classifier.py`,
+`tests/test_sensitive_vault.py`, `tests/test_vault_handles.py`,
+`tests/test_campaign_key_store.py`, `tests/test_agent_vault_access.py`,
+`tests/test_secret_bearing_tools.py`, and `tests/test_sensitive_annex.py`.
+
+Sprint acceptance: every raw read logs purpose, handle, campaign, and identity; authorized agent
+and tool use works; normal evidence, terminal logs, git, and public reports exclude raw material;
+retention and export rules hold; and annex export requires approval.
+
+## Sprint 17: WSTG Campaign Coverage Engine
+
+Goal: generate WSTG-aligned campaign phases, track coverage and gaps, and let the agent choose the
+next approved test from evidence.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 17.1 | Define a WSTG strategy map with executable families | Mappings are version-aware and evidence-linked |
+| 17.2 | Define passive, browser, auth, input, validation, and report phases | Every objective belongs to a campaign phase |
+| 17.3 | Generate WSTG objectives from scope and ROE | Generated objectives remain in scope |
+| 17.4 | Track coverage and analyze gaps | Status includes tested, skipped, denied, blocked, and deferred |
+| 17.5 | Add auth boundary checks | Only approved checks execute |
+| 17.6 | Add session management checks | Session material follows classification policy |
+| 17.7 | Add error and input-boundary checks | Budgets and stop conditions apply |
+| 17.8 | Add browser route and form metadata checks | Browser evidence links to WSTG categories |
+| 17.9 | Let the agent choose the next objective from evidence gaps | Agent explains the next choice |
+| 17.10 | Generate a WSTG coverage report | Report explains continue or stop reasoning |
+
+Development evidence: `src/aotp/wstg/strategy_map.py`,
+`src/aotp/wstg/objective_generator.py`, `src/aotp/wstg/coverage.py`,
+`src/aotp/wstg/auth_boundary.py`, `src/aotp/wstg/session_management.py`,
+`src/aotp/wstg/error_handling.py`, `src/aotp/wstg/input_boundary.py`,
+`src/aotp/wstg/browser_metadata.py`, `docs/sprint-17-wstg-campaign-coverage.md`,
+`tests/test_wstg_strategy_map.py`, `tests/test_wstg_objective_generator.py`,
+`tests/test_wstg_coverage.py`, `tests/test_wstg_auth_boundary.py`, and
+`tests/test_wstg_session_management.py`.
+
+Sprint acceptance: WSTG objectives derive from scope and ROE, execution stays approved, coverage
+dispositions are explicit, evidence maps back to categories, and the agent explains continuation
+or stop.
+
+## Sprint 18: Authenticated OSMAP and Clearbox Workflow
+
+Goal: productize authenticated, metadata-safe, source-informed testing of owned or authorized
+targets.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 18.1 | Add interactive credential and TOTP prompts | Values never enter argv, history, or public evidence |
+| 18.2 | Define the authenticated session boundary | Active authorization is required |
+| 18.3 | Classify and route cookies, CSRF values, and tokens | ROE selects vaulted or memory-only handling |
+| 18.4 | Review an OSMAP local repository or zip | Source remains local and produces safe metadata |
+| 18.5 | Build source-derived route and auth maps | Maps contain routes and auth requirements |
+| 18.6 | Generate OSMAP WSTG candidates | Hints do not grant execution authority |
+| 18.7 | Execute governed authenticated route checks | Classified evidence is produced |
+| 18.8 | Verify logout and post-logout boundaries | Cleanup and invalidated-session behavior are recorded |
+| 18.9 | Review candidate findings agentically | Candidates remain evidence-bound |
+| 18.10 | Build the authenticated campaign package | Draft includes evidence references and limitations |
+
+Development evidence: `src/aotp/credential_prompt.py`, `src/aotp/auth_session.py`,
+`src/aotp/csrf.py`, `src/aotp/session_evidence.py`,
+`src/aotp/integrations/osmap_source_review.py`,
+`src/aotp/integrations/osmap_route_map.py`,
+`src/aotp/integrations/osmap_wstg_mapper.py`,
+`src/aotp/agent_tools/osmap_authenticated_wstg.py`,
+`docs/sprint-18-authenticated-osmap-clearbox.md`,
+`tests/test_credential_prompt.py`, `tests/test_auth_session.py`,
+`tests/test_session_evidence_redaction.py`, `tests/test_osmap_source_review.py`, and
+`tests/test_osmap_route_map.py`.
+
+Sprint acceptance: credentials and session material follow campaign storage policy, source input
+produces route and auth maps, authenticated work requires authorization, logout boundaries are
+verified, and findings cite classified evidence.
+
+## Sprint 19: Bug Bounty Program Mode
+
+Goal: ingest HackerOne or Bugcrowd policy, normalize scope, block ambiguity, run low-noise
+campaigns under program rules, and export a manually submitted draft.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 19.1 | Ingest saved HTML, pasted text, Markdown, and PDF policy | Each format creates a private profile |
+| 19.2 | Build a normalized program profile | Required policy terms and provenance are retained |
+| 19.3 | Normalize assets, domains, paths, APIs, mobile, and exclusions | In-scope and out-of-scope assets are separate |
+| 19.4 | Block ambiguous policy pending operator decision | Ambiguity prevents live execution |
+| 19.5 | Add bug bounty ROE templates | Templates default to low-noise work |
+| 19.6 | Build campaigns from profile and scope | Agent cannot add targets |
+| 19.7 | Implement passive and browser-first execution profile | Active scanning requires explicit permission |
+| 19.8 | Add duplicate and prior-art review | Duplicate or low-value work is flagged |
+| 19.9 | Gate report acceptance quality | Required asset, proof, impact, limits, evidence, and scope exist |
+| 19.10 | Export manual-only submission packages | No automatic submission path exists |
+
+Development evidence: `src/aotp/program_ingest.py`,
+`src/aotp/policy_document_parser.py`, `src/aotp/pdf_policy_parser.py`,
+`src/aotp/program_profile_builder.py`, `src/aotp/scope_normalizer.py`,
+`src/aotp/policy_ambiguity.py`, `src/aotp/bug_bounty_mode.py`,
+`src/aotp/campaign_builder.py`, `src/aotp/report_acceptance.py`,
+`src/aotp/submission_gate.py`, `docs/sprint-19-bug-bounty-program-mode.md`,
+`examples/programs/mock-hackerone-program.yaml`,
+`examples/roe/bug-bounty-low-noise.yaml`, `tests/test_program_ingest.py`,
+`tests/test_pdf_policy_parser.py`, `tests/test_scope_normalizer.py`,
+`tests/test_policy_ambiguity.py`, `tests/test_bug_bounty_campaign_builder.py`, and
+`tests/test_report_acceptance.py`.
+
+Sprint acceptance: all four policy formats work, ambiguity and scope expansion deny, defaults are
+low-noise, active work requires permission, and only a complete manual submission package is
+exported.
+
+## Sprint 20: Internal SOW and Enterprise AppSec Mode
+
+Goal: support authorized clearbox, graybox, authenticated, source-informed, stronger-tool,
+exploitation-validation, remediation, and attack-path replay workflows under an internal SOW.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 20.1 | Define the SOW profile schema | Authority, environments, controls, and provenance validate |
+| 20.2 | Ingest PDF, Markdown, saved HTML, and pasted text | Every format creates a private SOW profile |
+| 20.3 | Model production, staging, lab, and safe-exploit environments | Each environment has distinct tool tiers |
+| 20.4 | Add stronger internal ROE tiers | High-risk tools need approval unless exactly pre-authorized |
+| 20.5 | Ingest local source repositories | Source-derived hints remain within scope |
+| 20.6 | Ingest OpenAPI and GraphQL documentation | API candidates retain schema provenance |
+| 20.7 | Add a targeted OWASP ZAP active wrapper | High-friction policy approval is mandatory |
+| 20.8 | Add controlled input probing and validation wrappers | Arguments, budgets, and stops are enforced |
+| 20.9 | Verify remediation and replay approved attack paths | Replay stays in the approved environment |
+| 20.10 | Build an internal stakeholder package | Report includes guidance and verification status |
+
+Development evidence: `src/aotp/sow_profile.py`, `src/aotp/sow_ingest.py`,
+`src/aotp/environment_model.py`, `src/aotp/internal_testing_mode.py`,
+`src/aotp/source_review.py`, `src/aotp/api_schema_ingest.py`,
+`src/aotp/agent_tools/zap_active_targeted.py`,
+`src/aotp/agent_tools/input_probe.py`, `src/aotp/remediation_verification.py`,
+`src/aotp/attack_path_replay.py`, `docs/sprint-20-internal-sow-mode.md`,
+`examples/roe/internal-staging-authorized.yaml`, `tests/test_sow_profile.py`,
+`tests/test_sow_ingest.py`, `tests/test_environment_model.py`,
+`tests/test_zap_active_targeted_policy.py`,
+`tests/test_remediation_verification.py`, and `tests/test_attack_path_replay.py`.
+
+Sprint acceptance: all four SOW formats work, environment-specific permissions hold, high-risk
+tools and replay are governed, remediation evidence links to the original finding, and the
+internal report includes guidance and verification state.
+
+## Sprint 21: Agentic Finding Validation and PoC Builder
+
+Goal: turn raw evidence into high-confidence findings by requesting missing proof, rejecting false
+positives, building classified PoCs, and generating reproducible stakeholder-ready steps.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 21.1 | Define the candidate finding model | Every candidate is evidence-bound |
+| 21.2 | Define confidence and evidence sufficiency rules | Missing proof blocks confirmation |
+| 21.3 | Add the agentic finding review loop | Agent requests proof instead of overclaiming |
+| 21.4 | Build safe PoCs with workspace and vault material | Authorized vault material is classified correctly |
+| 21.5 | Add an impact analysis helper | Impact is limited to supported evidence |
+| 21.6 | Add false-positive rejection | Rejection records reasons and evidence |
+| 21.7 | Integrate duplicate memory | Duplicates are blocked or marked low value |
+| 21.8 | Build report reproduction steps | Steps are reproducible and evidence-linked |
+| 21.9 | Build recipient-specific sensitive annexes | Annex export requires approval |
+| 21.10 | Emit a lifecycle dashboard or JSON summary | State moves through candidate, confirmed, ready, or rejected |
+
+Development evidence: `src/aotp/finding.py`, `src/aotp/finding_confidence.py`,
+`src/aotp/finding_review.py`, `src/aotp/poc_builder.py`,
+`src/aotp/impact_analysis.py`, `src/aotp/false_positive_filter.py`,
+`src/aotp/duplicate_memory.py`, `src/aotp/reproduction_steps.py`,
+`src/aotp/finding_lifecycle.py`, `docs/sprint-21-agentic-finding-validation.md`,
+`tests/test_finding_confidence.py`, `tests/test_poc_builder.py`,
+`tests/test_impact_analysis.py`, `tests/test_false_positive_filter.py`,
+`tests/test_duplicate_memory.py`, and `tests/test_reproduction_steps.py`.
+
+Sprint acceptance: candidates require sufficient evidence, false positives and duplicates are
+handled, authorized vault-backed PoCs remain classified, steps and impact are supported, annexes
+are gated, and lifecycle status is explicit.
+
+## Sprint 22: Reporting, Remediation, and Stakeholder Packages
+
+Goal: produce clear, reproducible, scoped, evidence-linked packages for bug bounty triagers and
+internal engineering teams, with sensitive material separated.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 22.1 | Add a bug bounty report template | Bug bounty package is generated |
+| 22.2 | Add an internal AppSec report template | Internal package is generated |
+| 22.3 | Generate an executive summary | Summary remains supported by findings |
+| 22.4 | Generate engineering remediation sections | Guidance is scoped to evidence |
+| 22.5 | Add an evidence appendix with SHA256 hashes | References and hashes verify |
+| 22.6 | Export a sensitive annex | Export is separate and approval-gated |
+| 22.7 | Generate no-finding due-diligence reports | Completed work remains evidenced |
+| 22.8 | Enforce report quality | Incomplete findings fail |
+| 22.9 | Add a manual submission checklist | Automatic disclosure remains blocked |
+| 22.10 | Render HTML and Markdown | Both outputs preserve control decisions |
+
+Development evidence: `src/aotp/report_templates.py`,
+`src/aotp/report_package.py`, `src/aotp/executive_summary.py`,
+`src/aotp/remediation_guidance.py`, `src/aotp/evidence_appendix.py`,
+`src/aotp/report_quality_gate.py`, `templates/bug_bounty_report.md`,
+`templates/internal_appsec_report.md`, `templates/no_finding_due_diligence.md`,
+`docs/sprint-22-reporting-remediation-packages.md`,
+`tests/test_report_templates.py`, `tests/test_report_quality_gate.py`, and
+`tests/test_sensitive_annex_export.py`.
+
+Sprint acceptance: both report types verify evidence hashes, normal reports exclude vault
+material, approved annexes stay separate, incomplete findings fail, no-finding work remains
+documented, and submission is manual.
+
+## Sprint 23: Effectiveness Measurement and Agentic Evaluation
+
+Goal: compare static and agentic testing under the same budget and measure evidence quality,
+candidate quality, false positives, duplicate avoidance, request efficiency, and report readiness.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 23.1 | Add static-versus-agentic comparison mode | Target, scope, and budget are identical |
+| 23.2 | Define campaign metrics | Metrics schema validates |
+| 23.3 | Measure request efficiency | Request and budget use compare |
+| 23.4 | Measure evidence coverage | Coverage dispositions compare |
+| 23.5 | Measure candidate quality | Evidence strength and readiness compare |
+| 23.6 | Measure false positives and duplicates | Both are counted explicitly |
+| 23.7 | Measure operator and approval time | Manual effort is visible |
+| 23.8 | Add OSMAP benchmark fixtures | Benchmarks are reproducible and authorized |
+| 23.9 | Generate an HTML metrics report | Results link to campaign evidence |
+| 23.10 | Generate a technical stakeholder scorecard | Agentic next-step reasoning is demonstrable |
+
+Development evidence: `src/aotp/campaign_compare.py`, `src/aotp/metrics.py`,
+`src/aotp/evaluation.py`, `src/aotp/benchmark_fixtures.py`,
+`src/aotp/demo_scorecard.py`, `docs/sprint-23-agentic-effectiveness-evaluation.md`,
+`tests/test_campaign_compare.py`, `tests/test_metrics.py`, and
+`tests/test_evaluation.py`.
+
+Sprint acceptance: equal-budget runs compare coverage, requests, evidence-linked reasoning,
+candidate quality, false positives, duplicates, operator effort, and report readiness in a
+technical scorecard.
+
+## Sprint 24: Reliability, Replay, and Campaign Resume
+
+Goal: checkpoint and resume campaigns safely, replay approved actions, preserve authorized vault
+context, and prove replay cannot bypass current policy.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 24.1 | Define campaign checkpoints | State stops durably |
+| 24.2 | Implement resume | Campaign continues from the verified checkpoint |
+| 24.3 | Record replay-safe actions | Stable action identity prevents duplicate side effects |
+| 24.4 | Recheck policy on replay | Updated policy can deny a prior action |
+| 24.5 | Rehydrate authorized vault access | Access resumes only while authorization remains valid |
+| 24.6 | Recover interrupted human approvals | Exact approval context is restored |
+| 24.7 | Recover failed tool runs | Failure is recorded without corrupting state |
+| 24.8 | Continue the evidence archive | Archive remains complete after resume |
+| 24.9 | Hash transcript integrity | Transcript verification detects mutation |
+| 24.10 | Simulate crashes and generate replay reports | Stop, resume, and recovery proofs pass |
+
+Development evidence: `src/aotp/checkpoints.py`, `src/aotp/resume.py`,
+`src/aotp/replay.py`, `src/aotp/vault_resume.py`,
+`src/aotp/transcript_integrity.py`, `docs/sprint-24-reliability-replay-resume.md`,
+`tests/test_checkpoints.py`, `tests/test_resume.py`,
+`tests/test_replay_policy_recheck.py`, `tests/test_vault_resume.py`, and
+`tests/test_transcript_integrity.py`.
+
+Sprint acceptance: campaigns stop and resume, replay rechecks policy, vault authorization is
+revalidated, approvals and failed runs recover safely, transcript hashes verify, and evidence
+remains complete.
+
+## Sprint 25: Operator Productization and Demo Readiness
+
+Goal: package the CLI, documentation, examples, demos, and safe defaults for bug bounty operators
+and internal security teams.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 25.1 | Add clean agentic campaign CLI commands | Commands validate and remain policy-governed |
+| 25.2 | Add a sample bug bounty workflow | Manual submission path is documented |
+| 25.3 | Add a sample internal SOW workflow | Stronger ROE and approvals are demonstrated |
+| 25.4 | Document Parrot OS setup | FOSS dependencies are reproducible |
+| 25.5 | Document local Ollama setup | Endpoint and model validation are clear |
+| 25.6 | Add demo mode with sanitized outputs | Demo creates a safe evidence archive |
+| 25.7 | Add a technical stakeholder demo script | Agentic value and controls are visible |
+| 25.8 | Add quickstart and troubleshooting | Fresh clone setup works |
+| 25.9 | Add the agentic MVP release gate | All MVP acceptance checks pass |
+| 25.10 | Add versioned release notes | Scope, limits, and evidence are recorded |
+
+Development evidence: `src/aotp/cli.py`, `docs/quickstart-parrot-ollama.md`,
+`docs/bug-bounty-operator-workflow.md`, `docs/internal-sow-workflow.md`,
+`docs/technical-stakeholder-demo-guide.md`, `examples/campaigns/`,
+`examples/roe/`, `scripts/run-agentic-mvp-demo.sh`,
+`scripts/release-agentic-mvp-gate.sh`, and
+`tests/test_cli_agentic_commands.py`.
+
+Sprint acceptance: fresh-clone Parrot and Ollama setup is documented, one command runs the demo,
+sanitized evidence is produced, synthetic vault-backed proof works, the release gate passes, no
+MCP dependency exists, and no paid tool is required.
+
 ## Branch and closeout convention
 
 Development uses `sprint/<number>-<short-name>` and, when useful, `slice/<number>.<number>-<short-name>`. Each completed slice is tested, committed with its lowercase suggestion or an equally precise message, pushed, reviewed, and integrated. Sprint closeout synchronizes `origin/main`, confirms the remote commit and repository visibility, and leaves the worktree clean.

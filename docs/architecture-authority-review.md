@@ -6,16 +6,20 @@ No execution path bypasses the deterministic policy decision. The CLI case path 
 are the only executor importers, and every executor call is nested under `decision.allowed`.
 LangGraph delegates each step to the same campaign loop and does not import the executor.
 
+This review proves the v0.1 baseline. It does not require future adapters to remain stubs. The
+post-Sprint 13 architecture preserves the same invariant by placing the deterministic policy gate
+between Deep Agent proposals and every campaign-governed native tool invocation.
+
 ## Authority matrix
 
 | Component | May propose | May authorize execution | May send requests |
 |---|---:|---:|---:|
 | Program profile and private scope | no | supplies authority inputs | no |
 | Scheduler | selects approved objective order | no | no |
-| Local model planner | approved objective ID only | no | no |
+| Local model planner or Deep Agent | proposes structured objectives and tool calls | no | only through an allowed native tool invocation |
 | Policy gate | no | yes, sole decision point | no |
-| Deterministic executor | no | no | no in v0.1 |
-| Deferred adapter contracts | capability metadata only | no | no |
+| Deterministic executor | no | no | no in v0.1; governed execution after tool acceptance |
+| Native tool registry and wrappers | typed capabilities and execution | no | yes, only after policy and approval |
 | Evidence and verifier pipeline | verdict records from evidence | no | no |
 | Reporter | evidence-bound draft language | no | no |
 | Human reviewer | lifecycle and report review decisions | no technical bypass | no |
@@ -38,7 +42,9 @@ LangGraph delegates each step to the same campaign loop and does not import the 
 
 - [x] Executor imports are limited to the CLI case path and campaign loop.
 - [x] Every executor call is guarded by `decision.allowed`.
-- [x] Live execution returns a manual-review stub with zero requests.
+- [x] v0.1 live execution returns a manual-review stub with zero requests.
+- [x] Post-Sprint 13 live execution remains blocked until native tool risk, scope, budget, approval,
+  and evidence controls accept the invocation.
 - [x] LangGraph uses the deterministic campaign loop.
 - [x] Model output cannot set scope, policy, authorization, verdict, confidence, impact, or
   severity.

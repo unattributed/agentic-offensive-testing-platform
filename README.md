@@ -8,9 +8,9 @@ Agentic Offensive Testing Platform (AOTP) is a public source-available, policy-c
 
 **Public code, private operations, safe-by-default, live-by-authorization, license-aware.**
 
-AOTP is a policy-constrained campaign harness. AI may propose objectives, summarize redacted evidence, classify likely risk, and draft evidence-bound language. AI cannot authorize scope, add targets, override rules of engagement, bypass the policy gate, continue after a stop condition, or submit a report.
+AOTP is a policy-constrained campaign harness. After Sprint 13, the product direction is a local Ollama model with a LangChain Deep Agent supervisor, AOTP subagents and skills, and campaign-governed native tools. The agent may plan, request and execute approved tools, analyze classified evidence, and adapt the next test. It cannot authorize scope, add targets, override rules of engagement, bypass the policy gate, continue after a stop condition, or submit a report.
 
-AOTP is not an uncontrolled autonomous pentest bot, program enrollment tool, target scraper, high-volume scanner, automatic report submitter, or guarantee of bug bounty income. The initial live adapters are intentionally network-silent stubs.
+AOTP is not an uncontrolled autonomous pentest bot, program enrollment tool, target scraper, high-volume scanner, automatic report submitter, or guarantee of bug bounty income. The v0.1 live adapters are intentionally network-silent stubs; Sprint 14 onward progressively replaces them with real, typed native tools governed by campaign ROE, budgets, evidence rules, and human steering.
 
 ## Campaign loop
 
@@ -18,13 +18,13 @@ AOTP is not an uncontrolled autonomous pentest bot, program enrollment tool, tar
 private program profile + private technical scope
                        |
                        v
-approved campaign -> deterministic scheduler -> policy gate
+approved campaign -> Deep Agent supervisor -> policy gate
                                                | deny
                                                v
                                       stopped-by-policy evidence
                                                |
                                       allow    v
-planner suggestion -> approved objective -> adapter contract
+agent proposal -> approved objective -> native tool registry
                                                |
                                                v
                                       evidence + hashes
@@ -36,7 +36,7 @@ planner suggestion -> approved objective -> adapter contract
                                 human gate -> evidence-only report
 ```
 
-Each iteration reads the scope and rules of engagement, selects an already approved objective, evaluates it at the policy gate, invokes a deterministic adapter, captures evidence, records state, updates candidate references, and decides whether to continue, pause, or stop. The scheduler selects the lowest-priority-number pending objective. AI suggestions are accepted only when they match an approved objective identifier.
+Each iteration reads the scope and rules of engagement, obtains a structured agent proposal, evaluates it at the deterministic policy gate, invokes only a registered and approved tool, captures classified evidence, records state, updates candidate references, and decides whether to continue, pause, or stop. The existing deterministic scheduler remains the v0.1 reference implementation while the Sprint 14 Deep Agent runtime is built.
 
 Campaign state is JSON under the ignored `.aotp/state/` directory. It records the scope hash, authorization and rules-of-engagement references, timestamps, module dispositions, finding candidate references, evidence directories, counters, events, and stop history.
 
@@ -46,7 +46,7 @@ Campaign state is JSON under the ignored `.aotp/state/` directory. It records th
 
 A fresh clone, CI, tests, example files, `make dry-run`, and all quick-start commands send no traffic to third-party targets. Live mode requires a private untracked program profile and scope, non-placeholder written authorization and agreement references, confirmed rules of engagement, confidentiality confirmation when applicable, an allowed window, explicit targets and categories, rate limits, evidence rules, disclosure rules, stop conditions, and `--operator-approved`.
 
-The policy gate denies missing or malformed scope, target or service expansion, forbidden actions, unapproved fuzzing, unapproved control-panel or cryptographic review, unprovided SBOM artifacts, absent human approval, unsafe evidence paths, and failed redaction. Even after a live request passes these checks, version 0.1 returns `manual_review` from a network-silent adapter stub.
+The policy gate denies missing or malformed scope, target or service expansion, forbidden actions, unapproved fuzzing, unapproved control-panel or cryptographic review, unprovided SBOM artifacts, absent human approval, unsafe evidence paths, and failed redaction. Even after a live request passes these checks, version 0.1 returns `manual_review` from a network-silent adapter stub. This is a release-specific limit, not the permanent architecture.
 
 Public repository visibility does not make operational use public. Real targets, organization names, profiles, accounts, correspondence, findings, screenshots, reports, traces, generated captures, and evidence must never be committed.
 
@@ -130,7 +130,7 @@ The graph stores only aliases, hashes, status, and local state references in a m
 4. Validate the profile and scope manually, then run `validate-config` and `campaign-plan`.
 5. Obtain any objective-specific human approvals.
 6. Invoke `campaign-run --live --operator-approved` with the private program profile and approval arguments.
-7. Review the resulting `manual_review` state before adding or enabling a future live adapter.
+7. On v0.1, review the resulting `manual_review` state. From Sprint 14 onward, use only implemented native tools whose risk tier, scope, budget, evidence handling, and approval requirements are satisfied.
 
 The example scope is deliberately incapable of authorizing live work.
 
@@ -191,8 +191,9 @@ out-of-schema output fails closed. See the
 
 ## Integration boundaries
 
-Playwright, ZAP, and mitmproxy are optional deferred adapters with validated, network-silent
-contracts. Live execution is disabled and the default request budget is zero. Their designs
+Playwright, ZAP, and mitmproxy currently have validated, network-silent v0.1 contracts. The
+post-Sprint 13 plan progressively implements campaign-governed native wrappers. Live execution
+remains disabled until the corresponding sprint acceptance proofs pass. Their designs
 reference the official [Playwright API](https://playwright.dev/docs/api/class-page),
 [ZAP Automation Framework](https://www.zaproxy.org/docs/automate/automation-framework/), and
 [mitmproxy addon](https://docs.mitmproxy.org/stable/addons/overview/) documentation.
@@ -202,6 +203,11 @@ dependencies. AOTP uses clean-room contracts, safe aliases, and redacted hashed 
 references instead of imported processes or vendored code. This preserves repository and
 licensing boundaries, including the browser suite's separate AGPL-3.0-or-later review obligation.
 Alias-only non-executing examples are under `examples/adapters/`.
+
+The core architecture does not use MCP. Native AOTP tools are exposed directly to the Deep Agent
+so policy, approval, evidence classification, budgets, and audit records remain campaign-governed.
+See [the settled direction](docs/post-sprint-13-direction.md) and
+[the no-MCP decision](docs/no-mcp-core-decision.md).
 
 ## Evaluation positioning
 

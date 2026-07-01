@@ -1,26 +1,29 @@
 # Architecture
 
-AOTP separates authority, planning, execution, evidence, verification, and reporting.
+AOTP separates authority, planning, execution, evidence, verification, and reporting. The settled
+post-Sprint 13 architecture uses a local Ollama model and LangChain Deep Agents without MCP.
 
 ```text
-program profile -> private scope -> campaign parser -> scheduler
-                                             |
-AI advisory output --------------------------+
-                                             v
-                                        policy gate
-                                     deny /       \ allow
-                               stop record         adapter
-                                                      |
-                                             evidence writer
-                                                      |
-                                          verifier + lifecycle
-                                                      |
-                                              human approval
-                                                      |
-                                           evidence-only report
+Ollama local model
+  -> LangChain Deep Agent supervisor
+  -> AOTP subagents and skills
+  -> campaign-governed native tool registry
+  -> policy gate and human approval steering
+  -> FOSS adapters and Parrot tools
+  -> evidence archive, sensitive vault, analysis, PoC, report package
 ```
 
 Program policy context and technical scope are separate. The policy gate is the sole execution authority. Planner output has no authority. Adapters declare supported, required, and denied actions. The executor is deterministic, and the foundational release is network-silent.
+
+After Sprint 13, the Deep Agent may propose objectives and invoke real native tools only after the
+deterministic control plane validates the active campaign, ROE, scope, tool risk tier, arguments,
+budgets, evidence classification, and required approval. Denials are evidence. High-risk action
+requires explicit ROE and/or human approval. Submission and disclosure remain manual-only.
+
+The evidence archive is the normal evidence plane. Sensitive proof and campaign key material use
+encrypted campaign storage. The agent and approved tools may access raw vault material when the
+active campaign ROE and artifact classification authorize it; every access is purpose-bound and
+logged, and retention, export, report inclusion, and annex creation are separately controlled.
 
 State and evidence are local, ignored artifacts. Reports read those artifacts and do not receive free-form facts from a model.
 
@@ -32,3 +35,6 @@ The graph preserves JSON state compatibility, idempotent step behavior, stable c
 
 The v0.1 authority and bypass review is recorded in
 [architecture-authority-review.md](architecture-authority-review.md).
+
+The complete post-Sprint 13 component and control flow is documented in
+[agentic-architecture.md](agentic-architecture.md).

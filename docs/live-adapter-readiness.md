@@ -1,6 +1,9 @@
 # Live adapter readiness
 
-Sprint 10 defines contracts only. It does not implement or enable network-capable adapters.
+Sprint 10 defines contracts only. It does not implement or enable network-capable adapters. This
+is the current v0.1 state, not a permanent product restriction. Sprint 14 onward progressively
+implements real campaign-governed native tools under the acceptance criteria in the development
+plan.
 
 | Adapter | Default mode | Modeled capability | Live execution |
 |---|---|---|---|
@@ -15,10 +18,14 @@ declare rate or spider boundaries, evidence rules, future readiness review, and 
 approval. Every contract defaults to network silent, a zero request budget, and
 `live_execution_enabled: false`.
 
-The registry does not grant authority. A future implementation must add private runtime
+The registry does not grant authority. Each implementation must add private runtime
 configuration, deterministic policy integration, dependency and license review, bounded execution,
 redaction, evidence integrity, negative tests, and explicit operator review before changing any
 live-execution flag.
+
+The post-Sprint 13 tool path is Deep Agent proposal, native registry lookup, risk-tier and ROE
+evaluation, human steering when required, bounded FOSS execution, and classified evidence capture.
+MCP is not part of this core path.
 
 OSMAP and browser-suite remain separate projects. Their bridges validate metadata references only.
 They do not import source code, invoke a process, or commit generated evidence. Browser-suite

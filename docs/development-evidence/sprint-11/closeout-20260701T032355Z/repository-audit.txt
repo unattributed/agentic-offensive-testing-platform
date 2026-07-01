@@ -1,0 +1,13 @@
+Commands:
+./scripts/validate-repository-safety.sh
+./scripts/audit-repository-release.sh
+
+Exit status: 0
+Output:
+repository safety validation passed
+repository release audit passed
+tracked_files=311
+history_commits=77
+historical_paths=301
+tracked_symlinks=0
+history_secret_findings=0

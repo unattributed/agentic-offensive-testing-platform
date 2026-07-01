@@ -1,0 +1,10 @@
+Command: PYTHON=.venv/bin/python ./scripts/check-v0.1-release.sh
+Exit status: 0
+Result:
+version=0.1.0
+validation_mode=full
+full_tests=369 passed
+repository_safety=passed
+history_audit=passed
+demo_summary=matched
+placeholder_report=matched

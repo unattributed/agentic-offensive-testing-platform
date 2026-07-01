@@ -11,6 +11,7 @@ from .sbom_review import VULNERABILITY_MAPPING_CONTRACT
 from .crypto_review import CRYPTO_UNSAFE_ACTIONS
 from .adapters.playwright_adapter import CONTRACT as PLAYWRIGHT_CONTRACT
 from .adapters.zap_adapter import CONTRACT as ZAP_CONTRACT
+from .adapters.mitmproxy_adapter import CONTRACT as MITMPROXY_CONTRACT
 
 @dataclass(frozen=True)
 class AdapterCapability:
@@ -62,24 +63,7 @@ REGISTRY: dict[str, AdapterCapability] = {
 RICH_ADAPTERS: list[dict[str, Any]] = [
  ZAP_CONTRACT.as_dict(),
  PLAYWRIGHT_CONTRACT.as_dict(),
- {'adapter_id': 'mitmproxy',
-  'default_execution_mode': 'dry_run',
-  'denied_actions': ['unscoped_interception',
-                     'private_ca_material_commitment',
-                     'credential_capture'],
-  'display_name': 'mitmproxy local capture contract',
-  'live_readiness_status': 'deferred',
-  'network_silent_default': True,
-  'optional_dependency_status': 'optional_not_required',
-  'provenance_requirements': ['adapter_id', 'mitmproxy_version', 'capture_alias', 'sha256'],
-  'required_approvals': ['future_live_readiness_approval', 'local_capture_authorization'],
-  'required_evidence_handling': ['redaction_required',
-                                 'local_only',
-                                 'private_ca_material_excluded'],
-  'required_scope_fields': ['target_alias', 'allowed_proxy_context', 'evidence_rules'],
-  'source_reference': 'https://docs.mitmproxy.org/stable/',
-  'supported_capabilities': ['authorized_local_capture_future_contract',
-                             'proxy_capture_placeholder']},
+ MITMPROXY_CONTRACT.as_dict(),
  {'adapter_id': 'osmap',
   'default_execution_mode': 'external_reference_only',
   'denied_actions': ['dependency_import',

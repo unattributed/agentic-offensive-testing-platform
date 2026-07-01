@@ -22,21 +22,12 @@ def test_evaluator_demo_completes_without_requests(project_root, tmp_path):
     summary = json.loads(
         (workspace / ".aotp/demo/summary.json").read_text(encoding="utf-8")
     )
-    assert summary == {
-        "campaign_id": "example-webapp-dry-run",
-        "completed_objectives": [
-            "wstg-security-headers",
-            "wstg-authn-session",
-        ],
-        "demonstration_data": "placeholder_only",
-        "evidence_records": 2,
-        "network_mode": "network_silent",
-        "report_limitations_declared": True,
-        "report_ready_findings": 0,
-        "request_count": 0,
-        "schema_version": "1.0",
-        "status": "completed",
-    }
+    expected = json.loads(
+        (project_root / "examples/demo/dry-run-summary.example.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert summary == expected
     assert json.loads(
         (workspace / ".aotp/demo/events-verify.json").read_text(encoding="utf-8")
     )["valid"] is True

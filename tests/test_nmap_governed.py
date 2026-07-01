@@ -28,7 +28,20 @@ def test_nmap_command_is_single_host_single_port():
     )
 
 
-@pytest.mark.parametrize("host", ["example.com/24", "*.example.com", "example.com other", ""])
+@pytest.mark.parametrize(
+    "host",
+    [
+        "example.com/24",
+        "*.example.com",
+        "example.com other",
+        "",
+        "10.0.0-255.1-254",
+        "192.168.0.1-254",
+        "10.0.0.1,10.0.0.2",
+        "10.0.0.*",
+        "10.0.0.0/24",
+    ],
+)
 def test_nmap_denies_target_expansion(host):
     with pytest.raises(NmapGovernedError):
         validate_single_host(host)

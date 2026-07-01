@@ -6,6 +6,7 @@ from aotp.agent_tools.zap_passive import (
     ZapPassiveError,
     build_zap_passive_command,
     run_zap_passive_baseline,
+    validate_zap_output_scope,
 )
 
 
@@ -53,3 +54,28 @@ def test_zap_passive_runner_is_bounded():
     assert result.tool_name == "zap_passive_baseline"
     assert result.request_count == 1
     assert result.result["returncode"] == 0
+
+
+def test_zap_passive_output_scope_allows_same_origin_urls():
+    validate_zap_output_scope(
+        "https://example.com/",
+        "PASS https://example.com/robots.txt and https://example.com/.well-known/security.txt",
+    )
+
+
+def test_zap_passive_output_scope_denies_out_of_scope_urls():
+    with pytest.raises(ZapPassiveError):
+        validate_zap_output_scope("https://example.com/", "WARN https://other.example/admin")
+
+
+def test_zap_passive_runner_denies_out_of_scope_output():
+    def fake_runner(argv, *, timeout):
+        return subprocess.CompletedProcess(argv, 0, stdout="WARN https://other.example/admin", stderr="")
+
+    with pytest.raises(ZapPassiveError):
+        run_zap_passive_baseline(
+            "https://example.com/",
+            max_minutes=1,
+            runner=fake_runner,
+            zap_binary="zap-baseline.py",
+        )

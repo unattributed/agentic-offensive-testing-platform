@@ -126,6 +126,7 @@ class NativeToolResult:
     request_count: int
     evidence_classification: str
     result: dict[str, Any]
+    evidence_path: str | None = None
 
 
 class NativeToolRegistry:
@@ -221,7 +222,6 @@ class NativeToolRegistry:
         spec = self.resolve(call.tool_name)
         if spec.executor is None:
             raise ToolRegistryError(f"native tool has no executor: {call.tool_name}")
-        result = spec.executor(call.arguments)
         consume_decision = budget.consume(
             tool_name=spec.name,
             risk_tier=spec.risk_tier,
@@ -229,12 +229,18 @@ class NativeToolRegistry:
         )
         if not consume_decision.allowed:
             raise ToolRegistryError("request budget changed before consume")
+        result = spec.executor(call.arguments)
+        evidence_path = None
+        if workspace is not None:
+            artifact = write_executed_tool_call_evidence(workspace, call, decision, roe, result)
+            evidence_path = str(artifact.relative_to(workspace.path))
         return NativeToolResult(
             tool_name=spec.name,
             risk_tier=spec.risk_tier.value,
             request_count=decision.request_count,
             evidence_classification=spec.evidence_classification,
             result=result,
+            evidence_path=evidence_path,
         )
 
 
@@ -276,6 +282,50 @@ def write_denied_tool_call_evidence(
         "evidence",
         f"denied-{safe_tool}-{uuid.uuid4().hex[:12]}",
         denied_tool_call_record(call, decision, roe),
+    )
+
+
+def executed_tool_call_record(
+    call: NativeToolCall,
+    decision: ToolCallDecision,
+    roe: RulesOfEngagement,
+    result: dict[str, Any],
+) -> dict[str, Any]:
+    """Build a deterministic evidence record for a successful governed tool call."""
+
+    return {
+        "schema_version": "1.0",
+        "timestamp_utc": utc_now(),
+        "campaign_id": call.campaign_id,
+        "active_campaign_id": roe.campaign_id,
+        "target_alias": call.target_alias,
+        "active_target_alias": roe.target_alias,
+        "tool_name": call.tool_name,
+        "proposal_id": call.proposal_id,
+        "requested_by": call.requested_by,
+        "proposal_arguments": _redact_tool_arguments(call.arguments),
+        "allowed": True,
+        "executed": True,
+        "risk_tier": decision.risk_tier,
+        "request_count": decision.request_count,
+        "evidence_classification": decision.evidence_classification,
+        "policy_decision": decision.summary,
+        "result": result,
+    }
+
+
+def write_executed_tool_call_evidence(
+    workspace: AgentCampaignWorkspace,
+    call: NativeToolCall,
+    decision: ToolCallDecision,
+    roe: RulesOfEngagement,
+    result: dict[str, Any],
+):
+    safe_tool = re.sub(r"[^a-z0-9._-]+", "-", call.tool_name.lower()).strip("-") or "tool"
+    return workspace.write_json(
+        "evidence",
+        f"executed-{safe_tool}-{uuid.uuid4().hex[:12]}",
+        executed_tool_call_record(call, decision, roe, result),
     )
 
 

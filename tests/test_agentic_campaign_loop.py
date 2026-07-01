@@ -10,6 +10,8 @@ from aotp.agentic_campaign_loop import AgenticCampaignError, run_agentic_campaig
 from aotp.deep_agent.supervisor import SupervisorStatus
 from aotp.model_proposal_gate import build_sprint14_policy
 from aotp.model_proposals import ModelProposal
+from aotp.tool_registry import NativeToolRegistry, NativeToolSpec, ToolArgument
+from aotp.tool_risk_tiers import ToolRiskTier
 
 
 @dataclass
@@ -159,3 +161,92 @@ def test_denied_second_proposal_is_evidence_and_never_executes(tmp_path):
     denial = workspace.evidence / "iteration-02-denied.json"
     assert denial.is_file()
     assert "outside the active campaign" in denial.read_text()
+
+
+def _registry_executor_for(tool_name, request_count, result):
+    def executor(_arguments):
+        return result
+
+    if tool_name == "http_metadata":
+        arguments = (ToolArgument("url", str),)
+    elif tool_name == "tls_metadata":
+        arguments = (ToolArgument("host", str), ToolArgument("port", int), ToolArgument("server_name", str))
+    else:
+        arguments = (ToolArgument("base_url", str),)
+    return NativeToolSpec(
+        name=tool_name,
+        description="test registry executor",
+        risk_tier=ToolRiskTier.PASSIVE_METADATA,
+        arguments=arguments,
+        request_cost=request_count,
+        evidence_classification="public",
+        executor=executor,
+    )
+
+
+def test_campaign_loop_routes_default_execution_through_registry(tmp_path):
+    workspace = AgentCampaignWorkspace.create(
+        tmp_path / "campaigns",
+        program_alias="owned-program",
+        run_id="run-001",
+    )
+    registry = NativeToolRegistry(
+        (
+            _registry_executor_for(
+                "http_metadata",
+                1,
+                {
+                    "status": 200,
+                    "headers": {"content-type": "text/html"},
+                    "body_bytes_observed": 10,
+                    "body_sha256": "1" * 64,
+                    "body_truncated": False,
+                },
+            ),
+            _registry_executor_for(
+                "tls_metadata",
+                1,
+                {
+                    "tls_version": "TLSv1.3",
+                    "cipher": "TLS_AES_256_GCM_SHA384",
+                    "certificate_sha256": "2" * 64,
+                    "subject": {"commonName": "mail.example.invalid"},
+                    "issuer": {"commonName": "test-ca"},
+                    "not_before": "test",
+                    "not_after": "test",
+                    "subject_alt_names": ["mail.example.invalid"],
+                },
+            ),
+            _registry_executor_for(
+                "well_known_text",
+                2,
+                {
+                    "checks": [
+                        {
+                            "url": "https://mail.example.invalid/robots.txt",
+                            "status": 404,
+                            "headers": {"content-type": "text/plain"},
+                            "body_sha256": "3" * 64,
+                            "body_truncated": False,
+                        },
+                        {
+                            "url": "https://mail.example.invalid/.well-known/security.txt",
+                            "status": 200,
+                            "headers": {"content-type": "text/plain"},
+                            "body_sha256": "4" * 64,
+                            "body_truncated": False,
+                        },
+                    ]
+                },
+            ),
+        )
+    )
+    result = run_agentic_campaign(
+        supervisor=ScriptedSupervisor(),
+        policy=_policy(),
+        workspace=workspace,
+        native_tool_registry=registry,
+    )
+    assert result.status == "completed"
+    assert result.request_count == 4
+    assert len(list(workspace.evidence.glob("executed-*.json"))) == 3

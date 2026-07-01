@@ -35,16 +35,22 @@ class NmapRunner(Protocol):
 def validate_single_host(host: str) -> str:
     if not isinstance(host, str) or not host:
         raise NmapGovernedError("nmap host is required")
-    if any(character in host for character in ("/", "*", " ", "\t", "\n", "\r")):
+    if any(character in host for character in ("/", "*", ",", " ", "\t", "\n", "\r")):
         raise NmapGovernedError("nmap host must be a single host, not a range or pattern")
     try:
         ipaddress.ip_address(host)
         return host
     except ValueError:
         pass
-    if HOSTNAME_PATTERN.fullmatch(host) is None:
+    normalized = host.lower().rstrip(".")
+    if HOSTNAME_PATTERN.fullmatch(normalized) is None:
         raise NmapGovernedError("nmap host must be a valid hostname or IP address")
-    return host.lower().rstrip(".")
+    if not any(character.isalpha() for character in normalized):
+        raise NmapGovernedError("nmap hostname must not be an address-like target expression")
+    for label in normalized.split("."):
+        if "-" in label and all(character.isdigit() or character == "-" for character in label):
+            raise NmapGovernedError("nmap host must not contain numeric range labels")
+    return normalized
 
 
 def validate_single_service_port(port: int) -> int:

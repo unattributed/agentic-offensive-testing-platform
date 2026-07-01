@@ -4,6 +4,7 @@ from aotp.agent_tools.playwright_passive import (
     PlaywrightPassiveError,
     collect_playwright_passive_metadata,
     validate_browser_metadata_url,
+    validate_same_origin_navigation,
 )
 
 
@@ -36,3 +37,24 @@ def test_playwright_passive_uses_injected_collector_without_browser_dependency()
     assert result.tool_name == "playwright_passive_metadata"
     assert result.request_count == 1
     assert result.result["form_count"] == 0
+
+
+def test_playwright_passive_denies_cross_origin_final_url():
+    with pytest.raises(PlaywrightPassiveError):
+        validate_same_origin_navigation("https://example.com/", "https://evil.example/")
+
+
+def test_playwright_passive_denies_collector_redirect_out_of_scope():
+    def fake_collector(_url):
+        return {
+            "url": "https://example.com/",
+            "final_url": "https://other.example/",
+            "status": 200,
+            "title": "Other",
+            "frame_count": 1,
+            "link_count": 0,
+            "form_count": 0,
+        }
+
+    with pytest.raises(PlaywrightPassiveError):
+        collect_playwright_passive_metadata("https://example.com/", collector=fake_collector)

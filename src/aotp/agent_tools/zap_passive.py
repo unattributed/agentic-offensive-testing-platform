@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -39,6 +40,29 @@ def validate_passive_target_url(target_url: str) -> str:
     ):
         raise ZapPassiveError("ZAP passive target must be credential-free HTTP or HTTPS without query or fragment")
     return target_url.rstrip("/") + ("/" if parsed.path in {"", "/"} else "")
+
+
+def _origin_tuple(url: str) -> tuple[str, str, int]:
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or parsed.hostname is None:
+        raise ZapPassiveError("ZAP passive URL has no comparable origin")
+    default_port = 443 if parsed.scheme == "https" else 80
+    return parsed.scheme, parsed.hostname.lower().rstrip("."), parsed.port or default_port
+
+
+def validate_zap_output_scope(target_url: str, *output_chunks: str) -> None:
+    """Reject evidence if the passive crawl reports out-of-origin URLs."""
+
+    target_origin = _origin_tuple(validate_passive_target_url(target_url))
+    text = "\n".join(chunk or "" for chunk in output_chunks)
+    for match in re.findall(r"https?://[^\s<>'\"]+", text):
+        candidate = match.rstrip(".,);]}")
+        try:
+            candidate_origin = _origin_tuple(candidate)
+        except ZapPassiveError:
+            continue
+        if candidate_origin != target_origin:
+            raise ZapPassiveError("ZAP passive output referenced an out-of-scope URL")
 
 
 def build_zap_passive_command(
@@ -97,6 +121,7 @@ def run_zap_passive_baseline(
     )
     try:
         completed = runner(argv, timeout=timeout_seconds)
+        validate_zap_output_scope(target_url, completed.stdout or "", completed.stderr or "")
     except (OSError, TimeoutError, subprocess.TimeoutExpired) as exc:
         raise ZapPassiveError("ZAP passive baseline command failed") from exc
     return ToolExecutionResult(
@@ -110,5 +135,6 @@ def run_zap_passive_baseline(
             "stdout": _truncate(completed.stdout or ""),
             "stderr": _truncate(completed.stderr or ""),
             "output_truncated_at_bytes": MAX_OUTPUT_BYTES,
+            "scope_enforced": True,
         },
     )

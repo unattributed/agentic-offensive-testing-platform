@@ -475,6 +475,21 @@ Goal: add the first executable AOTP-owned campaign path against the loopback-onl
 
 Sprint acceptance: AOTP can run a bounded local Juice Shop campaign that resets the target, plans WSTG work, executes safe local requests, writes evidence, creates evidence-bound candidate findings, and reports benchmark coverage without embedding Juice Shop challenge solutions.
 
+
+## Sprint 18H: Local Vulnerable Target Matrix
+
+Goal: add a local target matrix registry and implement OWASP crAPI as the first additional planned target after Juice Shop. This follow-up broadens AOTP benchmark coverage into modern APIs, authorization, authentication, and business logic while keeping target profiles separate from the WSTG engine.
+
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|
+| 18H.1 target registry | Add a metadata-only local target matrix registry for implemented benchmark targets | Juice Shop and crAPI are enumerated as loopback-only reset-required targets | `pytest tests/test_local_target_registry.py` | registry records | `src/aotp/lab_targets/registry.py`, tests | `add local vulnerable target matrix` |
+| 18H.2 crAPI profile | Add a local-only OWASP crAPI profile and WSTG planning profile | crAPI uses `127.0.0.1:8888`, requires compose reset, and denies persistent state | `pytest tests/test_crapi_local_profile.py` | profile JSON shape | `src/aotp/lab_targets/crapi.py` | `add crapi local target profile` |
+| 18H.3 crAPI benchmark mapping | Map broad crAPI vulnerability classes to canonical WSTG IDs | Benchmark IDs map only to official WSTG catalog entries and contain no solutions | `pytest tests/test_crapi_benchmark_mapping.py` | benchmark manifest | `src/aotp/benchmarks/crapi.py` | `map crapi benchmark coverage` |
+| 18H.4 local target scripts | Add install/reset scripts that inventory compose support, install missing compose tooling when approved, download official OWASP crAPI assets, reset state, and verify loopback listeners | `down -v` clears prior state; crAPI and MailHog respond; non-loopback exposure fails | `pytest tests/test_local_target_matrix_scripts.py` | live crAPI reset evidence | `scripts/install-local-target-matrix.sh`, `scripts/reset-local-target.sh` | `add crapi local reset scripts` |
+| 18H.5 documentation | Document the target matrix and Sprint 18H acceptance | Plan states that crAPI is a benchmark resource without making crAPI a dependency of the WSTG engine | `pytest tests/test_development_plan_local_target_matrix.py` | docs | `docs/lab-targets/local-target-matrix.md`, `docs/sprint-18-followup-local-target-matrix.md` | `document local target matrix` |
+
+Sprint acceptance: AOTP can manage a local target matrix with Juice Shop and crAPI as implemented benchmark targets, reset crAPI from official OWASP compose assets, verify loopback-only exposure and health, and map crAPI benchmark coverage to canonical WSTG IDs without making crAPI a dependency of the WSTG engine.
+
 ## Sprint 19: Bug Bounty Program Mode
 
 Goal: ingest HackerOne or Bugcrowd policy, normalize scope, block ambiguity, run low-noise
@@ -693,3 +708,11 @@ MCP dependency exists, and no paid tool is required.
 ## Branch and closeout convention
 
 Development uses `sprint/<number>-<short-name>` and, when useful, `slice/<number>.<number>-<short-name>`. Each completed slice is tested, committed with its lowercase suggestion or an equally precise message, pushed, reviewed, and integrated. Sprint closeout synchronizes `origin/main`, confirms the remote commit and repository visibility, and leaves the worktree clean.
+
+
+## crAPI live runtime status
+
+crAPI is registered with profile metadata and WSTG benchmark mapping, but live runtime remains pending on the Parrot rootless Podman Compose host. Evidence showed partial compose startup without a healthy `crapi-web` listener on `127.0.0.1:8888`, so live crAPI is not accepted in Sprint 18H.
+
+
+Status marker: crAPI live runtime pending.

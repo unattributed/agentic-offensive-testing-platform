@@ -6,8 +6,17 @@ from dataclasses import dataclass
 import json
 from typing import Any, Callable, Protocol
 
-from deepagents import create_deep_agent
-from deepagents.backends import StateBackend
+try:
+    from deepagents import create_deep_agent
+except ModuleNotFoundError:
+    def create_deep_agent(*_args: Any, **_kwargs: Any) -> Any:
+        raise RuntimeError("deepagents is required to create the default supervisor")
+
+try:
+    from deepagents.backends import StateBackend
+except ModuleNotFoundError:
+    class StateBackend:  # type: ignore[no-redef]
+        pass
 
 from ..model_proposal_gate import CampaignObjective
 from ..model_proposals import ModelProposal, parse_model_proposal

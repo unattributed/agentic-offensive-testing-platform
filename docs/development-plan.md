@@ -433,6 +433,7 @@ produces route and auth maps, authenticated work requires authorization, logout 
 verified, and findings cite classified evidence.
 
 
+
 ## Sprint 18F: Local Juice Shop WSTG Campaign Benchmark
 
 Goal: add a loopback-only OWASP Juice Shop benchmark target on the Parrot development system so the corrected Sprint 18 WSTG catalog and planning engine can be validated against a known intentionally vulnerable application before later authorized bug bounty campaigns.
@@ -461,6 +462,18 @@ Development evidence: `src/aotp/lab_targets/juice_shop.py`,
 `tests/test_development_plan_juice_shop_followup.py`.
 
 Follow-up acceptance: local Juice Shop is treated as a resettable benchmark resource, not as the engine; every live campaign against it starts from a freshly recreated loopback-only container; benchmark comparison maps observed findings to canonical WSTG coverage before later authorized bug bounty targets are used.
+
+## Sprint 18G: Local Juice Shop Agentic Campaign Runner
+
+Goal: add the first executable AOTP-owned campaign path against the loopback-only Juice Shop benchmark. This follow-up uses the corrected WSTG catalog and local benchmark profile to reset the target, plan a governed WSTG campaign, run bounded passive and safe-active GET-only checks, collect normalized evidence, create candidate or manual-required findings, and compare observed coverage against the Juice Shop benchmark manifest.
+
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|
+| 18G.1 campaign runner | Add a local Juice Shop campaign module that validates loopback scope, builds a WSTG plan, performs bounded same-origin GET requests, and records state-driven decisions | Non-loopback targets and unsafe paths are rejected; every request is GET-only and bounded | `pytest tests/test_juice_shop_agentic_campaign.py` | campaign result fixture and artifacts | `src/aotp/campaigns/juice_shop_campaign.py`, tests | `add local juice shop agentic campaign runner` |
+| 18G.2 evidence and report output | Write campaign plan, decisions, HTTP observations, surface inventory, candidate findings, benchmark comparison, report, and hashes | Evidence paths are deterministic and report content is evidence-bound | `pytest tests/test_juice_shop_agentic_campaign.py -k writes_evidence` | generated evidence tree and SHA256SUMS | campaign module and docs | `record juice shop campaign evidence` |
+| 18G.3 live runner script | Add a venv-backed shell runner that resets local Juice Shop before campaign execution and captures evidence | Runner uses `.venv/bin/python`, reset is default, and `--no-reset` is explicit | `pytest tests/test_juice_shop_agentic_campaign_scripts.py` | runner output and local target state | `scripts/run-local-juice-shop-agentic-campaign.sh` | `add juice shop campaign runner script` |
+
+Sprint acceptance: AOTP can run a bounded local Juice Shop campaign that resets the target, plans WSTG work, executes safe local requests, writes evidence, creates evidence-bound candidate findings, and reports benchmark coverage without embedding Juice Shop challenge solutions.
 
 ## Sprint 19: Bug Bounty Program Mode
 
@@ -610,7 +623,7 @@ candidate quality, false positives, duplicate avoidance, request efficiency, and
 | 23.10 | Generate a technical stakeholder scorecard | Agentic next-step reasoning is demonstrable |
 
 Development evidence: `src/aotp/campaign_compare.py`, `src/aotp/metrics.py`,
-`src/aotp/evaluation.py`, `src/aotp/benchmark_fixtures.py`, `src/aotp/benchmarks/juice_shop.py`, `src/aotp/benchmarks/juice_shop.py`,
+`src/aotp/evaluation.py`, `src/aotp/benchmark_fixtures.py`, `src/aotp/benchmarks/juice_shop.py`,
 `src/aotp/demo_scorecard.py`, `docs/sprint-23-agentic-effectiveness-evaluation.md`,
 `tests/test_campaign_compare.py`, `tests/test_metrics.py`, and
 `tests/test_evaluation.py`.

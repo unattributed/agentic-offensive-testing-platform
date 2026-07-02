@@ -112,7 +112,7 @@ if make -n check >/dev/null 2>&1; then
 else
   echo "make_check status=skipped_missing_target" >> "$SUMMARY"
 fi
-run_optional targeted_sensitive_review bash -lc 'git diff --name-only | xargs -r grep -nE "BEGIN .*PRIVATE KEY|Authorization: Bearer|Cookie:|Wealth|Wealthsimple|blackbagsecurity|unattributed\.blog" || true'
+run_required targeted_sensitive_review ./scripts/validate-repository-safety.sh
 run_optional final_status git status --short
 
 echo "required_validation_failures=$FAILURES" >> "$SUMMARY"

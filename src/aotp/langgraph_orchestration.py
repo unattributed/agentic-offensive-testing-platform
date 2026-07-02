@@ -9,33 +9,9 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Literal, TypedDict
 
-try:
-    from langgraph.checkpoint.sqlite import SqliteSaver
-    from langgraph.graph import END, START, StateGraph
-    from langgraph.types import Command, interrupt
-    _LANGGRAPH_AVAILABLE = True
-except ModuleNotFoundError:
-    _LANGGRAPH_AVAILABLE = False
-    END = "__end__"
-    START = "__start__"
-
-    class Command:  # type: ignore[no-redef]
-        def __init__(self, *, resume: dict[str, Any]) -> None:
-            self.resume = resume
-
-    def interrupt(payload: dict[str, Any]) -> dict[str, Any]:
-        return payload
-
-    class SqliteSaver:  # type: ignore[no-redef]
-        def __init__(self, connection: sqlite3.Connection) -> None:
-            self.connection = connection
-
-        def setup(self) -> None:
-            return None
-
-    class StateGraph:  # type: ignore[no-redef]
-        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
-            raise RuntimeError("langgraph is required for native graph execution")
+from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.graph import END, START, StateGraph
+from langgraph.types import Command, interrupt
 
 from .campaign import parse_campaign
 from .campaign_control import apply_review_decision
@@ -114,18 +90,12 @@ class LangGraphCampaignOrchestrator:
         self.connection.execute("PRAGMA synchronous=FULL")
         self.checkpointer = SqliteSaver(self.connection)
         self.checkpointer.setup()
-        if not _LANGGRAPH_AVAILABLE:
-            self.connection.execute(
-                "CREATE TABLE IF NOT EXISTS aotp_checkpoint "
-                "(thread_id TEXT PRIMARY KEY, state_json TEXT NOT NULL)"
-            )
-            self.connection.commit()
         self.thread_id = f"{parsed.campaign_id}:{self.scope_sha256[:16]}"
         self.config = {
             "configurable": {"thread_id": self.thread_id},
             "recursion_limit": parsed.limits.max_iterations * 4 + 20,
         }
-        self.graph = self._build_graph() if _LANGGRAPH_AVAILABLE else None
+        self.graph = self._build_graph()
         self._secure_checkpoint_files()
 
     def _secure_checkpoint_files(self) -> None:
@@ -234,115 +204,34 @@ class LangGraphCampaignOrchestrator:
         }
 
     def _verify_checkpoint_inputs(self) -> None:
-        if _LANGGRAPH_AVAILABLE:
-            if self.graph is None:
-                raise ValueError("LangGraph graph is not initialized")
-            snapshot = self.graph.get_state(self.config)
-            values = snapshot.values
-        else:
-            values = self._fallback_snapshot_values()
-        if not values:
+        snapshot = self.graph.get_state(self.config)
+        if not snapshot.values:
             return
-        if values.get("scope_sha256") != self.scope_sha256:
+        if snapshot.values.get("scope_sha256") != self.scope_sha256:
             raise ValueError("LangGraph checkpoint scope hash does not match current scope")
-        if values.get("campaign_sha256") != self.campaign_sha256:
+        if snapshot.values.get("campaign_sha256") != self.campaign_sha256:
             raise ValueError("LangGraph checkpoint campaign hash does not match current campaign")
 
     def start(self) -> dict[str, Any]:
-        if _LANGGRAPH_AVAILABLE:
-            if self.graph is None:
-                raise ValueError("LangGraph graph is not initialized")
-            snapshot = self.graph.get_state(self.config)
-            if snapshot.values:
-                raise ValueError("LangGraph campaign thread already exists; use resume")
-            self.graph.invoke(self._initial_state(), self.config)
-            self._secure_checkpoint_files()
-            return dict(self.graph.get_state(self.config).values)
-        if self._fallback_snapshot_values():
+        snapshot = self.graph.get_state(self.config)
+        if snapshot.values:
             raise ValueError("LangGraph campaign thread already exists; use resume")
-        state, _ = run_campaign(
-            self.scope,
-            self.scope_path,
-            self.campaign,
-            program_profile=self.program_profile,
-            operator_approval=self.operator_approval,
-            live=self.live,
-            operator_approved=self.operator_approved,
-            workspace=self.workspace,
-            state_path=self.state_path,
-        )
-        snapshot = self._snapshot_from_campaign_state(state, steps=max(0, state.next_iteration - 1))
-        self._fallback_save_snapshot(snapshot)
+        self.graph.invoke(self._initial_state(), self.config)
         self._secure_checkpoint_files()
-        return snapshot
+        return dict(self.graph.get_state(self.config).values)
 
     def resume(self, review: dict[str, Any]) -> dict[str, Any]:
         self._verify_checkpoint_inputs()
-        if _LANGGRAPH_AVAILABLE:
-            if self.graph is None:
-                raise ValueError("LangGraph graph is not initialized")
-            snapshot = self.graph.get_state(self.config)
-            if "human_review" not in snapshot.next:
-                raise ValueError("LangGraph campaign is not waiting for human review")
-            self.graph.invoke(Command(resume=review), self.config)
-            self._secure_checkpoint_files()
-            return dict(self.graph.get_state(self.config).values)
-        snapshot = self._fallback_snapshot_values()
-        if snapshot.get("status") != "paused_for_human_review":
+        snapshot = self.graph.get_state(self.config)
+        if "human_review" not in snapshot.next:
             raise ValueError("LangGraph campaign is not waiting for human review")
-        state = load_state(self.state_path)
-        apply_review_decision(state, self.state_path, review)
-        state, _ = run_campaign(
-            self.scope,
-            self.scope_path,
-            self.campaign,
-            program_profile=self.program_profile,
-            operator_approval=self.operator_approval,
-            live=self.live,
-            operator_approved=self.operator_approved,
-            workspace=self.workspace,
-            state=load_state(self.state_path),
-            state_path=self.state_path,
-        )
-        resumed = self._snapshot_from_campaign_state(state, steps=int(snapshot.get("steps", 0)) + 1)
-        self._fallback_save_snapshot(resumed)
+        self.graph.invoke(Command(resume=review), self.config)
         self._secure_checkpoint_files()
-        return resumed
+        return dict(self.graph.get_state(self.config).values)
 
     def snapshot(self) -> dict[str, Any]:
         self._verify_checkpoint_inputs()
-        if _LANGGRAPH_AVAILABLE:
-            if self.graph is None:
-                raise ValueError("LangGraph graph is not initialized")
-            return dict(self.graph.get_state(self.config).values)
-        return self._fallback_snapshot_values()
-
-    def _fallback_snapshot_values(self) -> dict[str, Any]:
-        row = self.connection.execute(
-            "SELECT state_json FROM aotp_checkpoint WHERE thread_id = ?",
-            (self.thread_id,),
-        ).fetchone()
-        if row is None:
-            return {}
-        return dict(json.loads(row[0]))
-
-    def _fallback_save_snapshot(self, snapshot: dict[str, Any]) -> None:
-        self.connection.execute(
-            "INSERT OR REPLACE INTO aotp_checkpoint(thread_id, state_json) VALUES (?, ?)",
-            (self.thread_id, json.dumps(snapshot, sort_keys=True, separators=(",", ":"))),
-        )
-        self.connection.commit()
-
-    def _snapshot_from_campaign_state(self, state: Any, *, steps: int) -> dict[str, Any]:
-        return {
-            "campaign_id": state.campaign_id,
-            "scope_sha256": self.scope_sha256,
-            "campaign_sha256": self.campaign_sha256,
-            "aotp_state_path": str(self.state_path),
-            "status": state.current_status,
-            "current_objective_id": state.current_objective_id,
-            "steps": steps,
-        }
+        return dict(self.graph.get_state(self.config).values)
 
     def close(self) -> None:
         self.connection.close()

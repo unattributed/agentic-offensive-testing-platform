@@ -6,11 +6,10 @@ import json
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Callable, TYPE_CHECKING
+from typing import Any, Callable
 from urllib.parse import urlsplit
 
-if TYPE_CHECKING:
-    from langchain_ollama import ChatOllama
+from langchain_ollama import ChatOllama
 
 
 MAX_TAG_RESPONSE_BYTES = 1_048_576
@@ -123,12 +122,8 @@ class OllamaBootstrap:
             available=True,
         )
 
-    def build_model(self) -> "ChatOllama":
+    def build_model(self) -> ChatOllama:
         self.validate()
-        try:
-            from langchain_ollama import ChatOllama
-        except ModuleNotFoundError as exc:
-            raise OllamaBootstrapError("langchain_ollama is required to build the local Ollama model") from exc
         return ChatOllama(
             model=self.model,
             base_url=self.base_url.rstrip("/"),

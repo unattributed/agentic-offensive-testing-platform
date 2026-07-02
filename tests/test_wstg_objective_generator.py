@@ -13,13 +13,12 @@ def _scope(**overrides):
         "base_url": "https://example.test",
         "authorization_reference": "authz-17",
         "operator_approved": True,
-        "allowed_phases": frozenset({WSTGPhase.PASSIVE, WSTGPhase.BROWSER, WSTGPhase.REPORT}),
+        "allowed_phases": frozenset({WSTGPhase.PASSIVE, WSTGPhase.BROWSER}),
         "approved_families": frozenset({
             ExecutableFamily.HTTP_METADATA,
             ExecutableFamily.WELL_KNOWN_TEXT,
             ExecutableFamily.TLS_METADATA,
             ExecutableFamily.PLAYWRIGHT_PASSIVE_METADATA,
-            ExecutableFamily.COVERAGE_REPORT,
         }),
     }
     values.update(overrides)
@@ -32,7 +31,7 @@ def test_generate_objectives_stays_in_scope_and_roe():
         target_alias="owned-app",
         authorization_reference="authz-17",
         operator_approved=True,
-        allowed_tool_names=frozenset({"http_metadata", "well_known_text", "tls_metadata", "playwright_passive_metadata", "wstg_coverage_report"}),
+        allowed_tool_names=frozenset({"http_metadata", "well_known_text", "tls_metadata", "playwright_passive_metadata", }),
         allowed_risk_tiers=frozenset({ToolRiskTier.PASSIVE_METADATA, ToolRiskTier.PASSIVE_BROWSER}),
         allowed_hosts=frozenset({"example.test"}),
         allowed_ports=frozenset({443}),
@@ -42,8 +41,8 @@ def test_generate_objectives_stays_in_scope_and_roe():
 
     objectives = generate_wstg_objectives(_scope(), build_default_strategy_map(), roe=roe)
 
-    assert {objective.phase for objective in objectives} <= {WSTGPhase.PASSIVE, WSTGPhase.BROWSER, WSTGPhase.REPORT}
-    assert all("example.test" in repr(objective.arguments) or objective.family is ExecutableFamily.COVERAGE_REPORT for objective in objectives)
+    assert {objective.phase for objective in objectives} <= {WSTGPhase.PASSIVE, WSTGPhase.BROWSER}
+    assert all("example.test" in repr(objective.arguments) for objective in objectives)
     assert {objective.wstg_id for objective in objectives} >= {"WSTG-v42-INFO-02", "WSTG-v42-INFO-03"}
 
 

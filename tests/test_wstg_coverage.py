@@ -10,12 +10,11 @@ def _objectives():
         base_url="https://example.test",
         authorization_reference="authz-17",
         operator_approved=True,
-        allowed_phases=frozenset({WSTGPhase.PASSIVE, WSTGPhase.BROWSER, WSTGPhase.REPORT}),
+        allowed_phases=frozenset({WSTGPhase.PASSIVE, WSTGPhase.BROWSER}),
         approved_families=frozenset({
             ExecutableFamily.HTTP_METADATA,
             ExecutableFamily.WELL_KNOWN_TEXT,
             ExecutableFamily.PLAYWRIGHT_PASSIVE_METADATA,
-            ExecutableFamily.COVERAGE_REPORT,
         }),
     )
     return generate_wstg_objectives(scope, build_default_strategy_map())

@@ -1,5 +1,25 @@
 """WSTG campaign coverage engine."""
 
+from .catalog import (
+    EXPECTED_WSTG_V42_TEST_COUNT,
+    WSTGAdapterFamily,
+    WSTGAuthRequirement,
+    WSTGAutomationStatus,
+    WSTGCatalog,
+    WSTGCatalogError,
+    WSTGSafetyTier,
+    WSTGTestCase,
+    WSTG_V42_CATALOG,
+    build_wstg_v42_catalog,
+)
+from .engine import (
+    WSTGEngineError,
+    WSTGEnginePlan,
+    WSTGEngineProfile,
+    WSTGPlanDisposition,
+    WSTGPlannedTest,
+    build_wstg_engine_plan,
+)
 from .strategy_map import (
     ExecutableFamily,
     WSTGPhase,
@@ -24,6 +44,22 @@ from .execution_adapter import (
 )
 
 __all__ = [
+    "EXPECTED_WSTG_V42_TEST_COUNT",
+    "WSTGAdapterFamily",
+    "WSTGAuthRequirement",
+    "WSTGAutomationStatus",
+    "WSTGCatalog",
+    "WSTGCatalogError",
+    "WSTGEngineError",
+    "WSTGEnginePlan",
+    "WSTGEngineProfile",
+    "WSTGPlanDisposition",
+    "WSTGPlannedTest",
+    "WSTGSafetyTier",
+    "WSTGTestCase",
+    "WSTG_V42_CATALOG",
+    "build_wstg_engine_plan",
+    "build_wstg_v42_catalog",
     "CoverageDisposition",
     "CoverageRecord",
     "CoverageTracker",

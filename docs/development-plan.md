@@ -1,718 +1,318 @@
 # Development plan
 
-This plan builds AOTP as small, reviewable, license-ready slices. The [engineering agent SOP](engineering-agent-sop.md) governs branch, test, commit, and synchronization behavior.
+This plan directs AOTP toward professional, evidence-first, authorized offensive web application testing. The project goal is not to collect vulnerable lab targets. The goal is to build agentic workflows that plan, execute, observe, validate, refine, and report web application security testing with the diligence expected from a senior web application penetration testing team.
 
-For every slice below, validation includes the listed focused command plus `python3 -m compileall src tests`, `python3 -m pytest`, `./scripts/validate-repository-safety.sh`, and `make test`. Evidence includes command output, focused test names, reviewed diff, and a no-private-material confirmation. Files are the named areas plus adjacent tests and documentation. Every suggested commit message is lowercase.
+The [engineering agent SOP](engineering-agent-sop.md) governs branch, test, commit, and synchronization behavior.
 
-## Sprint 0: private-safe foundation and repository creation
+For every slice below, validation includes the listed focused command plus `python3 -m compileall src tests`, `python3 -m pytest`, `./scripts/validate-repository-safety.sh`, and `make test` when those commands are available in the checkout. Evidence includes command output, focused test names, reviewed diff, target-state proof when a live target is used, and a no-private-material confirmation. Files are the named areas plus adjacent tests and documentation. Every suggested commit message is lowercase.
 
-Goal: create the private repository, package scaffold, policies, proprietary license, redaction controls, CI, and test baseline.
+## Direction of travel
 
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 0.1 repository scaffold and metadata | Create package, README, metadata, ignores, and examples | Fresh checkout installs; examples are inert | `aotp --help` | install and tree output | root, `src/aotp`, `config` | `scaffold repository metadata` |
-| 0.2 repository safety validation script | Detect prohibited paths and obvious secret forms | Unsafe fixture fails; repository passes | `./scripts/validate-repository-safety.sh` | pass and negative fixture result | `scripts`, `.gitignore`, tests | `add repository safety validation` |
-| 0.3 minimal CLI and config loading | Add argparse commands and fail-closed YAML loading | Valid example loads; malformed input fails | `aotp validate-config --scope config/scope.example.yaml` | CLI JSON output | `cli.py`, `config.py`, config | `add safe cli and config loading` |
-| 0.4 fail-closed policy gate | Deny missing authority, scope expansion, unsafe paths, and forbidden actions | Negative tests cover every denial family | `pytest tests/test_policy_gate.py` | denial matrix | `policy_gate.py`, tests | `implement fail closed policy gate` |
-| 0.5 CI workflow and validation evidence | Run compile, tests, and safety validation on GitHub | All jobs pass on clean checkout | `make check` | local and Actions result | `.github/workflows`, Makefile | `add continuous validation workflow` |
-| 0.6 proprietary license file | Add exact all-rights-reserved terms | No open-source grant or classifier exists | `rg -n "MIT|Apache|GPL|BSD|MPL" LICENSE.md pyproject.toml` | reviewed license diff | `LICENSE.md`, licensing docs | `add proprietary license terms` |
+AOTP must become a platform that can complete authorized testing campaigns through agentic loops:
 
-Sprint acceptance: private GitHub repository exists; core policy documents exist; compile, tests, safety, and Make targets pass; worktree is clean.
+```text
+authorized scope -> WSTG plan -> agent tasking -> governed execution -> evidence -> proof request -> validation -> finding lifecycle -> professional report
+```
 
-## Sprint 1: scope, authorization, and rules of engagement
+The project must produce real testing outcomes:
 
-Goal: make live testing possible only with explicit private authority.
+- real tests, not only planning artifacts
+- real evidence, not unsupported assertions
+- real candidate findings, bound to artifacts
+- vetted and validated findings, not scanner noise or agent guesses
+- false-positive rejection, duplicate handling, and out-of-scope stops
+- reproducible proof steps and professional report packages
+- campaign summaries that explain tested, skipped, denied, deferred, and blocked work
 
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 1.1 scope schema and examples | Define aliases, assets, accounts, categories, windows, limits, and evidence rules | Example remains dry-run only | `pytest tests/test_config.py` | schema cases | config model and docs | `define private scope model` |
-| 1.2 authorization metadata checks | Require written authorization, agreement, profile, and applicable confidentiality references | Placeholder or missing reference denies live | `pytest tests/test_policy_gate.py -k live` | denial outputs | policy and tests | `require live authorization metadata` |
-| 1.3 rules-of-engagement checks | Require confirmation, reference, forbidden actions, and stop rules | Missing confirmation denies live | `pytest tests/test_policy_gate.py -k rules` | focused results | policy, scope docs | `enforce rules of engagement` |
-| 1.4 live mode approval checks | Require live flag plus operator and objective approvals | Example scope cannot run live | `aotp run-case --scope config/scope.example.yaml --case cases/wstg-security-headers.example.yaml --live --operator-approved` | expected denial | CLI, human approval | `gate live execution approvals` |
-| 1.5 negative fail-closed tests | Cover target, service, API, category, time, and evidence violations | Each missing field has a deterministic denial | `pytest tests/test_policy_gate.py` | denial matrix | tests and fixtures | `expand policy denial coverage` |
+HackerOne or Bugcrowd compatibility is an output mode, not the only destination. The same validated findings must also support internal AppSec review, external client assessment, candidate evaluation, executive review, and developer remediation.
 
-Sprint acceptance: live mode cannot use examples; target expansion and forbidden actions are denied; tests prove every critical denial.
+## Target strategy
 
-## Sprint 2: campaign loop and campaign state
+No more local vulnerable targets are planned during the next execution-depth phase. Juice Shop is the active local live benchmark. crAPI remains registered as a planned benchmark profile with live runtime pending. Future external testing must use authorized program scope, such as HackerOne campaigns, only after the local benchmark workflow can demonstrate real agentic testing depth.
 
-Goal: implement bounded scheduling, checkpoints, events, stop conditions, pause, and resume.
+Target policy:
 
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 2.1 campaign file parser | Parse named objectives and limits | Empty or malformed campaigns fail | `pytest tests/test_campaign_loop.py` | parser cases | `campaign.py`, campaigns | `add campaign parser` |
-| 2.2 campaign state model | Persist required identity, disposition, counter, and stop fields | Round trip preserves all fields | `pytest tests/test_campaign_state.py` | state fixture | `campaign_state.py` | `add campaign state model` |
-| 2.3 campaign loop skeleton | Gate each objective and write outcome evidence | Every iteration has evidence or policy stop | `pytest tests/test_campaign_loop.py` | event and evidence paths | `campaign_loop.py` | `implement bounded campaign loop` |
-| 2.4 scheduler and safety budget | Order approved work and enforce iteration, runtime, and requests | No budget can be exceeded | `pytest tests/test_safety_budget.py` | boundary cases | scheduler and budget | `enforce campaign safety budgets` |
-| 2.5 pause resume and stop behavior | Add operator stop and reviewed resume state | Invalid resume fails; stop persists | `aotp campaign-stop --state <fixture>` | before and after state | CLI and state | `add campaign pause resume and stop` |
-| 2.6 campaign event log | Record iteration, policy, module, outcome, and evidence | Events are ordered and complete | `pytest tests/test_campaign_loop.py -k events` | event JSON | loop and state | `record structured campaign events` |
-| 2.7 LangGraph orchestration prototype | Map approved objectives to nodes, add a durable checkpointer and interrupts, and preserve the policy boundary | Restart, pause, approval, denial, and resume match the deterministic state contract | `pytest tests/test_langgraph_orchestration.py` | checkpoint and parity fixtures | orchestration adapter, state, tests, dependency inventory | `prototype durable langgraph orchestration` |
+- Juice Shop is the resettable loopback-only live benchmark for execution-depth work.
+- crAPI is a registered planned benchmark target with WSTG mapping, but live runtime is pending and not accepted.
+- AOTP must not make any target a dependency of the WSTG engine.
+- New target additions are deferred until the generic workflow, validation, and reporting layers are proven.
 
-Sprint acceptance: plan and dry-run work; state tracks all dispositions; stop conditions and reviewed resume are enforced; the LangGraph prototype passes state and policy parity tests before it can replace the initial loop.
+## Professional finding standard
 
-## Sprint 3: evidence and finding candidate pipeline
+A finding can become reportable only after it passes a lifecycle gate. AOTP must not report observations, guesses, or raw scanner output as validated vulnerabilities.
 
-Goal: hash, redact, verify, classify, and report without invented facts.
+Finding lifecycle:
 
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 3.1 evidence manifest model | Implement required campaign, authorization, mapping, artifact, and verdict fields | Invalid verdict or redaction fails | `pytest tests/test_evidence_manifest.py` | manifest fixture | `evidence.py` | `define evidence manifest contract` |
-| 3.2 redaction checks | Detect secrets and personal identifiers at boundaries | All required secret classes are blocked | `pytest tests/test_redaction.py` | parameter results | `redaction.py` | `enforce evidence redaction` |
-| 3.3 evidence hashing | Hash artifacts and verify identity | Modified artifact fails verification | `pytest tests/test_evidence_manifest.py -k hash` | expected digests | evidence code | `add evidence artifact hashing` |
-| 3.4 verifier verdict model | Restrict verdicts to five values | Unsupported value fails | `pytest tests/test_evidence_manifest.py` | negative result | `verifier.py` | `restrict verifier verdicts` |
-| 3.5 finding candidate model | Separate severity, confidence, strength, and human validation | No candidate exists without evidence | `pytest tests/test_finding_candidate.py tests/test_finding_lifecycle.py` | lifecycle cases | finding modules | `add evidence bound finding lifecycle` |
-| 3.6 markdown report generator | Render evidence fields only | No unsupported impact or remediation appears | `pytest tests/test_reporter.py` | generated report | `reporter.py` | `generate evidence only reports` |
+```text
+observed -> candidate -> needs_more_evidence -> needs_human_approval -> validated -> report_ready
+observed -> candidate -> rejected_false_positive
+observed -> candidate -> duplicate
+observed -> candidate -> out_of_scope
+```
 
-Sprint acceptance: hashes verify, redaction fails closed, candidates are evidence-bound, and reports do not invent facts.
+Report-ready findings require:
 
-## Sprint 4: WSTG web application module
+- title
+- affected asset or endpoint
+- scope decision and ROE reference
+- WSTG category
+- CWE or OWASP mapping when supported
+- severity recommendation and confidence
+- evidence files and hashes
+- reproduction steps
+- validation steps performed
+- false-positive checks performed
+- impact statement supported by evidence
+- limitations and what was not tested
+- remediation guidance
+- safe retest steps
 
-Goal: provide safe WSTG case models and dry-run adapter contracts.
+## Agentic workflow model
 
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 4.1 WSTG case registry | Register version-aware case mappings | `list-cases` exposes approved cases | `aotp list-cases` | registry output | cases and module | `add wstg case registry` |
-| 4.2 authentication and session cases | Model provisioned-account authn and sessions | No credential guessing action exists | `aotp run-case ... --dry-run` | dry-run evidence | authn case files | `add safe authn session cases` |
-| 4.3 authorization cross-account case | Require human approval for cross-account confirmation | Unapproved case pauses or denies | `pytest tests/test_policy_gate.py -k human` | denial record | authz case and approval | `gate cross account testing` |
-| 4.4 security header case | Model observation-only header review | No mutation or crawl occurs | run header case dry-run | evidence manifest | header case | `add security header case` |
-| 4.5 browser-agent context case | Model DOM, screenshot, and browser context placeholders | Artifacts stay local and redacted | run browser case dry-run | placeholder references | browser cases | `add browser context evidence case` |
-| 4.6 adapter stubs | Define Playwright, ZAP, mitmproxy, OSMAP, and browser-suite contracts | Stubs declare supports, requires, denies | `pytest tests/test_capability_registry.py` | registry output | adapters and docs | `add web adapter contracts` |
+AOTP must support assigned agents with auditable responsibilities. Agents do not merely produce text. Agents create or update campaign state, request actions, execute governed tools, record evidence, and explain decisions.
 
-Sprint acceptance: WSTG cases list and dry-run; mappings enter evidence; adapters remain optional and network-silent.
-
-## Sprint 5: service control panel misconfiguration
-
-Goal: safely assess explicitly scoped management interfaces.
-
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 5.1 panel target model | Define explicit panel aliases and categories | Unlisted panel is denied | focused policy test | denial evidence | scope and panel module | `define control panel targets` |
-| 5.2 safe checks | Model headers, TLS, login exposure, versions, defaults, indexing, and metadata | Credential and destructive actions absent | module contract test | capability output | panel module and cases | `add safe panel observations` |
-| 5.3 panel evidence | Add panel-specific metadata placeholders | Dry-run creates redacted evidence | run panel case dry-run | manifest | evidence and module | `record panel evidence` |
-| 5.4 report review gating | Require a manifest-bound human review record before panel candidate creation | Candidate and report gates fail closed | review-gate tests | review decision record | candidate, reporter, and CLI | `add report review gating` |
-| 5.5 lockout stop conditions and campaign integration | Detect explicit lockout-risk signals and support panel campaign objectives | Risk pauses before execution; campaign evidence stays network-silent | approval, campaign, and policy tests | pause event and panel evidence | campaign, approval, loop, and panel module | `stop on panel lockout risk` |
-| 5.6 report mapping and closeout | Render only validated fields from the hashed panel evidence artifact | No panel candidate without manifest-bound review; report re-derives the gate | adversarial reporter and end-to-end tests | report excerpt and validation record | reporter, tests, and docs | `map panel evidence to reports` |
-
-Sprint acceptance: unscoped panels and credential attacks are refused; dry-run evidence is safe; reports remain evidence-bound.
-
-Plan amendment: the initial plan assigned lockout stop conditions to 5.4 and report mapping to
-5.5. PR #10 used 5.4 for report-review gating before those planned items were implemented. The
-amended sequence preserves that published history, moves lockout and campaign work to 5.5, and
-moves report mapping and adversarial closeout to 5.6. No original acceptance requirement is
-removed.
-
-## Sprint 6: bounded fuzzing
-
-Goal: enforce explicit authorization, small budgets, safe payload classes, and instability stops.
-
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 6.1 fuzzing authorization | Require category and action approval | Default scope denies fuzzing | policy fuzzing test | denial record | policy and scope | `require fuzzing authorization` |
-| 6.2 payload budget | Define payload classes and count | Zero or missing budget denies | focused budget test | boundary cases | fuzz module | `bound fuzzing payloads` |
-| 6.3 endpoint budget | Enforce per-endpoint and total requests | Counter cannot exceed limits | budget tests | counter state | budget and loop | `bound fuzzing requests` |
-| 6.4 corpus reference | Hash and reference private corpus without committing it | Evidence contains reference, not payload secrets | evidence test | manifest | evidence and fuzz module | `record fuzzing corpus references` |
-| 6.5 dry-run execution | Plan requests without sending them | Request count remains zero | run fuzz case dry-run | dry-run evidence | executor and module | `add network silent fuzz dry run` |
-| 6.6 instability stops | Stop on size, retry, runtime, instability, or lockout signals | Stop event and counters persist | focused loop tests | stop history | loop and budget | `stop unsafe fuzzing conditions` |
-
-Sprint acceptance: fuzzing requires explicit authority and budgets; state-changing behavior is separately gated; counters and stops are proven.
-
-## Sprint 7: SBOM and dependency review
-
-Goal: review only provided artifacts while separating presence from exploitability.
-
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 7.1 artifact ingestion | Accept and hash provided SBOMs and manifests | Unprovided path is denied | policy artifact test | hash and denial | SBOM module and policy | `ingest provided dependency artifacts` |
-| 7.2 package evidence | Record package, version, source, and hash | Evidence is reproducible | manifest test | package record | SBOM and evidence | `record component evidence` |
-| 7.3 vulnerability mapping interface | Define configured data-source contract | No implicit external lookup occurs | adapter contract test | interface output | SBOM adapter | `add vulnerability mapping contract` |
-| 7.4 reachability caveat | Track presence, reachability, and exploitability separately | Presence cannot become confirmed risk alone | finding tests | lifecycle result | finding and SBOM | `separate component presence from risk` |
-| 7.5 SBOM report section | Render recorded component facts and caveats | No unsupported exploitation claim | reporter test | report excerpt | reporter | `add evidence only sbom reporting` |
-
-Sprint acceptance: provided artifacts are represented and hashed; non-provided inputs are denied; reports distinguish presence from confirmed risk.
-
-## Sprint 8: cryptographic controls review
-
-Goal: review scoped observable or provided cryptographic evidence safely.
-
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 8.1 TLS certificate evidence | Model protocol and certificate metadata | Raw private material is absent | evidence test | TLS fixture | crypto module | `record tls certificate evidence` |
-| 8.2 cookie attributes | Record transport-related attributes without values | Cookie values trigger redaction | redaction test | safe fixture | crypto and redaction | `review cookie security attributes` |
-| 8.3 token configuration | Review provided algorithm and validation settings | Tokens and secrets are blocked | focused redaction test | config fixture | crypto module | `review provided token configuration` |
-| 8.4 weak algorithm indicators | Keep indicators distinct from confirmed weakness | Human review required for finding | lifecycle test | candidate state | crypto and finding | `model weak algorithm indicators` |
-| 8.5 key management artifacts | Review provided metadata, never key material | Private-key marker fails closed | redaction test | denial output | crypto and policy | `gate key management evidence` |
-| 8.6 crypto report section | Render observed evidence and uncertainty | No brute force or unverified claim | reporter test | report excerpt | reporter | `add cryptographic evidence reporting` |
-
-Sprint acceptance: extraction and brute force are refused; weaknesses require evidence; reports preserve uncertainty.
-
-## Sprint 9: Ollama planner, verifier, and report assistant
-
-Goal: use local structured models without giving them authority or secrets.
-
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 9.1 Ollama config model | Add localhost default and approved models | Remote endpoint is not default | config test | parsed config | model config | `configure local ollama models` |
-| 9.2 structured JSON adapter | Use JSON output and timeouts | Invalid response fails gracefully | adapter unit test | mocked response | Ollama adapter | `add structured ollama adapter` |
-| 9.3 planner schema | Restrict suggestions to approved objective IDs | Unknown objective is rejected | planner test | rejection result | planner | `constrain model planning suggestions` |
-| 9.4 verifier schema | Restrict model assistance to evidence summaries | Model cannot set authorization | verifier test | schema result | verifier and adapter | `constrain model verification assistance` |
-| 9.5 secret stripping | Sanitize every prompt recursively | Required secret classes never reach body | `pytest tests/test_redaction.py` | sanitized prompt | redaction and adapter | `strip secrets from model prompts` |
-| 9.6 no-secret tests | Add nested payload and regression cases | Prompt construction fails safe | focused adapter tests | negative cases | tests | `prove model prompt redaction` |
-
-Sprint acceptance: localhost and structured output are defaults; suggestions cannot bypass policy; secrets do not enter prompts; unavailable Ollama is bounded.
-
-## Sprint 10: live adapter readiness
-
-Goal: define testable contracts for future live tools without enabling them by default.
-
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 10.1 Playwright contract | Define navigation, DOM, screenshot, and trace capabilities | Scope and rate requirements declared | capability test | registry entry | Playwright adapter | `define playwright adapter contract` |
-| 10.2 ZAP contract | Define passive and limited spider capabilities | Active scan denied without approval | capability test | registry entry | ZAP adapter | `define zap adapter contract` |
-| 10.3 mitmproxy contract | Define authorized capture and redaction boundary | Unscoped interception denied | capability test | registry entry | proxy adapter | `define mitmproxy adapter contract` |
-| 10.4 OSMAP contract | Bridge explicit local cases and evidence references | No code vendoring or implicit live run | provenance review | reviewed diff | OSMAP adapter and docs | `define osmap adapter contract` |
-| 10.5 browser-suite contract | Bridge external browser evidence | Separate license obligations documented | license review | inventory note | browser adapter and docs | `define browser suite adapter contract` |
-| 10.6 placeholder integration examples | Demonstrate dry-run wiring with aliases only | No real target or private data exists | safety validator | safe examples | examples and docs | `add safe adapter examples` |
-
-Sprint acceptance: contracts are documented and testable; live use requires private scope; no private material or copied code is committed.
-
-## Sprint 11: candidate evaluation demonstration
-
-Goal: produce a polished, network-silent private demonstration release.
-
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 11.1 demo script | Document a repeatable evaluator walkthrough | Fresh clone steps work | follow demo script | terminal record | demo docs | `add evaluator demo script` |
-| 11.2 sample dry-run output | Generate clearly marked placeholders | Output is reproducible and inert | campaign dry-run | local ignored output | examples and docs | `document dry run campaign output` |
-| 11.3 example report | Generate from placeholder evidence only | Report states its limitations | reporter command | report sample | reporter docs | `add placeholder evidence report` |
-| 11.4 architecture review | Review authority and data flows | No bypass path exists | threat-model checklist | review record | architecture docs | `review campaign architecture` |
-| 11.5 repository safety review | Audit tracked inventory and history | No prohibited material is found | safety validator and `git grep` | audit record | repository-wide | `complete repository safety review` |
-| 11.6 v0.1 checklist | Verify install, docs, policy, tests, and license | Every release item passes | `make check` | release checklist | release docs | `prepare private v0.1 release` |
-
-Sprint acceptance: demo works from a fresh clone without live traffic; placeholder report is clear; safety passes; release checklist is complete.
-
-## Sprint 12: bug bounty operator workflow
-
-Goal: support private profiles, duplicate control, human-reviewed report packages, and privacy-safe metrics.
-
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 12.1 private program profile | Implement separate private policy context | Live campaign lacks authority without it | profile policy test | denial record | profile model | `add private program profiles` |
-| 12.2 policy checklist | Record acceptance, safe harbor, disclosure, and stops | Missing required term denies | checklist test | completed placeholder | profile docs | `add program policy checklist` |
-| 12.3 scope enforcement | Enforce in-scope, out-of-scope, and prohibited actions | Out-of-scope aliases deny | policy tests | denial matrix | policy | `enforce program scope boundaries` |
-| 12.4 duplicate tracking | Add private prior-test fingerprints and outcomes | Memory is ignored and alias-only | memory test | schema fixture | campaign memory | `add duplicate avoidance memory` |
-| 12.5 report package | Bundle redacted evidence references and draft | Package is marked draft | reporter test | package manifest | reporter | `build human reviewed report package` |
-| 12.6 submission gate | Require human approval and keep submission manual | No automatic submission path exists | approval test | pause event | approvals and docs | `gate report submission` |
-| 12.7 efficiency metrics | Track time, counts, outcomes, bounty, and cost separately | Metrics contain no target data | metrics test | aggregate fixture | metrics | `add private operator metrics` |
-
-Sprint acceptance: real profiles remain private; out-of-scope and prohibited actions deny; drafts require human review; no submission automation exists.
-
-## Sprint 13: licensing and commercialization readiness
-
-Goal: prepare for private licensing, evaluator access, commercialization, or a later carefully reviewed release.
-
-| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|---|
-| 13.1 proprietary license | Verify all-rights-reserved terms and metadata | No open-source grant is present | license grep | reviewed license | license and metadata | `confirm proprietary licensing` |
-| 13.2 dependency inventory | Record direct, dev, transitive, and tooling obligations | Every dependency has a review status | package metadata review | inventory | dependency docs | `inventory dependency licenses` |
-| 13.3 attribution policy | Define provenance and clean-room integration rules | Unclear code cannot merge | contribution checklist | provenance record | contributing docs | `define third party attribution policy` |
-| 13.4 evaluator model | Draft limited evaluation rights and restrictions | Draft is marked for legal review | document review | review notes | evaluator license doc | `draft evaluator license model` |
-| 13.5 commercialization checklist | Cover rights, support, privacy, retention, and release terms | Owners and open items are visible | checklist review | readiness record | commercialization docs | `add commercialization readiness checklist` |
-| 13.6 public release risk review | Audit history, secrets, licenses, claims, and private artifacts | Release is blocked until all risks close | safety and history audit | signed review record | repository-wide | `add public release risk review` |
-
-Sprint acceptance: source remains proprietary, operational material remains private, dependency
-and future-license options are documented, and commercial, evaluator, and open-source distribution
-remain blocked until every recorded review closes.
-
-Plan correction: repository visibility is public, not private. Sprint 13 preserves proprietary
-source terms and private operations without claiming that repository visibility is private.
-
-## Sprint 14: Ollama Deep Agent Campaign Runtime
-
-Goal: build the first real agentic campaign loop using local Ollama plus LangChain Deep Agents,
-with no MCP. The agent plans, calls governed native tools, analyzes evidence summaries, and chooses
-the next test.
-
-| Slice | Implementation tasks | Acceptance checks |
+| Agent | Responsibility | Required outputs |
 |---|---|---|
-| 14.1 | Bootstrap Ollama Deep Agent and validate the local model | Ollama is detected on `127.0.0.1` only; configured model is available |
-| 14.2 | Create `.aotp/campaigns/<program>/<run-id>/` bounded workspace | State and artifacts cannot escape the workspace |
-| 14.3 | Define Deep Agent supervisor and subagents | Supervisor and delegated roles start with bounded context |
-| 14.4 | Define structured test-objective and tool-call proposal schema | Agent emits valid structured proposal JSON |
-| 14.5 | Gate model-proposed objectives | Malformed and out-of-scope proposals are denied |
-| 14.6 | Add HTTP metadata, TLS metadata, robots, and security.txt native tools | Approved metadata tools execute; no unregistered tool path exists |
-| 14.7 | Return classified evidence summaries to the agent | Evidence is written, hashed, classified, and summarized |
-| 14.8 | Run a three-iteration campaign loop | Agent analyzes each summary and completes at least three iterations |
-| 14.9 | Demonstrate a no-credential campaign on an authorized owned target | Live proof remains in scope and produces a due-diligence result |
-| 14.10 | Document the sprint and operator demo | Report draft or no-finding summary is generated; no MCP code path exists |
+| Campaign Lead Agent | Maintains campaign goals, WSTG coverage, budgets, and stop conditions | campaign state, next objective rationale, stop or continue decision |
+| Browser Workflow Agent | Uses governed Playwright to navigate, observe pages, capture DOM, screenshots, links, forms, and session state | browser evidence, route observations, session state references |
+| Authentication Agent | Handles provisioned accounts, login state, logout proof, and session classification | vaulted credential references, auth state evidence, boundary checks |
+| Form Action Agent | Discovers forms, classifies risk, proposes safe submissions, and requests approval for risky actions | form inventory, action proposals, submission evidence |
+| API Discovery Agent | Extracts API routes from browser traffic, OpenAPI, GraphQL, JavaScript references, and observed requests | API inventory, provenance, scope decisions |
+| Evidence Auditor Agent | Determines whether evidence is sufficient, stale, contradictory, or missing | proof requests, sufficiency verdicts |
+| Validation Agent | Performs ROE-gated confirmation of candidate findings | validation action records, confidence updates |
+| Reporting Agent | Converts validated findings into professional packages for the selected audience | finding package, campaign report, evidence appendix |
 
-Development evidence: `src/aotp/deep_agent/bootstrap.py`,
-`src/aotp/deep_agent/supervisor.py`, `src/aotp/deep_agent/subagents.py`,
-`src/aotp/agent_workspace.py`, `src/aotp/agentic_campaign_loop.py`,
-`src/aotp/model_proposals.py`, `src/aotp/model_proposal_gate.py`,
-`src/aotp/agent_tools/http_metadata.py`, `src/aotp/agent_tools/tls_metadata.py`,
-`src/aotp/evidence_summarizer.py`, `docs/sprint-14-ollama-deep-agent-runtime.md`,
-`scripts/run-sprint14-agentic-mailhost-demo.sh`, `tests/test_agent_workspace.py`,
-`tests/test_model_proposals.py`, `tests/test_model_proposal_gate.py`, and
-`tests/test_agentic_campaign_loop.py`.
+## ROE gates
 
-Sprint acceptance: the local supervisor produces governed structured proposals, approved metadata
-tools execute, evidence feeds the next decision for at least three iterations, output is
-evidence-linked, and no MCP path exists.
+Every execution path must remain authorized and controlled. AOTP must fail closed when authority, scope, budget, or evidence handling is unclear.
 
-## Sprint 15: Campaign-Governed Native Tool Registry
+Required gates:
 
-Goal: make every real tool typed, risk-tiered, scoped, budgeted, logged, classified, and approved
-under human-defined ROE.
+- passive-only mode
+- safe active mode
+- authenticated testing mode
+- form submission approval
+- state-changing action approval
+- proof action approval
+- destructive action prohibition
+- rate limit and request budget enforcement
+- out-of-scope stop
+- credential and session handling policy
+- sensitive data classification and vault handling
+- manual-only external disclosure
 
-| Slice | Implementation tasks | Acceptance checks |
+## Completed foundation through Sprint 18H
+
+The following completed work remains part of the project baseline. Historical detail is preserved in sprint-specific documents and commit history. Future work must build on these foundations rather than bypass them.
+
+| Sprint | Completed capability | Current acceptance boundary |
 |---|---|---|
-| 15.1 | Implement the native tool registry | Agent requests map only to registered tools |
-| 15.2 | Define risk tiers from passive metadata to exploitation validation | Every tool call resolves to a documented risk tier |
-| 15.3 | Add ROE-driven tool permissions | Tools not allowed by ROE are denied |
-| 15.4 | Enforce request budgets and rate limits | Over-budget calls are denied before execution |
-| 15.5 | Add a constrained Parrot campaign shell | Shell cannot run arbitrary commands |
-| 15.6 | Add a single-host, single-service governed nmap wrapper | Arguments and targets outside scope are denied |
-| 15.7 | Add an OWASP ZAP passive baseline wrapper | Approved passive execution is bounded and captured |
-| 15.8 | Add a Playwright passive browser metadata wrapper | Browser collection remains scoped and classified |
-| 15.9 | Record denied calls as campaign evidence | Denial reason and proposal are evidence-bound |
-| 15.10 | Generate a FOSS tool inventory | Availability never grants authority |
+| 0 | Private-safe repository foundation, metadata, CI baseline, policy scaffold | repository safety and tests pass |
+| 1 | Scope, authorization, and rules of engagement | live work requires explicit authority and operator approval |
+| 2 | Campaign loop and campaign state foundations | bounded state, stop behavior, and checkpoint concepts exist |
+| 3 | Evidence and candidate pipeline | evidence hashes, redaction, and evidence-bound candidates are foundational |
+| 4 | WSTG web application module contracts | WSTG cases and adapter contracts are safe and initially network-silent |
+| 5 | Service control panel misconfiguration workflow | scoped management-interface checks are evidence-bound and gated |
+| 6 | Bounded fuzzing policy | fuzzing requires explicit authorization, budgets, and instability stops |
+| 7 | SBOM and dependency review | provided artifacts are hashed and presence is separated from exploitability |
+| 8 | Cryptographic controls review | scoped observable crypto evidence is handled safely |
+| 9 | HTTP security and browser-control review | browser-facing controls are modeled safely |
+| 10 | Access control and session review foundations | auth and session checks remain governed |
+| 11 | Input and error-boundary review foundations | input evidence and error behavior are bounded |
+| 12 | Campaign report and evidence packaging foundations | report generation remains evidence-bound |
+| 13 | Post-sprint alignment and documentation cleanup | stale blockers and target-specific drift are reduced |
+| 14 | Deep agent runtime foundations | local agent runtime work is available for later orchestration |
+| 15 | Campaign-governed native tool registry | governed tools mediate execution and budget |
+| 15A | Tool registry hardening | target expansion and out-of-origin evidence are blocked |
+| 16 | Sensitive evidence vault and PoC material handling | sensitive material is classified, vaulted, and export-gated |
+| 17 | WSTG campaign coverage engine | WSTG objectives derive from scope, ROE, and evidence gaps |
+| 17F | WSTG execution adapter contract | generated objectives can map to governed execution requests and evidence-backed results |
+| 18 | Authenticated OSMAP and clearbox workflow | retained as a narrow integration example, not an engine dependency |
+| 18F | Local Juice Shop benchmark | Juice Shop is loopback-only, resettable, and separate from the engine |
+| 18G | Local Juice Shop agentic campaign runner | first bounded local live campaign exists, but is still limited and GET-oriented |
+| 18H | Local vulnerable target matrix | Juice Shop is implemented; OWASP crAPI is a planned registered target with live runtime pending, without making crAPI a dependency of the WSTG engine |
 
-Development evidence: `src/aotp/tool_registry.py`, `src/aotp/tool_risk_tiers.py`,
-`src/aotp/roe.py`, `src/aotp/request_budget.py`,
-`src/aotp/agent_tools/campaign_shell.py`, `src/aotp/agent_tools/nmap_governed.py`,
-`src/aotp/agent_tools/zap_passive.py`, `src/aotp/agent_tools/playwright_passive.py`,
-`src/aotp/tool_inventory.py`, `docs/sprint-15-campaign-governed-tools.md`,
-`tests/test_tool_registry.py`, `tests/test_tool_risk_tiers.py`,
-`tests/test_request_budget.py`, `tests/test_campaign_shell.py`,
-`tests/test_nmap_governed.py`, and `tests/test_zap_passive.py`.
-
-Sprint acceptance: approved FOSS tools execute within scope and budget, denied calls become
-evidence, arbitrary shell execution is impossible, and results returned to the agent follow ROE
-and evidence classification.
-
-### Sprint 15 Follow-up: Tool Governance Hardening
-
-Goal: close the senior-review findings before Sprint 16 depends on governed native tools for
-sensitive evidence handling.
-
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 15A.1 | Close nmap target expansion edge cases | Nmap denies CIDR, wildcard, comma, and numeric range target expressions |
-| 15A.2 | Reserve request budget before tool execution | Failed launched tools still consume budget |
-| 15A.3 | Route the active campaign loop through the registry | Default agent execution uses ROE, registry, and request budget |
-| 15A.4 | Record successful registry-mediated executions | Executed governed tool calls create evidence records |
-| 15A.5 | Add redirect and crawl scope regressions | Playwright and ZAP tests deny out-of-origin navigation or crawl output |
-
-Development evidence: `src/aotp/tool_registry.py`, `src/aotp/agentic_campaign_loop.py`,
-`src/aotp/agent_tools/nmap_governed.py`, `src/aotp/agent_tools/playwright_passive.py`,
-`src/aotp/agent_tools/zap_passive.py`, `docs/sprint-15-governance-hardening.md`,
-`tests/test_tool_registry.py`, `tests/test_nmap_governed.py`, `tests/test_playwright_passive.py`,
-`tests/test_zap_passive.py`, and `tests/test_agentic_campaign_loop.py`.
-
-Sprint acceptance: Sprint 15 governed tools are fail-closed against target expansion, consume
-budget at launch, provide success and denial evidence, govern the active campaign loop, and
-block out-of-origin browser or passive scanner evidence before Sprint 16 begins.
-
-## Sprint 16: Sensitive Evidence Vault and PoC Material Handling
-
-Goal: encrypt sensitive campaign proof, allow authorized agent and tool use during campaign
-iterations, support PoC construction, and prevent leakage into normal evidence, git, or reports.
-
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 16.1 | Define `public`, `restricted`, `secret`, `poc_sensitive`, `recipient_only`, and `do_not_store` | Secret-like output is classified automatically |
-| 16.2 | Implement encrypted campaign-sensitive storage | Sensitive material is encrypted before persistence |
-| 16.3 | Add vault handles across campaign iterations | Normal evidence references handles without raw values |
-| 16.4 | Store campaign keys, hashes, passwords, tokens, private keys, and proof material | Authorized campaign material persists safely |
-| 16.5 | Enforce authorized raw agent access | Access denies outside active campaign ROE |
-| 16.6 | Add secret-bearing in-memory tool interfaces | Approved tools use material without argv or log leakage |
-| 16.7 | Add a classified PoC workspace | Vault-backed material can build reproducible proof |
-| 16.8 | Implement sensitive annex export | Annex stays separate from the normal report |
-| 16.9 | Block unencrypted vault leakage in repository safety | Tracked plaintext sensitive material fails validation |
-| 16.10 | Gate vault export, report inclusion, and campaign handoff | Each action requires explicit human approval |
-
-Development evidence: `src/aotp/evidence_classifier.py`, `src/aotp/sensitive_vault.py`,
-`src/aotp/vault_handles.py`, `src/aotp/campaign_key_store.py`,
-`src/aotp/agent_vault_access.py`, `src/aotp/secret_bearing_tools.py`,
-`src/aotp/poc_workspace.py`, `src/aotp/sensitive_annex.py`,
-`src/aotp/report_export_policy.py`, `scripts/validate-vault-leakage.sh`,
-`docs/sprint-16-sensitive-evidence-vault.md`, `tests/test_evidence_classifier.py`,
-`tests/test_sensitive_vault.py`, `tests/test_vault_handles.py`,
-`tests/test_campaign_key_store.py`, `tests/test_agent_vault_access.py`,
-`tests/test_secret_bearing_tools.py`, and `tests/test_sensitive_annex.py`.
-
-Sprint acceptance: every raw read logs purpose, handle, campaign, and identity; authorized agent
-and tool use works; normal evidence, terminal logs, git, and public reports exclude raw material;
-retention and export rules hold; and annex export requires approval.
-
-## Sprint 17: WSTG Campaign Coverage Engine
-
-Goal: generate WSTG-aligned campaign phases, track coverage and gaps, and let the agent choose the
-next approved test from evidence.
-
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 17.1 | Define a WSTG strategy map with executable families | Mappings are version-aware and evidence-linked |
-| 17.2 | Define passive, browser, auth, input, validation, and report phases | Every objective belongs to a campaign phase |
-| 17.3 | Generate WSTG objectives from scope and ROE | Generated objectives remain in scope |
-| 17.4 | Track coverage and analyze gaps | Status includes tested, skipped, denied, blocked, and deferred |
-| 17.5 | Add auth boundary checks | Only approved checks execute |
-| 17.6 | Add session management checks | Session material follows classification policy |
-| 17.7 | Add error and input-boundary checks | Budgets and stop conditions apply |
-| 17.8 | Add browser route and form metadata checks | Browser evidence links to WSTG categories |
-| 17.9 | Let the agent choose the next objective from evidence gaps | Agent explains the next choice |
-| 17.10 | Generate a WSTG coverage report | Report explains continue or stop reasoning |
-
-Development evidence: `src/aotp/wstg/strategy_map.py`,
-`src/aotp/wstg/objective_generator.py`, `src/aotp/wstg/coverage.py`,
-`src/aotp/wstg/auth_boundary.py`, `src/aotp/wstg/session_management.py`,
-`src/aotp/wstg/error_handling.py`, `src/aotp/wstg/input_boundary.py`,
-`src/aotp/wstg/browser_metadata.py`, `docs/sprint-17-wstg-campaign-coverage.md`,
-`tests/test_wstg_strategy_map.py`, `tests/test_wstg_objective_generator.py`,
-`tests/test_wstg_coverage.py`, `tests/test_wstg_auth_boundary.py`,
-`tests/test_wstg_session_management.py`, and `tests/test_wstg_error_input_browser.py`.
-
-Sprint acceptance: WSTG objectives derive from scope and ROE, execution stays approved, coverage
-dispositions are explicit, evidence maps back to categories, and the agent explains continuation
-or stop.
-
-### Sprint 17 Follow-up: WSTG Execution Adapter Contract
-
-Goal: close the Sprint 17 carry-forward gap by adding an OSMAP-inspired execution adapter
-contract that converts generated WSTG objectives into governed execution requests, redacted
-evidence references, OSMAP-style execution results, coverage updates, and evidence-bound finding
-candidates. This is a Sprint 17 hardening slice, not the Sprint 18 authenticated workflow.
-
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 17F.1 | Define a WSTG execution request contract | Request binds one generated objective to a governed tool or app-specific runner |
-| 17F.2 | Define redacted evidence references | Absolute paths, path escape, and unredacted artifacts are rejected |
-| 17F.3 | Define OSMAP-style result statuses | Status includes pass, fail, warning, skip, and not_applicable |
-| 17F.4 | Convert results into coverage records | Coverage ledger receives tested or skipped dispositions with evidence or reasons |
-| 17F.5 | Gate finding candidates | Candidates are emitted only for failed, evidence-backed results |
-
-Development evidence: `src/aotp/wstg/execution_adapter.py`,
-`docs/sprint-17-followup-wstg-execution-adapters.md`,
-`tests/test_wstg_execution_adapter.py`, and exported symbols in `src/aotp/wstg/__init__.py`.
-
-Follow-up acceptance: the adapter contract remains network-silent, does not grant execution
-authority, rejects unsafe evidence references, maps execution outcomes to the Sprint 17 coverage
-ledger, and creates candidate findings only when redacted evidence supports a failed result.
-
-## Sprint 18: Authenticated OSMAP and Clearbox Workflow
-
-Goal: productize authenticated, metadata-safe, source-informed testing of owned or authorized
-targets by consuming the Sprint 17 follow-up execution adapter contract rather than redefining
-it.
-
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 18.1 | Add interactive credential and TOTP prompts | Values never enter argv, history, or public evidence |
-| 18.2 | Define the authenticated session boundary | Active authorization is required |
-| 18.3 | Classify and route cookies, CSRF values, and tokens | ROE selects vaulted or memory-only handling |
-| 18.4 | Review an OSMAP local repository or zip | Source remains local and produces safe metadata |
-| 18.5 | Build source-derived route and auth maps | Maps contain routes and auth requirements |
-| 18.6 | Generate OSMAP WSTG candidates through the Sprint 17 follow-up adapter contract | Hints do not grant execution authority |
-| 18.7 | Execute governed authenticated route checks through approved tools or app-specific runners | Classified evidence is produced and mapped back to adapter results |
-| 18.8 | Verify logout and post-logout boundaries | Cleanup and invalidated-session behavior are recorded |
-| 18.9 | Review candidate findings agentically | Candidates remain evidence-bound |
-| 18.10 | Build the authenticated campaign package | Draft includes evidence references and limitations |
-
-Development evidence: `src/aotp/credential_prompt.py`, `src/aotp/auth_session.py`,
-`src/aotp/csrf.py`, `src/aotp/session_evidence.py`,
-`src/aotp/integrations/osmap_source_review.py`,
-`src/aotp/integrations/osmap_route_map.py`,
-`src/aotp/integrations/osmap_wstg_mapper.py`,
-`src/aotp/agent_tools/osmap_authenticated_wstg.py`,
-`docs/sprint-18-authenticated-osmap-clearbox.md`,
-`tests/test_credential_prompt.py`, `tests/test_auth_session.py`,
-`tests/test_session_evidence_redaction.py`, `tests/test_osmap_source_review.py`, and
-`tests/test_osmap_route_map.py`.
-
-Sprint acceptance: credentials and session material follow campaign storage policy, source input
-produces route and auth maps, authenticated work requires authorization, logout boundaries are
-verified, and findings cite classified evidence.
-
-
+Sprint 18H correction: crAPI live runtime is not accepted on the Parrot rootless Podman Compose host. The plan must not claim that crAPI live reset, health verification, or `127.0.0.1:8888` runtime support is complete. The accepted value from Sprint 18H is the target matrix registry, crAPI metadata profile, and crAPI WSTG mapping.
 
 ## Sprint 18F: Local Juice Shop WSTG Campaign Benchmark
 
-Goal: add a loopback-only OWASP Juice Shop benchmark target on the Parrot development system so the corrected Sprint 18 WSTG catalog and planning engine can be validated against a known intentionally vulnerable application before later authorized bug bounty campaigns.
+Goal: preserve the accepted loopback-only OWASP Juice Shop benchmark work as the active local live proving ground for execution-depth development. Juice Shop is a resettable benchmark resource, not an engine dependency, and must remain separate from WSTG planning logic.
 
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 18F.1 | Inventory the local Parrot system and required tools | Evidence records user, sudo, OS, Docker, curl, Python, git, and listener state |
-| 18F.2 | Install Docker when missing through the local package manager | Install uses passwordless sudo as user foo and records package evidence |
-| 18F.3 | Pull the OWASP Juice Shop image | The `bkimminich/juice-shop` image is present and inspected |
-| 18F.4 | Reset Juice Shop before every campaign | The old container is removed and a fresh container starts without persistent mounts |
-| 18F.5 | Enforce loopback-only exposure | Docker binds exactly `127.0.0.1:3000:3000` |
-| 18F.6 | Add a metadata-only Juice Shop lab target profile | The profile cannot become a WSTG engine dependency or challenge-solution shortcut |
-| 18F.7 | Add a benchmark manifest | Broad Juice Shop classes map to canonical WSTG IDs without copied solutions |
-| 18F.8 | Add a focused validation runner | The runner validates project tests and optionally installs or resets the live local benchmark |
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|---|
+| 18F.1 benchmark inventory | Inventory the local Parrot system and required tools before using the target | Evidence records user, OS, container runtime, curl, Python, git, and listener state | `pytest tests/test_juice_shop_local_scripts.py` | inventory output | `scripts/install-local-juice-shop-benchmark.sh`, tests | `inventory local juice shop benchmark` |
+| 18F.2 loopback reset | Reset Juice Shop before every live campaign | Old container is removed and a fresh loopback-only container starts without persistent mounts | `scripts/juice-shop-local-reset.sh --help` | reset evidence | `scripts/juice-shop-local-reset.sh` | `reset local juice shop benchmark` |
+| 18F.3 benchmark profile | Keep a metadata-only Juice Shop lab target profile | Profile cannot become a WSTG engine dependency or challenge-solution shortcut | `pytest tests/test_juice_shop_local_profile.py` | profile fixture | `src/aotp/lab_targets/juice_shop.py` | `add juice shop local profile` |
+| 18F.4 benchmark mapping | Map broad Juice Shop vulnerability classes to canonical WSTG IDs | Mapping contains no copied solutions and no challenge-specific bypasses | `pytest tests/test_juice_shop_benchmark_mapping.py` | benchmark fixture | `src/aotp/benchmarks/juice_shop.py` | `map juice shop benchmark coverage` |
+| 18F.5 local validation runner | Preserve the venv-backed validation runner for the benchmark | Runner can validate project tests and optionally reset the live local benchmark | `pytest tests/test_development_plan_juice_shop_followup.py` | runner output | `scripts/run-sprint18-followup-local-juice-shop-validation.sh` | `validate local juice shop benchmark` |
 
-Development evidence: `src/aotp/lab_targets/juice_shop.py`,
-`src/aotp/benchmarks/juice_shop.py`,
-`scripts/install-local-juice-shop-benchmark.sh`,
-`scripts/juice-shop-local-reset.sh`,
-`scripts/run-sprint18-followup-local-juice-shop-validation.sh`,
-`docs/sprint-18-followup-local-juice-shop-benchmark.md`,
-`docs/lab-targets/juice-shop-local.md`,
-`tests/test_juice_shop_local_profile.py`,
-`tests/test_juice_shop_benchmark_mapping.py`,
-`tests/test_juice_shop_local_scripts.py`, and
-`tests/test_development_plan_juice_shop_followup.py`.
+Development evidence: `src/aotp/lab_targets/juice_shop.py`, `src/aotp/benchmarks/juice_shop.py`, `scripts/install-local-juice-shop-benchmark.sh`, `scripts/juice-shop-local-reset.sh`, `scripts/run-sprint18-followup-local-juice-shop-validation.sh`, `docs/lab-targets/juice-shop-local.md`, `docs/sprint-18-followup-local-juice-shop-benchmark.md`, `tests/test_juice_shop_local_profile.py`, `tests/test_juice_shop_benchmark_mapping.py`, `tests/test_juice_shop_local_scripts.py`, and `tests/test_development_plan_juice_shop_followup.py`.
 
-Follow-up acceptance: local Juice Shop is treated as a resettable benchmark resource, not as the engine; every live campaign against it starts from a freshly recreated loopback-only container; benchmark comparison maps observed findings to canonical WSTG coverage before later authorized bug bounty targets are used.
+Sprint acceptance: the loopback-only OWASP Juice Shop benchmark remains resettable, local, and separate from the WSTG engine. The plan keeps local Juice Shop benchmark fixtures available for execution-depth work while preventing benchmark-specific shortcuts.
 
 ## Sprint 18G: Local Juice Shop Agentic Campaign Runner
 
-Goal: add the first executable AOTP-owned campaign path against the loopback-only Juice Shop benchmark. This follow-up uses the corrected WSTG catalog and local benchmark profile to reset the target, plan a governed WSTG campaign, run bounded passive and safe-active GET-only checks, collect normalized evidence, create candidate or manual-required findings, and compare observed coverage against the Juice Shop benchmark manifest.
+Goal: preserve the accepted first executable AOTP-owned campaign path against the loopback-only Juice Shop benchmark. This runner is useful as a baseline, but it is not the final agentic testing model. Future sprints must generalize it into reusable WSTG execution, stateful browser workflows, proof requests, validation loops, and professional reporting.
 
 | Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|
-| 18G.1 campaign runner | Add a local Juice Shop campaign module that validates loopback scope, builds a WSTG plan, performs bounded same-origin GET requests, and records state-driven decisions | Non-loopback targets and unsafe paths are rejected; every request is GET-only and bounded | `pytest tests/test_juice_shop_agentic_campaign.py` | campaign result fixture and artifacts | `src/aotp/campaigns/juice_shop_campaign.py`, tests | `add local juice shop agentic campaign runner` |
-| 18G.2 evidence and report output | Write campaign plan, decisions, HTTP observations, surface inventory, candidate findings, benchmark comparison, report, and hashes | Evidence paths are deterministic and report content is evidence-bound | `pytest tests/test_juice_shop_agentic_campaign.py -k writes_evidence` | generated evidence tree and SHA256SUMS | campaign module and docs | `record juice shop campaign evidence` |
-| 18G.3 live runner script | Add a venv-backed shell runner that resets local Juice Shop before campaign execution and captures evidence | Runner uses `.venv/bin/python`, reset is default, and `--no-reset` is explicit | `pytest tests/test_juice_shop_agentic_campaign_scripts.py` | runner output and local target state | `scripts/run-local-juice-shop-agentic-campaign.sh` | `add juice shop campaign runner script` |
+|---|---|---|---|---|---|---|
+| 18G.1 campaign runner | Preserve the local Juice Shop campaign module that validates loopback scope, builds a WSTG plan, performs bounded same-origin GET requests, and records state-driven decisions | Non-loopback targets and unsafe paths are rejected; requests remain bounded | `pytest tests/test_juice_shop_agentic_campaign.py` | campaign result fixture | `src/aotp/campaigns/juice_shop_campaign.py` | `preserve juice shop campaign runner` |
+| 18G.2 evidence output | Preserve campaign plan, decisions, HTTP observations, surface inventory, candidate findings, benchmark comparison, report, and hashes | Evidence paths are deterministic and report content is evidence-bound | `pytest tests/test_juice_shop_agentic_campaign.py -k writes_evidence` | generated evidence tree | campaign module and docs | `record juice shop campaign evidence` |
+| 18G.3 live runner script | Preserve the venv-backed live runner that resets local Juice Shop before campaign execution | Reset is default, `--no-reset` is explicit, and evidence is captured | `pytest tests/test_juice_shop_agentic_campaign_scripts.py` | runner output | `scripts/run-local-juice-shop-agentic-campaign.sh` | `run juice shop agentic campaign` |
+| 18G.4 generalization boundary | Document that the runner is a baseline for generic execution, not a target-specific model to copy | Later sprints must remove target-specific shortcuts from the main execution harness | development plan guard tests | roadmap evidence | docs and campaign modules | `document juice shop runner boundary` |
 
-Sprint acceptance: AOTP can run a bounded local Juice Shop campaign that resets the target, plans WSTG work, executes safe local requests, writes evidence, creates evidence-bound candidate findings, and reports benchmark coverage without embedding Juice Shop challenge solutions.
+Development evidence: `src/aotp/campaigns/juice_shop_campaign.py`, `scripts/run-local-juice-shop-agentic-campaign.sh`, `docs/sprint-18-followup-local-juice-shop-agentic-campaign.md`, `tests/test_juice_shop_agentic_campaign.py`, and `tests/test_juice_shop_agentic_campaign_scripts.py`.
 
+Sprint acceptance: AOTP can run a bounded local Juice Shop campaign that resets the target, plans WSTG work, executes safe local requests, writes evidence, creates evidence-bound candidate findings, and reports benchmark coverage without embedding Juice Shop challenge solutions. The accepted limitation is explicit: this is an early bounded campaign runner, not a complete autonomous penetration tester.
 
 ## Sprint 18H: Local Vulnerable Target Matrix
 
-Goal: add a local target matrix registry and implement OWASP crAPI as the first additional planned target after Juice Shop. This follow-up broadens AOTP benchmark coverage into modern APIs, authorization, authentication, and business logic while keeping target profiles separate from the WSTG engine.
+Goal: preserve the accepted Sprint 18H boundary while preventing future drift back into target collection. AOTP includes a local target matrix registry. Juice Shop is the implemented resettable live benchmark. OWASP crAPI is the first additional planned target in the registry, with live runtime pending because the Parrot rootless Podman Compose path did not produce deterministic clean startup. The crAPI profile and WSTG mapping remain useful planning assets without making crAPI a dependency of the WSTG engine.
+
+Sprint 18H acceptance boundary: the accepted implementation is the local target matrix registry, Juice Shop implemented live target metadata, crAPI planned target metadata, and crAPI WSTG benchmark mapping. crAPI live runtime, reset, health verification, and `127.0.0.1:8888` acceptance are not complete and must not be treated as available until a later dedicated runtime-hardening sprint proves deterministic startup, health, cleanup, and evidence capture.
+
+## Sprint 19: Generic Agentic WSTG Execution Harness
+
+Goal: replace target-specific campaign logic with a generic WSTG live execution harness that can run approved objectives against an approved target profile through governed tools, record evidence, update campaign state, and emit candidate findings without target-specific shortcuts.
 
 | Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
-|---|---|---|---|---|---|
-| 18H.1 target registry | Add a metadata-only local target matrix registry for implemented benchmark targets | Juice Shop and crAPI are enumerated as loopback-only reset-required targets | `pytest tests/test_local_target_registry.py` | registry records | `src/aotp/lab_targets/registry.py`, tests | `add local vulnerable target matrix` |
-| 18H.2 crAPI profile | Add a local-only OWASP crAPI profile and WSTG planning profile | crAPI uses `127.0.0.1:8888`, requires compose reset, and denies persistent state | `pytest tests/test_crapi_local_profile.py` | profile JSON shape | `src/aotp/lab_targets/crapi.py` | `add crapi local target profile` |
-| 18H.3 crAPI benchmark mapping | Map broad crAPI vulnerability classes to canonical WSTG IDs | Benchmark IDs map only to official WSTG catalog entries and contain no solutions | `pytest tests/test_crapi_benchmark_mapping.py` | benchmark manifest | `src/aotp/benchmarks/crapi.py` | `map crapi benchmark coverage` |
-| 18H.4 local target scripts | Add install/reset scripts that inventory compose support, install missing compose tooling when approved, download official OWASP crAPI assets, reset state, and verify loopback listeners | `down -v` clears prior state; crAPI and MailHog respond; non-loopback exposure fails | `pytest tests/test_local_target_matrix_scripts.py` | live crAPI reset evidence | `scripts/install-local-target-matrix.sh`, `scripts/reset-local-target.sh` | `add crapi local reset scripts` |
-| 18H.5 documentation | Document the target matrix and Sprint 18H acceptance | Plan states that crAPI is a benchmark resource without making crAPI a dependency of the WSTG engine | `pytest tests/test_development_plan_local_target_matrix.py` | docs | `docs/lab-targets/local-target-matrix.md`, `docs/sprint-18-followup-local-target-matrix.md` | `document local target matrix` |
+|---|---|---|---|---|---|---|
+| 19.1 campaign target contract | Define a generic target runtime contract for loopback, bug bounty, and internal AppSec profiles | Juice Shop uses the contract; crAPI remains planned and not executable | `pytest tests/test_target_runtime_contract.py` | target runtime fixture | `src/aotp/campaigns/target_runtime.py`, tests | `add generic target runtime contract` |
+| 19.2 WSTG live campaign model | Define campaign input, objective queue, action queue, state, budget, and evidence references | Campaign state round trips and denies missing scope | `pytest tests/test_wstg_live_campaign.py` | state fixture | `src/aotp/campaigns/wstg_live_campaign.py`, `src/aotp/campaigns/campaign_state.py` | `add generic wstg live campaign model` |
+| 19.3 execution planner | Select the next executable WSTG objective from coverage gaps, ROE, and available tools | Selection explains why objectives are executed, deferred, denied, or blocked | `pytest tests/test_execution_planner.py` | decision log | `src/aotp/campaigns/execution_planner.py` | `add evidence driven execution planner` |
+| 19.4 governed tool invocation | Route every action through the governed tool registry with request budget reservation | No direct network or browser action bypasses the registry | `pytest tests/test_wstg_tool_invocation.py` | registry-mediated action record | campaign and tool registry modules | `route wstg actions through governed tools` |
+| 19.5 generic evidence writer | Write normalized campaign plan, decisions, observations, coverage, candidates, and hashes | Evidence paths are deterministic and redacted | `pytest tests/test_campaign_evidence_writer.py` | evidence tree fixture | `src/aotp/campaigns/evidence_writer.py` | `write generic campaign evidence` |
+| 19.6 Juice Shop adapter migration | Migrate the existing Juice Shop runner onto the generic harness | Live Juice Shop campaign still passes and contains no challenge-solution shortcuts | `pytest tests/test_juice_shop_agentic_campaign.py tests/test_wstg_live_campaign.py` | local campaign archive | Juice Shop campaign and target modules | `migrate juice shop to generic wstg harness` |
+| 19.7 proof request output | Generate proof requests when evidence is insufficient instead of overclaiming | Candidate remains unvalidated until proof exists | `pytest tests/test_proof_requests.py` | proof request JSON | `src/aotp/campaigns/proof_requests.py` | `add campaign proof requests` |
 
-Sprint acceptance: AOTP can manage a local target matrix with Juice Shop and crAPI as implemented benchmark targets, reset crAPI from official OWASP compose assets, verify loopback-only exposure and health, and map crAPI benchmark coverage to canonical WSTG IDs without making crAPI a dependency of the WSTG engine.
+Sprint acceptance: AOTP can run a generic WSTG campaign against the supported local Juice Shop profile, maintain campaign state, choose next WSTG objectives from evidence gaps, execute only through governed tools, write normalized evidence, generate proof requests, and produce evidence-bound candidate findings. crAPI remains registered but not live-executable.
 
-## Sprint 19: Bug Bounty Program Mode
+## Sprint 20: Stateful Browser Workflows and Authenticated Sessions
 
-Goal: ingest HackerOne or Bugcrowd policy, normalize scope, block ambiguity, run low-noise
-campaigns under program rules, and export a manually submitted draft.
+Goal: add a Playwright-backed, governed browser workflow engine that can navigate, observe, authenticate with provisioned accounts, preserve classified session state, and feed route, DOM, link, screenshot, and form observations back into the WSTG campaign loop.
 
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 19.1 | Ingest saved HTML, pasted text, Markdown, and PDF policy | Each format creates a private profile |
-| 19.2 | Build a normalized program profile | Required policy terms and provenance are retained |
-| 19.3 | Normalize assets, domains, paths, APIs, mobile, and exclusions | In-scope and out-of-scope assets are separate |
-| 19.4 | Block ambiguous policy pending operator decision | Ambiguity prevents live execution |
-| 19.5 | Add bug bounty ROE templates | Templates default to low-noise work |
-| 19.6 | Build campaigns from profile and scope | Agent cannot add targets |
-| 19.7 | Implement passive and browser-first execution profile | Active scanning requires explicit permission |
-| 19.8 | Add duplicate and prior-art review | Duplicate or low-value work is flagged |
-| 19.9 | Gate report acceptance quality | Required asset, proof, impact, limits, evidence, and scope exist |
-| 19.10 | Export manual-only submission packages | No automatic submission path exists |
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|---|
+| 20.1 Playwright governed adapter | Implement Playwright through the governed tool registry with same-origin and budget enforcement | Browser actions deny out-of-scope URLs and direct execution bypass | `pytest tests/test_playwright_browser_governed.py` | action and denial records | `src/aotp/agent_tools/playwright_browser.py`, tests | `add governed playwright browser adapter` |
+| 20.2 browser observation model | Capture DOM metadata, visible text summaries, screenshots, links, frames, cookies metadata, and storage metadata | Sensitive values are classified or redacted | `pytest tests/test_browser_observation.py` | observation fixture | `src/aotp/browser_observation.py` | `record browser workflow observations` |
+| 20.3 session state handling | Store provisioned account session state through vault or memory-only policy | Cookies and tokens never enter public evidence | `pytest tests/test_authenticated_session_state.py` | session evidence | `src/aotp/authenticated_session.py`, vault modules | `handle authenticated browser sessions` |
+| 20.4 login workflow runner | Support provisioned login steps without credential guessing | Login requires provided credentials and ROE authorization | `pytest tests/test_login_workflow.py` | auth workflow artifact | `src/aotp/workflows/login.py` | `add provisioned login workflow` |
+| 20.5 logout and boundary proof | Verify logout, post-logout access, and session invalidation when approved | Boundaries are recorded without exposing secrets | `pytest tests/test_logout_boundary.py` | boundary evidence | `src/aotp/workflows/logout_boundary.py` | `verify authenticated session boundaries` |
+| 20.6 browser-to-WSTG mapper | Map browser observations to WSTG objectives and evidence gaps | Routes, forms, and session observations update coverage | `pytest tests/test_browser_wstg_mapper.py` | coverage update fixture | `src/aotp/wstg/browser_mapper.py` | `map browser observations to wstg coverage` |
 
-Development evidence: `src/aotp/program_ingest.py`,
-`src/aotp/policy_document_parser.py`, `src/aotp/pdf_policy_parser.py`,
-`src/aotp/program_profile_builder.py`, `src/aotp/scope_normalizer.py`,
-`src/aotp/policy_ambiguity.py`, `src/aotp/bug_bounty_mode.py`,
-`src/aotp/campaign_builder.py`, `src/aotp/report_acceptance.py`,
-`src/aotp/submission_gate.py`, `docs/sprint-19-bug-bounty-program-mode.md`,
-`examples/programs/mock-hackerone-program.yaml`,
-`examples/roe/bug-bounty-low-noise.yaml`, `tests/test_program_ingest.py`,
-`tests/test_pdf_policy_parser.py`, `tests/test_scope_normalizer.py`,
-`tests/test_policy_ambiguity.py`, `tests/test_bug_bounty_campaign_builder.py`, and
-`tests/test_report_acceptance.py`.
+Sprint acceptance: AOTP can use governed Playwright to perform stateful browser observation, provisioned login, classified session handling, logout proof, and WSTG coverage updates without credential guessing or out-of-scope browsing.
 
-Sprint acceptance: all four policy formats work, ambiguity and scope expansion deny, defaults are
-low-noise, active work requires permission, and only a complete manual submission package is
-exported.
+## Sprint 21: Form Discovery, API Discovery, and Controlled Action Chains
 
-## Sprint 20: Internal SOW and Enterprise AppSec Mode
+Goal: let the agent discover forms, classify actions, observe APIs, build controlled multi-step action chains, and request human approval before any risky or state-changing action.
 
-Goal: support authorized clearbox, graybox, authenticated, source-informed, stronger-tool,
-exploitation-validation, remediation, and attack-path replay workflows under an internal SOW.
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|---|
+| 21.1 form discovery | Inventory forms, methods, fields, CSRF indicators, and visible context | Raw secret values and entered credentials are not persisted | `pytest tests/test_form_discovery.py` | form inventory fixture | `src/aotp/form_discovery.py` | `discover browser forms safely` |
+| 21.2 form risk classifier | Classify forms as passive, safe submit, state-changing, auth, destructive, or approval-required | Destructive or unclear forms deny by default | `pytest tests/test_form_risk_classifier.py` | classification matrix | `src/aotp/form_risk.py` | `classify form action risk` |
+| 21.3 controlled submission planner | Generate safe submissions only when ROE, budget, and field policy permit | Submission plans require evidence and approval when needed | `pytest tests/test_controlled_submission.py` | planned action records | `src/aotp/controlled_submission.py` | `plan controlled form submissions` |
+| 21.4 browser traffic observer | Capture request and response metadata from browser activity | Request bodies and sensitive headers are classified or redacted | `pytest tests/test_browser_traffic_observer.py` | traffic observation fixture | `src/aotp/agent_tools/http_observer.py` | `observe browser api traffic` |
+| 21.5 API route discovery | Discover API routes from observed traffic, OpenAPI, GraphQL introspection when approved, and JavaScript references | Routes keep provenance and scope decision | `pytest tests/test_api_route_discovery.py` | API inventory | `src/aotp/api_route_discovery.py` | `discover scoped api routes` |
+| 21.6 action chain model | Define ordered, replayable, policy-checked action chains | Chains cannot skip approval or exceed budget | `pytest tests/test_action_chains.py` | action chain fixture | `src/aotp/action_chains.py` | `add controlled action chains` |
+| 21.7 human approval interrupts | Pause for approval with exact context when proof or mutation risk requires it | Resume rechecks policy and approval identity | `pytest tests/test_human_approval_interrupts.py` | approval transcript | approval and campaign modules | `gate risky action chains` |
 
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 20.1 | Define the SOW profile schema | Authority, environments, controls, and provenance validate |
-| 20.2 | Ingest PDF, Markdown, saved HTML, and pasted text | Every format creates a private SOW profile |
-| 20.3 | Model production, staging, lab, and safe-exploit environments | Each environment has distinct tool tiers |
-| 20.4 | Add stronger internal ROE tiers | High-risk tools need approval unless exactly pre-authorized |
-| 20.5 | Ingest local source repositories | Source-derived hints remain within scope |
-| 20.6 | Ingest OpenAPI and GraphQL documentation | API candidates retain schema provenance |
-| 20.7 | Add a targeted OWASP ZAP active wrapper | High-friction policy approval is mandatory |
-| 20.8 | Add controlled input probing and validation wrappers | Arguments, budgets, and stops are enforced |
-| 20.9 | Verify remediation and replay approved attack paths | Replay stays in the approved environment |
-| 20.10 | Build an internal stakeholder package | Report includes guidance and verification status |
+Sprint acceptance: AOTP can discover forms and API routes, classify risk, plan controlled submissions, build multi-step action chains, and pause for exact human approval before risky proof actions.
 
-Development evidence: `src/aotp/sow_profile.py`, `src/aotp/sow_ingest.py`,
-`src/aotp/environment_model.py`, `src/aotp/internal_testing_mode.py`,
-`src/aotp/source_review.py`, `src/aotp/api_schema_ingest.py`,
-`src/aotp/agent_tools/zap_active_targeted.py`,
-`src/aotp/agent_tools/input_probe.py`, `src/aotp/remediation_verification.py`,
-`src/aotp/attack_path_replay.py`, `docs/sprint-20-internal-sow-mode.md`,
-`examples/roe/internal-staging-authorized.yaml`, `tests/test_sow_profile.py`,
-`tests/test_sow_ingest.py`, `tests/test_environment_model.py`,
-`tests/test_zap_active_targeted_policy.py`,
-`tests/test_remediation_verification.py`, and `tests/test_attack_path_replay.py`.
+## Sprint 22: Evidence-Driven Proof Requests and Finding Validation
 
-Sprint acceptance: all four SOW formats work, environment-specific permissions hold, high-risk
-tools and replay are governed, remediation evidence links to the original finding, and the
-internal report includes guidance and verification state.
+Goal: move from candidate observations to validated findings by requiring missing-proof requests, sufficiency checks, controlled validation actions, confidence updates, false-positive rejection, duplicate handling, and explicit lifecycle transitions.
 
-## Sprint 21: Agentic Finding Validation and PoC Builder
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|---|
+| 22.1 finding lifecycle state machine | Implement observed, candidate, needs_more_evidence, needs_human_approval, validated, rejected_false_positive, duplicate, out_of_scope, and report_ready states | Invalid transitions fail | `pytest tests/test_finding_lifecycle.py` | lifecycle matrix | `src/aotp/finding_lifecycle.py` | `add validated finding lifecycle` |
+| 22.2 evidence sufficiency rules | Define minimum evidence per finding type and WSTG category | Candidate cannot validate without required proof | `pytest tests/test_evidence_sufficiency.py` | sufficiency cases | `src/aotp/evidence_sufficiency.py` | `require finding evidence sufficiency` |
+| 22.3 proof request generator | Produce specific proof requests for missing exploitability, impact, reproduction, or scope evidence | Requests cite exact missing fields | `pytest tests/test_proof_request_generator.py` | proof request artifacts | `src/aotp/proof_request_generator.py` | `generate missing proof requests` |
+| 22.4 validation action planner | Convert proof requests into ROE-gated validation actions | Risky actions require approval; denied actions leave finding unvalidated | `pytest tests/test_validation_action_planner.py` | validation plan | `src/aotp/validation_action_planner.py` | `plan governed validation actions` |
+| 22.5 false-positive rejection | Reject weak candidates with evidence-backed reasons | Rejection is auditable and cannot silently disappear | `pytest tests/test_false_positive_rejection.py` | rejection record | `src/aotp/false_positive_rejection.py` | `reject false positive candidates` |
+| 22.6 duplicate and prior-art review | Identify duplicate, previously reported, and low-value issues when evidence supports it | Duplicate state preserves evidence and rationale | `pytest tests/test_duplicate_review.py` | duplicate review fixture | `src/aotp/duplicate_review.py` | `review duplicate finding candidates` |
+| 22.7 confidence scoring | Compute confidence from evidence quality, reproducibility, validation, and limitations | Confidence cannot exceed evidence support | `pytest tests/test_finding_confidence.py` | confidence cases | `src/aotp/finding_confidence.py` | `score finding confidence from evidence` |
+| 22.8 campaign validation dashboard | Emit JSON and Markdown summary of candidate status and outstanding proof requests | Dashboard matches lifecycle state | `pytest tests/test_validation_dashboard.py` | dashboard artifact | `src/aotp/validation_dashboard.py` | `summarize finding validation state` |
 
-Goal: turn raw evidence into high-confidence findings by requesting missing proof, rejecting false
-positives, building classified PoCs, and generating reproducible stakeholder-ready steps.
+Sprint acceptance: AOTP cannot validate a finding without sufficient evidence, cannot hide rejected candidates, requests missing proof instead of overclaiming, and produces an auditable validation dashboard.
 
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 21.1 | Define the candidate finding model | Every candidate is evidence-bound |
-| 21.2 | Define confidence and evidence sufficiency rules | Missing proof blocks confirmation |
-| 21.3 | Add the agentic finding review loop | Agent requests proof instead of overclaiming |
-| 21.4 | Build safe PoCs with workspace and vault material | Authorized vault material is classified correctly |
-| 21.5 | Add an impact analysis helper | Impact is limited to supported evidence |
-| 21.6 | Add false-positive rejection | Rejection records reasons and evidence |
-| 21.7 | Integrate duplicate memory | Duplicates are blocked or marked low value |
-| 21.8 | Build report reproduction steps | Steps are reproducible and evidence-linked |
-| 21.9 | Build recipient-specific sensitive annexes | Annex export requires approval |
-| 21.10 | Emit a lifecycle dashboard or JSON summary | State moves through candidate, confirmed, ready, or rejected |
+## Sprint 23: Reproducible PoC Steps and Safe Retest Workflows
 
-Development evidence: `src/aotp/finding.py`, `src/aotp/finding_confidence.py`,
-`src/aotp/finding_review.py`, `src/aotp/poc_builder.py`,
-`src/aotp/impact_analysis.py`, `src/aotp/false_positive_filter.py`,
-`src/aotp/duplicate_memory.py`, `src/aotp/reproduction_steps.py`,
-`src/aotp/finding_lifecycle.py`, `docs/sprint-21-agentic-finding-validation.md`,
-`tests/test_finding_confidence.py`, `tests/test_poc_builder.py`,
-`tests/test_impact_analysis.py`, `tests/test_false_positive_filter.py`,
-`tests/test_duplicate_memory.py`, and `tests/test_reproduction_steps.py`.
+Goal: build reproducible proof-of-concept and retest workflows that preserve sensitive material safely, separate public and restricted evidence, and generate exact steps for validated findings without uncontrolled exploitation.
 
-Sprint acceptance: candidates require sufficient evidence, false positives and duplicates are
-handled, authorized vault-backed PoCs remain classified, steps and impact are supported, annexes
-are gated, and lifecycle status is explicit.
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|---|
+| 23.1 PoC workspace contract | Define public, restricted, secret, poc_sensitive, recipient_only, and do_not_store handling in PoC workspaces | Public reports never contain raw sensitive material | `pytest tests/test_poc_workspace_contract.py` | workspace fixture | `src/aotp/poc_workspace.py` | `define reproducible poc workspace` |
+| 23.2 reproduction step builder | Generate step-by-step reproduction from validated action chains and evidence | Steps are ordered, scoped, and replayable | `pytest tests/test_reproduction_steps.py` | reproduction document | `src/aotp/reproduction_steps.py` | `build evidence linked reproduction steps` |
+| 23.3 proof artifact minimization | Store only necessary proof artifacts and classify sensitive annex material | Unneeded sensitive material is not exported | `pytest tests/test_proof_artifact_minimization.py` | artifact manifest | PoC and evidence modules | `minimize proof artifacts` |
+| 23.4 safe retest plan | Generate retest steps that avoid destructive or high-risk behavior unless authorized | Retest plan reuses ROE gates | `pytest tests/test_safe_retest_plan.py` | retest plan | `src/aotp/safe_retest.py` | `generate safe retest steps` |
+| 23.5 remediation verification hooks | Link retest evidence back to original finding and fix claim | Verification cannot bypass current policy | `pytest tests/test_remediation_verification.py` | verification record | `src/aotp/remediation_verification.py` | `verify remediation evidence` |
+| 23.6 replayable local proof | Replay approved local benchmark steps under current policy | Replay denies if scope or ROE changes | `pytest tests/test_poc_replay.py` | replay transcript | `src/aotp/poc_replay.py` | `replay approved proof steps` |
 
-## Sprint 22: Reporting, Remediation, and Stakeholder Packages
+Sprint acceptance: validated findings have reproducible PoC steps, sensitive proof material stays classified, retest steps are safe, and replay rechecks policy.
 
-Goal: produce clear, reproducible, scoped, evidence-linked packages for bug bounty triagers and
-internal engineering teams, with sensitive material separated.
+## Sprint 24: Validated Finding Packages and Professional Assessment Reporting
 
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 22.1 | Add a bug bounty report template | Bug bounty package is generated |
-| 22.2 | Add an internal AppSec report template | Internal package is generated |
-| 22.3 | Generate an executive summary | Summary remains supported by findings |
-| 22.4 | Generate engineering remediation sections | Guidance is scoped to evidence |
-| 22.5 | Add an evidence appendix with SHA256 hashes | References and hashes verify |
-| 22.6 | Export a sensitive annex | Export is separate and approval-gated |
-| 22.7 | Generate no-finding due-diligence reports | Completed work remains evidenced |
-| 22.8 | Enforce report quality | Incomplete findings fail |
-| 22.9 | Add a manual submission checklist | Automatic disclosure remains blocked |
-| 22.10 | Render HTML and Markdown | Both outputs preserve control decisions |
+Goal: convert only validated findings into professional finding packages and campaign assessment reports suitable for bug bounty triage, internal AppSec review, external client assessment, executive review, and engineering remediation.
 
-Development evidence: `src/aotp/report_templates.py`,
-`src/aotp/report_package.py`, `src/aotp/executive_summary.py`,
-`src/aotp/remediation_guidance.py`, `src/aotp/evidence_appendix.py`,
-`src/aotp/report_quality_gate.py`, `templates/bug_bounty_report.md`,
-`templates/internal_appsec_report.md`, `templates/no_finding_due_diligence.md`,
-`docs/sprint-22-reporting-remediation-packages.md`,
-`tests/test_report_templates.py`, `tests/test_report_quality_gate.py`, and
-`tests/test_sensitive_annex_export.py`.
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|---|
+| 24.1 reportable finding schema | Define required fields for report-ready validated findings | Missing scope, evidence, reproduction, impact, or validation fails | `pytest tests/test_reportable_finding_schema.py` | schema fixture | `src/aotp/reportable_finding.py` | `define reportable finding schema` |
+| 24.2 audience-specific packages | Generate bug bounty, internal AppSec, executive, developer, and audit archive views | All views derive from the same validated finding | `pytest tests/test_audience_report_packages.py` | report package fixtures | `src/aotp/report_package.py`, templates | `generate professional finding packages` |
+| 24.3 evidence appendix | Generate appendix with artifact paths, SHA256 hashes, timestamps, redaction notes, and classification | Hashes verify and sensitive annex stays separate | `pytest tests/test_evidence_appendix.py` | appendix artifact | `src/aotp/evidence_appendix.py` | `add report evidence appendix` |
+| 24.4 no-finding assessment report | Generate professional no-finding due-diligence report from completed campaign evidence | Report includes tested, untested, skipped, denied, and limitations | `pytest tests/test_no_finding_report.py` | no-finding report | templates and report modules | `generate no finding assessment reports` |
+| 24.5 report quality gate | Block incomplete, unsupported, out-of-scope, duplicate, or unvalidated findings | Only validated report-ready findings export | `pytest tests/test_report_quality_gate.py` | quality gate verdicts | `src/aotp/report_quality_gate.py` | `gate professional report quality` |
+| 24.6 remediation guidance | Produce scoped remediation and safe retest guidance without unsupported root-cause claims | Guidance cites evidence and limitations | `pytest tests/test_remediation_guidance.py` | remediation section | `src/aotp/remediation_guidance.py` | `add scoped remediation guidance` |
+| 24.7 manual disclosure package | Export manual-only packages for HackerOne, Bugcrowd, client delivery, or internal review | No automatic external submission path exists | `pytest tests/test_manual_disclosure_package.py` | package artifact | `src/aotp/disclosure_package.py` | `export manual assessment packages` |
+| 24.8 professional campaign summary | Summarize scope, ROE, coverage, agent actions, validated findings, rejected candidates, proof requests, and limitations | Summary is supported by campaign state and evidence | `pytest tests/test_campaign_summary_report.py` | campaign summary | `src/aotp/campaign_summary.py` | `summarize professional campaign results` |
 
-Sprint acceptance: both report types verify evidence hashes, normal reports exclude vault
-material, approved annexes stay separate, incomplete findings fail, no-finding work remains
-documented, and submission is manual.
+Sprint acceptance: AOTP can create validated finding packages and professional campaign assessment reports for multiple audiences, with evidence hashes, reproduction steps, validation notes, false-positive checks, scope decisions, remediation, limitations, and manual-only disclosure workflows.
 
-## Sprint 23: Effectiveness Measurement and Agentic Evaluation
+## Sprint 25: Campaign Reliability, Replay, Resume, and Agent Orchestration
 
-Goal: compare static and agentic testing under the same budget and measure evidence quality,
-candidate quality, false positives, duplicate avoidance, request efficiency, and report readiness.
+Goal: make long-running agentic campaigns durable, resumable, replay-safe, and auditable while preserving policy, approval, evidence, vault, and transcript integrity.
 
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 23.1 | Add static-versus-agentic comparison mode | Target, scope, and budget are identical |
-| 23.2 | Define campaign metrics | Metrics schema validates |
-| 23.3 | Measure request efficiency | Request and budget use compare |
-| 23.4 | Measure evidence coverage | Coverage dispositions compare |
-| 23.5 | Measure candidate quality | Evidence strength and readiness compare |
-| 23.6 | Measure false positives and duplicates | Both are counted explicitly |
-| 23.7 | Measure operator and approval time | Manual effort is visible |
-| 23.8 | Add local Juice Shop benchmark fixtures | Benchmarks reset to clean loopback-only state and remain reproducible |
-| 23.9 | Generate an HTML metrics report | Results link to campaign evidence |
-| 23.10 | Generate a technical stakeholder scorecard | Agentic next-step reasoning is demonstrable |
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|---|
+| 25.1 durable checkpoints | Save campaign, agent, action queue, approvals, and evidence state | Interrupted campaigns resume from verified state | `pytest tests/test_campaign_checkpoints.py` | checkpoint fixture | `src/aotp/checkpoints.py` | `checkpoint agentic campaigns` |
+| 25.2 resume engine | Resume campaigns only after state, scope, ROE, and vault authorization revalidate | Changed policy can deny resume | `pytest tests/test_campaign_resume.py` | resume transcript | `src/aotp/resume.py` | `resume campaigns safely` |
+| 25.3 replay-safe actions | Give actions stable identities and idempotency rules | Replay cannot duplicate side effects | `pytest tests/test_replay_safe_actions.py` | replay fixture | `src/aotp/replay.py` | `record replay safe actions` |
+| 25.4 approval recovery | Recover interrupted human approvals with exact context and identity | Approval context cannot be broadened | `pytest tests/test_approval_recovery.py` | approval evidence | approval modules | `recover approval interrupts` |
+| 25.5 agent transcript integrity | Hash agent decisions, tool calls, observations, and report derivation | Transcript tampering is detected | `pytest tests/test_transcript_integrity.py` | transcript hashes | `src/aotp/transcript_integrity.py` | `verify agent transcript integrity` |
+| 25.6 LangGraph orchestration hardening | Route assigned agents through durable graph nodes with interrupts and policy boundaries | Graph behavior matches deterministic campaign state | `pytest tests/test_langgraph_orchestration.py` | orchestration fixture | orchestration modules | `harden agent orchestration graph` |
+| 25.7 failure recovery | Record failed tool runs without corrupting state and continue when policy allows | Failed action consumes budget and preserves evidence | `pytest tests/test_failed_tool_recovery.py` | failure artifact | campaign loop and tool modules | `recover failed governed tool runs` |
 
-Development evidence: `src/aotp/campaign_compare.py`, `src/aotp/metrics.py`,
-`src/aotp/evaluation.py`, `src/aotp/benchmark_fixtures.py`, `src/aotp/benchmarks/juice_shop.py`,
-`src/aotp/demo_scorecard.py`, `docs/sprint-23-agentic-effectiveness-evaluation.md`,
-`tests/test_campaign_compare.py`, `tests/test_metrics.py`, and
-`tests/test_evaluation.py`.
+Sprint acceptance: AOTP campaigns can pause, resume, replay approved work, recover approvals, preserve vault authorization, and prove transcript integrity without bypassing current policy.
 
-Sprint acceptance: equal-budget runs compare coverage, requests, evidence-linked reasoning,
-candidate quality, false positives, duplicates, operator effort, and report readiness in a
-technical scorecard.
+## Sprint 26: Authorized External Campaign Readiness
 
-## Sprint 24: Reliability, Replay, and Campaign Resume
+Goal: prepare AOTP for controlled, low-noise, authorized external campaigns after local benchmark testing proves agentic execution, evidence validation, finding quality, reporting, and reliability.
 
-Goal: checkpoint and resume campaigns safely, replay approved actions, preserve authorized vault
-context, and prove replay cannot bypass current policy.
+| Slice | Implementation tasks | Acceptance checks | Focused validation | Evidence | Files likely touched | Commit suggestion |
+|---|---|---|---|---|---|---|
+| 26.1 program policy ingest | Ingest saved HTML, pasted text, Markdown, and PDF policy into a private program profile | Policy provenance and required terms are retained | `pytest tests/test_program_policy_ingest.py` | policy profile fixture | `src/aotp/program_ingest.py` | `ingest authorized program policy` |
+| 26.2 scope normalization | Normalize domains, paths, APIs, mobile, exclusions, credentials, rate limits, and test windows | Ambiguity blocks execution until operator decision | `pytest tests/test_scope_normalizer.py` | scope decision matrix | `src/aotp/scope_normalizer.py` | `normalize external program scope` |
+| 26.3 low-noise execution profile | Default external campaigns to passive and browser-first actions | Active checks require explicit program permission | `pytest tests/test_low_noise_external_profile.py` | ROE fixture | `src/aotp/external_campaign_mode.py` | `add low noise external campaign mode` |
+| 26.4 duplicate and prior-art review | Track known disclosures, previous submissions, and low-value patterns | Duplicate risk is visible before reporting | `pytest tests/test_prior_art_review.py` | review record | `src/aotp/prior_art_review.py` | `review external prior art` |
+| 26.5 manual submission gate | Export manual-only submission packages with no auto-submit capability | Missing proof, scope, impact, or evidence blocks export | `pytest tests/test_submission_gate.py` | manual package | `src/aotp/submission_gate.py` | `gate manual external submissions` |
+| 26.6 pilot campaign checklist | Generate preflight and postflight checklists for authorized programs or clients | Operator confirms scope, ROE, and reporting destination | `pytest tests/test_pilot_campaign_checklist.py` | checklist artifact | docs and CLI | `add authorized pilot checklist` |
 
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 24.1 | Define campaign checkpoints | State stops durably |
-| 24.2 | Implement resume | Campaign continues from the verified checkpoint |
-| 24.3 | Record replay-safe actions | Stable action identity prevents duplicate side effects |
-| 24.4 | Recheck policy on replay | Updated policy can deny a prior action |
-| 24.5 | Rehydrate authorized vault access | Access resumes only while authorization remains valid |
-| 24.6 | Recover interrupted human approvals | Exact approval context is restored |
-| 24.7 | Recover failed tool runs | Failure is recorded without corrupting state |
-| 24.8 | Continue the evidence archive | Archive remains complete after resume |
-| 24.9 | Hash transcript integrity | Transcript verification detects mutation |
-| 24.10 | Simulate crashes and generate replay reports | Stop, resume, and recovery proofs pass |
+Sprint acceptance: AOTP can prepare an authorized external campaign profile, enforce low-noise ROE, block ambiguity and scope expansion, export manual-only packages, and provide operator checklists. External live use remains operator-controlled and must follow each program or client authorization.
 
-Development evidence: `src/aotp/checkpoints.py`, `src/aotp/resume.py`,
-`src/aotp/replay.py`, `src/aotp/vault_resume.py`,
-`src/aotp/transcript_integrity.py`, `docs/sprint-24-reliability-replay-resume.md`,
-`tests/test_checkpoints.py`, `tests/test_resume.py`,
-`tests/test_replay_policy_recheck.py`, `tests/test_vault_resume.py`, and
-`tests/test_transcript_integrity.py`.
+## Long-term release criteria
 
-Sprint acceptance: campaigns stop and resume, replay rechecks policy, vault authorization is
-revalidated, approvals and failed runs recover safely, transcript hashes verify, and evidence
-remains complete.
+AOTP is release-ready only when it can demonstrate the following on authorized targets:
 
-## Sprint 25: Operator Productization and Demo Readiness
+- the campaign starts from explicit scope and ROE
+- agents create an executable WSTG plan
+- tools execute only through governed adapters
+- browser workflows preserve state and evidence
+- authenticated sessions use provisioned accounts safely
+- action chains are controlled and approval-gated
+- findings are validated before reporting
+- false positives and duplicates are rejected with reasons
+- PoC steps are reproducible and safe to retest
+- professional report packages are generated for the selected audience
+- campaign replay and resume preserve policy and evidence integrity
+- all sensitive material remains classified, vaulted, or excluded according to policy
 
-Goal: package the CLI, documentation, examples, demos, and safe defaults for bug bounty operators
-and internal security teams.
-
-| Slice | Implementation tasks | Acceptance checks |
-|---|---|---|
-| 25.1 | Add clean agentic campaign CLI commands | Commands validate and remain policy-governed |
-| 25.2 | Add a sample bug bounty workflow | Manual submission path is documented |
-| 25.3 | Add a sample internal SOW workflow | Stronger ROE and approvals are demonstrated |
-| 25.4 | Document Parrot OS setup | FOSS dependencies are reproducible |
-| 25.5 | Document local Ollama setup | Endpoint and model validation are clear |
-| 25.6 | Add demo mode with sanitized outputs | Demo creates a safe evidence archive |
-| 25.7 | Add a technical stakeholder demo script | Agentic value and controls are visible |
-| 25.8 | Add quickstart and troubleshooting | Fresh clone setup works |
-| 25.9 | Add the agentic MVP release gate | All MVP acceptance checks pass |
-| 25.10 | Add versioned release notes | Scope, limits, and evidence are recorded |
-
-Development evidence: `src/aotp/cli.py`, `docs/quickstart-parrot-ollama.md`,
-`docs/bug-bounty-operator-workflow.md`, `docs/internal-sow-workflow.md`,
-`docs/technical-stakeholder-demo-guide.md`, `examples/campaigns/`,
-`examples/roe/`, `scripts/run-agentic-mvp-demo.sh`,
-`scripts/release-agentic-mvp-gate.sh`, and
-`tests/test_cli_agentic_commands.py`.
-
-Sprint acceptance: fresh-clone Parrot and Ollama setup is documented, one command runs the demo,
-sanitized evidence is produced, synthetic vault-backed proof works, the release gate passes, no
-MCP dependency exists, and no paid tool is required.
-
-## Branch and closeout convention
-
-Development uses `sprint/<number>-<short-name>` and, when useful, `slice/<number>.<number>-<short-name>`. Each completed slice is tested, committed with its lowercase suggestion or an equally precise message, pushed, reviewed, and integrated. Sprint closeout synchronizes `origin/main`, confirms the remote commit and repository visibility, and leaves the worktree clean.
-
-
-## crAPI live runtime status
-
-crAPI is registered with profile metadata and WSTG benchmark mapping, but live runtime remains pending on the Parrot rootless Podman Compose host. Evidence showed partial compose startup without a healthy `crapi-web` listener on `127.0.0.1:8888`, so live crAPI is not accepted in Sprint 18H.
-
-
-Status marker: crAPI live runtime pending.
+The project succeeds when it can perform diligent, professional, senior-level web application security testing through agentic workflows and produce vetted, validated findings that are useful to program triagers, internal AppSec teams, clients, developers, and executives.

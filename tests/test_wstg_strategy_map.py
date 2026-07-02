@@ -1,6 +1,7 @@
 import pytest
 
 from aotp.tool_risk_tiers import ToolRiskTier
+from aotp.wstg.catalog import WSTG_V42_CATALOG
 from aotp.wstg.strategy_map import (
     ExecutableFamily,
     WSTGPhase,
@@ -10,7 +11,7 @@ from aotp.wstg.strategy_map import (
 )
 
 
-def test_default_strategy_map_is_version_aware_and_phase_complete():
+def test_default_strategy_map_uses_only_canonical_wstg_v42_titles():
     strategy = build_default_strategy_map()
     entries = strategy.entries()
 
@@ -22,9 +23,26 @@ def test_default_strategy_map_is_version_aware_and_phase_complete():
         WSTGPhase.AUTH,
         WSTGPhase.INPUT,
         WSTGPhase.VALIDATION,
-        WSTGPhase.REPORT,
     }
     assert strategy.by_id("WSTG-v42-INFO-02").family is ExecutableFamily.HTTP_METADATA
+    for entry in entries:
+        assert entry.name == WSTG_V42_CATALOG.by_id(entry.wstg_id).title
+
+
+def test_strategy_entry_rejects_non_canonical_wstg_title():
+    with pytest.raises(WSTGStrategyError):
+        WSTGStrategyEntry(
+            wstg_id="WSTG-v42-CLNT-01",
+            version="v42",
+            category="CLNT",
+            name="Browser Route and Client-Side Metadata Review",
+            phase=WSTGPhase.BROWSER,
+            family=ExecutableFamily.PLAYWRIGHT_PASSIVE_METADATA,
+            tool_name="playwright_passive_metadata",
+            risk_tier=ToolRiskTier.PASSIVE_BROWSER,
+            evidence_classification="public",
+            evidence_required=("forms",),
+        )
 
 
 def test_strategy_entry_requires_versioned_identifier_and_evidence():
@@ -49,6 +67,7 @@ def test_strategy_map_supports_family_lookup():
     browser = strategy.by_family(ExecutableFamily.PLAYWRIGHT_PASSIVE_METADATA)
 
     assert len(browser) == 1
+    assert browser[0].wstg_id == "WSTG-v42-INFO-06"
     assert browser[0].phase is WSTGPhase.BROWSER
 
 

@@ -9,6 +9,8 @@ from typing import Any, Iterable
 
 from aotp.tool_risk_tiers import ToolRiskTier, parse_risk_tier
 
+from .catalog import WSTG_V42_CATALOG, WSTGCatalogError
+
 
 class WSTGStrategyError(ValueError):
     """Raised when a WSTG strategy entry or map is invalid."""
@@ -94,6 +96,15 @@ class WSTGStrategyEntry:
             raise WSTGStrategyError("unsupported evidence classification")
         if not self.evidence_required:
             raise WSTGStrategyError("at least one evidence requirement is required")
+        if self.version == "v42":
+            try:
+                catalog_case = WSTG_V42_CATALOG.by_id(self.wstg_id)
+            except WSTGCatalogError as exc:
+                raise WSTGStrategyError(str(exc)) from exc
+            if catalog_case.category != self.category:
+                raise WSTGStrategyError("strategy entry category must match the canonical WSTG catalog")
+            if catalog_case.title != self.name:
+                raise WSTGStrategyError("strategy entry name must match the canonical OWASP WSTG title")
 
     @property
     def sort_key(self) -> tuple[int, str]:
@@ -152,11 +163,13 @@ class WSTGStrategyMap:
 
 
 def build_default_strategy_map(version: str = "v42") -> WSTGStrategyMap:
-    """Build the Sprint 17 default WSTG v4.2-aligned map.
+    """Build the default AOTP WSTG v4.2 executable starter map.
 
-    The map is intentionally small and executable-family oriented. It links each generated
-    objective to a version-qualified WSTG identifier and keeps execution authority separate
-    from the existence of the mapping.
+    The map is deliberately smaller than the full catalog. It selects currently
+    supported AOTP execution families from canonical OWASP WSTG v4.2 test cases.
+    Coverage for every WSTG test belongs to :mod:`aotp.wstg.catalog` and
+    :mod:`aotp.wstg.engine`; this function must not invent internal WSTG IDs or
+    rename official OWASP tests.
     """
 
     entries = (
@@ -185,10 +198,10 @@ def build_default_strategy_map(version: str = "v42") -> WSTGStrategyMap:
             evidence_required=("robots_txt", "security_txt"),
         ),
         WSTGStrategyEntry(
-            wstg_id=f"WSTG-{version}-CONF-07",
+            wstg_id=f"WSTG-{version}-CRYP-01",
             version=version,
-            category="CONF",
-            name="Test HTTP Strict Transport Security",
+            category="CRYP",
+            name="Testing for Weak Transport Layer Security",
             phase=WSTGPhase.PASSIVE,
             family=ExecutableFamily.TLS_METADATA,
             tool_name="tls_metadata",
@@ -197,10 +210,10 @@ def build_default_strategy_map(version: str = "v42") -> WSTGStrategyMap:
             evidence_required=("tls_certificate_metadata", "transport_headers"),
         ),
         WSTGStrategyEntry(
-            wstg_id=f"WSTG-{version}-CLNT-01",
+            wstg_id=f"WSTG-{version}-INFO-06",
             version=version,
-            category="CLNT",
-            name="Browser Route and Client-Side Metadata Review",
+            category="INFO",
+            name="Identify Application Entry Points",
             phase=WSTGPhase.BROWSER,
             family=ExecutableFamily.PLAYWRIGHT_PASSIVE_METADATA,
             tool_name="playwright_passive_metadata",
@@ -212,7 +225,7 @@ def build_default_strategy_map(version: str = "v42") -> WSTGStrategyMap:
             wstg_id=f"WSTG-{version}-ATHN-01",
             version=version,
             category="ATHN",
-            name="Credentials Transported over an Encrypted Channel",
+            name="Testing for Credentials Transported over an Encrypted Channel",
             phase=WSTGPhase.AUTH,
             family=ExecutableFamily.AUTH_BOUNDARY,
             tool_name="auth_boundary_check",
@@ -225,7 +238,7 @@ def build_default_strategy_map(version: str = "v42") -> WSTGStrategyMap:
             wstg_id=f"WSTG-{version}-SESS-02",
             version=version,
             category="SESS",
-            name="Cookie Attribute and Session Material Review",
+            name="Testing for Cookies Attributes",
             phase=WSTGPhase.AUTH,
             family=ExecutableFamily.SESSION_MANAGEMENT,
             tool_name="session_management_check",
@@ -238,7 +251,7 @@ def build_default_strategy_map(version: str = "v42") -> WSTGStrategyMap:
             wstg_id=f"WSTG-{version}-ERRH-01",
             version=version,
             category="ERRH",
-            name="Analysis of Error Codes",
+            name="Testing for Improper Error Handling",
             phase=WSTGPhase.INPUT,
             family=ExecutableFamily.ERROR_HANDLING,
             tool_name="error_handling_check",
@@ -247,10 +260,10 @@ def build_default_strategy_map(version: str = "v42") -> WSTGStrategyMap:
             evidence_required=("bounded_error_observation", "stop_condition"),
         ),
         WSTGStrategyEntry(
-            wstg_id=f"WSTG-{version}-INPV-01",
+            wstg_id=f"WSTG-{version}-INPV-04",
             version=version,
             category="INPV",
-            name="Input Boundary Metadata Review",
+            name="Testing for HTTP Parameter Pollution",
             phase=WSTGPhase.INPUT,
             family=ExecutableFamily.INPUT_BOUNDARY,
             tool_name="input_boundary_check",
@@ -259,10 +272,10 @@ def build_default_strategy_map(version: str = "v42") -> WSTGStrategyMap:
             evidence_required=("input_names", "allowed_payload_class", "request_budget"),
         ),
         WSTGStrategyEntry(
-            wstg_id=f"WSTG-{version}-CONF-01",
+            wstg_id=f"WSTG-{version}-CONF-02",
             version=version,
             category="CONF",
-            name="Passive Baseline Configuration Review",
+            name="Test Application Platform Configuration",
             phase=WSTGPhase.VALIDATION,
             family=ExecutableFamily.ZAP_PASSIVE_BASELINE,
             tool_name="zap_passive_baseline",
@@ -271,18 +284,6 @@ def build_default_strategy_map(version: str = "v42") -> WSTGStrategyMap:
             evidence_required=("zap_json", "scoped_crawl_summary"),
             requires_human_approval=True,
             default_arguments={"max_minutes": 1},
-        ),
-        WSTGStrategyEntry(
-            wstg_id=f"WSTG-{version}-RPRT-01",
-            version=version,
-            category="RPRT",
-            name="Coverage Report and Continuation Decision",
-            phase=WSTGPhase.REPORT,
-            family=ExecutableFamily.COVERAGE_REPORT,
-            tool_name="wstg_coverage_report",
-            risk_tier=ToolRiskTier.PASSIVE_METADATA,
-            evidence_classification="public",
-            evidence_required=("coverage_matrix", "continue_or_stop_reason"),
         ),
     )
     return WSTGStrategyMap(entries)

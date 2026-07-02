@@ -22,7 +22,7 @@ class WSTGExecutionAdapterError(ValueError):
 
 
 class WSTGExecutionStatus(str, Enum):
-    """OSMAP-style execution result status for one WSTG objective."""
+    """Generic execution result status for one WSTG objective."""
 
     PASS = "pass"
     FAIL = "fail"
@@ -188,7 +188,7 @@ class WSTGFindingCandidate:
 
 @dataclass(frozen=True)
 class WSTGExecutionResult:
-    """OSMAP-style execution result for one generated WSTG objective."""
+    """Generic execution result for one generated WSTG objective."""
 
     request: WSTGExecutionRequest
     status: WSTGExecutionStatus

@@ -432,6 +432,36 @@ Sprint acceptance: credentials and session material follow campaign storage poli
 produces route and auth maps, authenticated work requires authorization, logout boundaries are
 verified, and findings cite classified evidence.
 
+
+## Sprint 18F: Local Juice Shop WSTG Campaign Benchmark
+
+Goal: add a loopback-only OWASP Juice Shop benchmark target on the Parrot development system so the corrected Sprint 18 WSTG catalog and planning engine can be validated against a known intentionally vulnerable application before later authorized bug bounty campaigns.
+
+| Slice | Implementation tasks | Acceptance checks |
+|---|---|---|
+| 18F.1 | Inventory the local Parrot system and required tools | Evidence records user, sudo, OS, Docker, curl, Python, git, and listener state |
+| 18F.2 | Install Docker when missing through the local package manager | Install uses passwordless sudo as user foo and records package evidence |
+| 18F.3 | Pull the OWASP Juice Shop image | The `bkimminich/juice-shop` image is present and inspected |
+| 18F.4 | Reset Juice Shop before every campaign | The old container is removed and a fresh container starts without persistent mounts |
+| 18F.5 | Enforce loopback-only exposure | Docker binds exactly `127.0.0.1:3000:3000` |
+| 18F.6 | Add a metadata-only Juice Shop lab target profile | The profile cannot become a WSTG engine dependency or challenge-solution shortcut |
+| 18F.7 | Add a benchmark manifest | Broad Juice Shop classes map to canonical WSTG IDs without copied solutions |
+| 18F.8 | Add a focused validation runner | The runner validates project tests and optionally installs or resets the live local benchmark |
+
+Development evidence: `src/aotp/lab_targets/juice_shop.py`,
+`src/aotp/benchmarks/juice_shop.py`,
+`scripts/install-local-juice-shop-benchmark.sh`,
+`scripts/juice-shop-local-reset.sh`,
+`scripts/run-sprint18-followup-local-juice-shop-validation.sh`,
+`docs/sprint-18-followup-local-juice-shop-benchmark.md`,
+`docs/lab-targets/juice-shop-local.md`,
+`tests/test_juice_shop_local_profile.py`,
+`tests/test_juice_shop_benchmark_mapping.py`,
+`tests/test_juice_shop_local_scripts.py`, and
+`tests/test_development_plan_juice_shop_followup.py`.
+
+Follow-up acceptance: local Juice Shop is treated as a resettable benchmark resource, not as the engine; every live campaign against it starts from a freshly recreated loopback-only container; benchmark comparison maps observed findings to canonical WSTG coverage before later authorized bug bounty targets are used.
+
 ## Sprint 19: Bug Bounty Program Mode
 
 Goal: ingest HackerOne or Bugcrowd policy, normalize scope, block ambiguity, run low-noise
@@ -575,12 +605,12 @@ candidate quality, false positives, duplicate avoidance, request efficiency, and
 | 23.5 | Measure candidate quality | Evidence strength and readiness compare |
 | 23.6 | Measure false positives and duplicates | Both are counted explicitly |
 | 23.7 | Measure operator and approval time | Manual effort is visible |
-| 23.8 | Add OSMAP benchmark fixtures | Benchmarks are reproducible and authorized |
+| 23.8 | Add local Juice Shop benchmark fixtures | Benchmarks reset to clean loopback-only state and remain reproducible |
 | 23.9 | Generate an HTML metrics report | Results link to campaign evidence |
 | 23.10 | Generate a technical stakeholder scorecard | Agentic next-step reasoning is demonstrable |
 
 Development evidence: `src/aotp/campaign_compare.py`, `src/aotp/metrics.py`,
-`src/aotp/evaluation.py`, `src/aotp/benchmark_fixtures.py`,
+`src/aotp/evaluation.py`, `src/aotp/benchmark_fixtures.py`, `src/aotp/benchmarks/juice_shop.py`, `src/aotp/benchmarks/juice_shop.py`,
 `src/aotp/demo_scorecard.py`, `docs/sprint-23-agentic-effectiveness-evaluation.md`,
 `tests/test_campaign_compare.py`, `tests/test_metrics.py`, and
 `tests/test_evaluation.py`.
